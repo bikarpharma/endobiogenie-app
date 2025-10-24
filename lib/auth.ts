@@ -8,7 +8,6 @@
 // - Sessions utilisateur (qui est connecté ?)
 
 import NextAuth, { DefaultSession } from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 // import Google from "next-auth/providers/google"; // Décommentez plus tard
 import { compare } from "bcryptjs";
@@ -39,8 +38,7 @@ const loginSchema = z.object({
 
 // ===== CONFIGURATION NEXTAUTH =====
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  // Adaptateur Prisma (pour lire/écrire dans la base de données)
-  adapter: PrismaAdapter(prisma),
+  // Note: Pas d'adapter avec JWT sessions pour éviter les erreurs edge runtime
 
   // Mode de session : JWT (token stocké côté client)
   session: { strategy: "jwt" },
