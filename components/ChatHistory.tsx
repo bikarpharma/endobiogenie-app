@@ -34,6 +34,7 @@ export function ChatHistory({
   const [question, setQuestion] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -120,24 +121,60 @@ export function ChatHistory({
     setQuestion("");
   }
 
+  async function exportToPDF() {
+    setExporting(true);
+    try {
+      const response = await fetch(`/api/chats/${chatId}/export`);
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de l'export");
+      }
+
+      // Créer un blob et télécharger le fichier
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `conversation_${chatTitle.slice(0, 30)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      setError("Erreur lors de l'export PDF");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function copyMessage(content: string) {
     navigator.clipboard.writeText(content);
   }
 
   return (
     <div className="chat-container">
-      {/* En-tête avec retour */}
+      {/* En-tête avec retour et export */}
       <div className="chat-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Link href="/dashboard" className="btn btn-ghost">
-            ← Retour
-          </Link>
-          <div>
-            <h1>💬 {chatTitle}</h1>
-            <p className="muted" style={{ fontSize: "14px", marginTop: "4px" }}>
-              {messages.length} message{messages.length > 1 ? "s" : ""}
-            </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <Link href="/dashboard" className="btn btn-ghost">
+              ← Retour
+            </Link>
+            <div>
+              <h1>💬 {chatTitle}</h1>
+              <p className="muted" style={{ fontSize: "14px", marginTop: "4px" }}>
+                {messages.length} message{messages.length > 1 ? "s" : ""}
+              </p>
+            </div>
           </div>
+          <button
+            onClick={exportToPDF}
+            disabled={exporting || messages.length === 0}
+            className="btn btn-primary"
+            title="Exporter en PDF"
+          >
+            {exporting ? "Export en cours..." : "📄 Exporter en PDF"}
+          </button>
         </div>
       </div>
 
