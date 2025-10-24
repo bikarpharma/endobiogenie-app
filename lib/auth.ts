@@ -97,24 +97,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // ===== CALLBACKS (personnalisation des sessions) =====
   callbacks: {
     // Ajouter l'ID et le rôle dans le JWT
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
       }
-
-      // Récupérer le rôle depuis la base de données à chaque requête
-      // pour s'assurer qu'il est toujours à jour
-      if (token.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { role: true },
-        });
-        if (dbUser) {
-          token.role = dbUser.role;
-        }
-      }
-
       return token;
     },
 
