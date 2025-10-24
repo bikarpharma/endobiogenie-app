@@ -27,16 +27,15 @@ export default async function DashboardPage() {
     orderBy: { updatedAt: "desc" }, // Les plus récentes d'abord
     take: 10, // Limiter à 10 résultats
     include: {
-      messages: {
-        take: 1, // Récupérer le dernier message de chaque conversation
-        orderBy: { createdAt: "desc" },
+      _count: {
+        select: { messages: true },
       },
     },
   });
 
   // Calculer le nombre total de messages
   const totalMessages = chats.reduce((acc, chat) => {
-    return acc + chat.messages.length;
+    return acc + chat._count.messages;
   }, 0);
 
   return (
