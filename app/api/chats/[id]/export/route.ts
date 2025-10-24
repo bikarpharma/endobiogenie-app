@@ -14,6 +14,8 @@ import { prisma } from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { ChatPDFDocument } from "@/lib/pdf/ChatPDFDocument";
 
+export const runtime = "nodejs";
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

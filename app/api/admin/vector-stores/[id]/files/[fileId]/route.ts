@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import OpenAI from "openai";
 
+export const runtime = "nodejs";
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });

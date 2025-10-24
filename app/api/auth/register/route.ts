@@ -13,6 +13,8 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
+export const runtime = "nodejs";
+
 // Validation des données d'inscription
 const registerSchema = z.object({
   name: z.string().min(1, "Nom requis"),
