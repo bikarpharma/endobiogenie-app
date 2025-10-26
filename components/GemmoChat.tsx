@@ -1,14 +1,8 @@
-// ========================================
-// COMPOSANT GEMMO CHAT
-// ========================================
-// 📖 Interface de chat pour la gemmothérapie
-
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
-type ApiReply = { reply?: string; error?: string; chatId?: string };
-
+// 6 suggestions de questions pour la gemmothérapie
 const SUGGESTIONS = [
   "Quelles sont les propriétés du bourgeon de tilleul ?",
   "Quel macérat pour le stress chronique et l'anxiété ?",
@@ -18,208 +12,319 @@ const SUGGESTIONS = [
   "Bourgeons pour soutenir le système immunitaire ?",
 ];
 
-export function GemmoChat({ userId }: { userId: string }) {
-  const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
-  const [error, setError] = useState("");
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+interface GemmoChatProps {
+  userId: string;
+}
+
+export function GemmoChat({ userId }: GemmoChatProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-resize textarea
-  useEffect(() => {
-    if (!textareaRef.current) return;
-    const el = textareaRef.current;
-    const autosize = () => {
-      el.style.height = "auto";
-      el.style.height = Math.min(300, Math.max(80, el.scrollHeight)) + "px";
-    };
-    autosize();
-    const handler = () => autosize();
-    el.addEventListener("input", handler);
-    return () => el.removeEventListener("input", handler);
-  }, []);
-
-  // Auto-scroll to bottom
+  // Auto-scroll vers le bas quand de nouveaux messages arrivent
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function sendMessage(message: string) {
-    setLoading(true);
-    setError("");
+  // Envoyer un message (question ou suggestion)
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || loading) return;
 
-    const userMessage = { role: "user", content: message };
+    const userMessage: Message = { role: "user", content: text };
     setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setLoading(true);
 
     try {
       const res = await fetch("/api/gemmo/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message,
+          message: text,
           chatId,
-          userId
+          userId,
         }),
       });
 
-      const data: ApiReply = await res.json();
-
       if (!res.ok) {
-        setError(typeof data?.error === "string" ? data.error : res.statusText);
-        setMessages((prev) => prev.slice(0, -1));
-        return;
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Erreur API");
       }
 
-      const reply = (data.reply ?? "").trim();
-      if (!reply) {
-        setError("Réponse vide du serveur.");
-        setMessages((prev) => prev.slice(0, -1));
-        return;
-      }
+      const data = await res.json();
 
-      if (data.chatId && !chatId) {
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: data.reply,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+
+      // Sauvegarder le chatId pour les prochains messages
+      if (data.chatId) {
         setChatId(data.chatId);
       }
-
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-    } catch (e: any) {
-      setError(e?.message || "Erreur réseau");
-      setMessages((prev) => prev.slice(0, -1));
+    } catch (error: any) {
+      console.error("Erreur lors de l'envoi du message:", error);
+      const errorMessage: Message = {
+        role: "assistant",
+        content: \`❌ \${error.message}\`,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const msg = question.trim();
-    if (!msg || loading) return;
-    sendMessage(msg);
-    setQuestion("");
-  }
-
-  function useSuggestion(suggestion: string) {
-    if (loading) return;
-    setQuestion(suggestion);
+  // Cliquer sur une suggestion
+  const handleSuggestionClick = (suggestion: string) => {
     sendMessage(suggestion);
-    setQuestion("");
-  }
+  };
 
-  function copyMessage(content: string) {
+  // Soumettre le formulaire
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(input);
+  };
+
+  // Copier un message
+  const copyMessage = (content: string) => {
     navigator.clipboard.writeText(content);
-  }
+  };
 
   return (
-    <div className="chat-container gemmo-chat">
-      <div className="chat-header gemmo-header">
-        <h2 style={{ color: "#2d5016", margin: 0 }}>🌿 Chat Gemmothérapie</h2>
-        <p className="muted">
-          Posez vos questions sur les macérats glycérinés et bourgeons
-        </p>
-      </div>
-
-      {/* Messages */}
-      <div className="chat-messages">
-        {messages.length === 0 ? (
-          <div className="chat-empty">
-            <span style={{ fontSize: "48px" }}>🌸</span>
-            <p className="muted">Commencez une conversation sur la gemmothérapie</p>
-            <div className="suggestions">
-              {SUGGESTIONS.map((s, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className="suggestion-chip gemmo-chip"
-                  onClick={() => useSuggestion(s)}
-                  disabled={loading}
-                >
-                  🌿 {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`message message-${msg.role}`}>
-                <div className="message-avatar">
-                  {msg.role === "user" ? "👤" : "🌿"}
-                </div>
-                <div className="message-content">
-                  <div className="message-text">{msg.content}</div>
-                  {msg.role === "assistant" && (
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => copyMessage(msg.content)}
-                      title="Copier"
-                    >
-                      📋 Copier
-                    </button>
-                  )}
-                </div>
-              </div>
+    <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+      {/* Suggestions - affichées seulement si aucun message */}
+      {messages.length === 0 && (
+        <div style={{ marginBottom: "24px" }}>
+          <h3 style={{ fontSize: "1.1rem", marginBottom: "16px", color: "#2d5016" }}>
+            💡 Questions suggestions
+          </h3>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "12px",
+            }}
+          >
+            {SUGGESTIONS.map((suggestion, i) => (
+              <button
+                key={i}
+                onClick={() => handleSuggestionClick(suggestion)}
+                disabled={loading}
+                style={{
+                  padding: "14px 16px",
+                  background: "#f0f9e8",
+                  border: "1px solid #d1e7c2",
+                  borderRadius: "8px",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  textAlign: "left",
+                  fontSize: "0.95rem",
+                  color: "#2d5016",
+                  transition: "all 0.2s",
+                  opacity: loading ? 0.6 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.background = "#e3f4d7";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(45, 80, 22, 0.15)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#f0f9e8";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                {suggestion}
+              </button>
             ))}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-
-      {/* Erreur */}
-      {error && (
-        <div className="error-message" style={{ marginBottom: "16px" }}>
-          ❌ {error}
+          </div>
         </div>
       )}
 
-      {/* Formulaire */}
-      <form onSubmit={onSubmit} className="chat-input-form">
-        <textarea
-          ref={textareaRef}
-          className="chat-textarea"
-          placeholder="Ex. Quelles sont les propriétés du bourgeon de tilleul ?"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          disabled={loading}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              onSubmit(e);
-            }
+      {/* Zone de messages */}
+      {messages.length > 0 && (
+        <div
+          style={{
+            background: "white",
+            borderRadius: "12px",
+            padding: "20px",
+            marginBottom: "20px",
+            maxHeight: "500px",
+            overflowY: "auto",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           }}
-        />
-        <button
-          className="btn btn-primary gemmo-btn"
-          type="submit"
-          disabled={loading || !question.trim()}
         >
-          {loading ? "Génération…" : "Envoyer"}
-        </button>
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              style={{
+                marginBottom: "16px",
+                display: "flex",
+                gap: "12px",
+                alignItems: "flex-start",
+              }}
+            >
+              {/* Avatar */}
+              <div
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "50%",
+                  background: msg.role === "user" ? "#3b82f6" : "#2d5016",
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.1rem",
+                  flexShrink: 0,
+                }}
+              >
+                {msg.role === "user" ? "👤" : "🌿"}
+              </div>
+
+              {/* Message content */}
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    background: msg.role === "user" ? "#eff6ff" : "#f0f9e8",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: \`1px solid \${msg.role === "user" ? "#dbeafe" : "#d1e7c2"}\`,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    fontSize: "0.95rem",
+                    lineHeight: "1.6",
+                  }}
+                >
+                  {msg.content}
+                </div>
+
+                {/* Bouton copier */}
+                <button
+                  onClick={() => copyMessage(msg.content)}
+                  style={{
+                    marginTop: "6px",
+                    padding: "4px 10px",
+                    background: "transparent",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "6px",
+                    fontSize: "0.8rem",
+                    color: "#6b7280",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#f9fafb";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  📋 Copier
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {loading && (
+            <div style={{ textAlign: "center", color: "#6b7280", padding: "12px" }}>
+              <div
+                style={{
+                  display: "inline-block",
+                  width: "20px",
+                  height: "20px",
+                  border: "3px solid #f3f4f6",
+                  borderTop: "3px solid #2d5016",
+                  borderRadius: "50%",
+                  animation: "spin 1s linear infinite",
+                }}
+              />
+              <style>
+                {`
+                  @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                  }
+                `}
+              </style>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      {/* Formulaire de saisie */}
+      <form onSubmit={handleSubmit}>
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            background: "white",
+            padding: "16px",
+            borderRadius: "12px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          }}
+        >
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Posez votre question sur la gemmothérapie..."
+            disabled={loading}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              border: "1px solid #e5e7eb",
+              borderRadius: "8px",
+              fontSize: "0.95rem",
+              outline: "none",
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = "#2d5016";
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "#e5e7eb";
+            }}
+          />
+          <button
+            type="submit"
+            disabled={loading || !input.trim()}
+            style={{
+              padding: "12px 24px",
+              background: loading || !input.trim() ? "#9ca3af" : "#2d5016",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "0.95rem",
+              fontWeight: "500",
+              cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              if (!loading && input.trim()) {
+                e.currentTarget.style.background = "#1f3a0f";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading && input.trim()) {
+                e.currentTarget.style.background = "#2d5016";
+              }
+            }}
+          >
+            {loading ? "..." : "Envoyer"}
+          </button>
+        </div>
       </form>
-
-      <style jsx>{`
-        .gemmo-header {
-          border-left: 4px solid #2d5016;
-        }
-
-        .gemmo-chip {
-          background: #f0f9e8 !important;
-          border-color: #d1e7c2 !important;
-        }
-
-        .gemmo-chip:hover:not(:disabled) {
-          background: #e3f4d7 !important;
-        }
-
-        .gemmo-btn {
-          background: #2d5016 !important;
-        }
-
-        .gemmo-btn:hover:not(:disabled) {
-          background: #1f3a0f !important;
-        }
-      `}</style>
     </div>
   );
 }
