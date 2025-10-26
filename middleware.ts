@@ -20,10 +20,14 @@ export default auth((req) => {
   // Ces pages sont accessibles sans connexion
   const publicPaths = ["/", "/login", "/register", "/api/auth"];
   const isPublic = publicPaths.some((path) => pathname.startsWith(path));
+  const isApiRoute = pathname.startsWith("/api/");
 
   // ===== REDIRECTION 1 : Page privée + non connecté =====
   // Si on essaie d'accéder à /dashboard sans être connecté
   if (!isPublic && !isAuth) {
+    if (isApiRoute) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
