@@ -75,7 +75,7 @@ export function GemmoChat({ userId }: GemmoChatProps) {
       console.error("Erreur lors de l'envoi du message:", error);
       const errorMessage: Message = {
         role: "assistant",
-        content: \`❌ \${error.message}\`,
+        content: `❌ ${error.message}`,
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -199,7 +199,7 @@ export function GemmoChat({ userId }: GemmoChatProps) {
                     background: msg.role === "user" ? "#eff6ff" : "#f0f9e8",
                     padding: "12px 16px",
                     borderRadius: "12px",
-                    border: \`1px solid \${msg.role === "user" ? "#dbeafe" : "#d1e7c2"}\`,
+                    border: `1px solid ${msg.role === "user" ? "#dbeafe" : "#d1e7c2"}`,
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
                     fontSize: "0.95rem",
