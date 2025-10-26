@@ -11,6 +11,10 @@ import OpenAI from "openai";
 
 export const runtime = "nodejs";
 
+// Debug: vérifier que la clé API est bien chargée
+console.log("🔑 DEBUG - OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "EXISTE ✅" : "UNDEFINED ❌");
+console.log("🔍 Longueur de la clé:", process.env.OPENAI_API_KEY?.length || 0);
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
