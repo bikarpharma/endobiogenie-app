@@ -9,7 +9,8 @@
 // - Retourne le chatId pour les messages suivants
 
 import { NextRequest, NextResponse } from "next/server";
-import { fileSearchTool, Agent, AgentInputItem, Runner } from "@openai/agents";
+import { fileSearchTool, Agent, Runner } from "@openai/agents";
+import type { AgentInputItem } from "@openai/agents";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
