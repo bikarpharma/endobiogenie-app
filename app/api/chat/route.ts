@@ -1,6 +1,7 @@
 // app/api/chat/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { fileSearchTool, Agent, AgentInputItem, Runner } from "@openai/agents";
+import { fileSearchTool, Agent, Runner } from "@openai/agents";
+import type { AgentInputItem } from "@openai/agents";
 
 export const runtime = "nodejs";
 
