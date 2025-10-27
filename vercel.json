@@ -2,8 +2,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "regions": ["cdg1"],
-  "env": {
-    "OPENAI_API_KEY": "@openai-api-key"
-  }
+  "regions": ["cdg1"]
 }
