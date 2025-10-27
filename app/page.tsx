@@ -1,13 +1,15 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { Button, Card, Textarea, Badge, Chip, Spinner } from "@/components/ui";
+import { Sidebar } from "@/components/Sidebar";
 
 type ApiReply = { reply?: string; error?: string };
 
 const SUGGESTIONS = [
-  "Explique la relation αΣ / βΣ / πΣ dans l’adaptation immédiate.",
+  "Explique la relation αΣ / βΣ / πΣ dans l'adaptation immédiate.",
   "Cassis (Ribes nigrum) : axes sollicités et lecture endobiogénique ?",
   "Quels émonctoires prioriser en terrain congestif hépatique ?",
-  "Différence TM / EPS / macérat glycériné sur l’axe thyréotrope.",
+  "Différence TM / EPS / macérat glycériné sur l'axe thyréotrope.",
 ];
 
 export default function Page() {
@@ -32,7 +34,9 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (answer && ansRef.current) ansRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (answer && ansRef.current) {
+      ansRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }, [answer]);
 
   async function ask(message: string) {
@@ -82,103 +86,111 @@ export default function Page() {
 
   // Mise en forme légère : met en évidence "(Source : ...)"
   function formatAnswer(text: string) {
-    const withSources = text.replace(/\(Source\s*:[^)]+\)/gi, (m) => `<span class="src">${m}</span>`);
+    const withSources = text.replace(
+      /\(Source\s*:[^)]+\)/gi,
+      (m) => `<span class="text-muted">${m}</span>`
+    );
     return withSources;
   }
 
   return (
-    <div className="grid" style={{ marginTop: 22 }}>
+    <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mt-5 pb-8">
       {/* Colonne principale */}
-      <section className="panel" style={{ padding: 18 }}>
-        <h1 style={{ margin: "0 0 6px" }}>Assistant RAG — Endobiogénie</h1>
-        <p style={{ margin: "0 0 16px", color: "var(--muted)" }}>
-          Posez vos questions. Les réponses s’appuient exclusivement sur vos volumes indexés.
-        </p>
+      <section>
+        <Card className="p-4 md:p-5">
+          <h1 className="text-2xl md:text-3xl font-bold text-text m-0 mb-1.5">
+            Assistant RAG — Endobiogénie
+          </h1>
+          <p className="text-sm md:text-base text-muted m-0 mb-4">
+            Posez vos questions. Les réponses s'appuient exclusivement sur vos
+            volumes indexés.
+          </p>
 
-        <form onSubmit={onSubmit} className="row" style={{ alignItems: "flex-start" }}>
-          <textarea
-            ref={taRef}
-            className="textarea"
-            placeholder="Ex. Explique la dynamique αΣ ↔ βΣ ↔ πΣ dans une adaptation chronique…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          <button className="btn" type="submit" disabled={loading || !q.trim()}>
-            {loading ? "Génération…" : "Envoyer"}
-          </button>
-        </form>
+          <form onSubmit={onSubmit} className="flex flex-col sm:flex-row gap-2.5 items-start">
+            <Textarea
+              ref={taRef}
+              placeholder="Ex. Explique la dynamique αΣ ↔ βΣ ↔ πΣ dans une adaptation chronique…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              type="submit"
+              disabled={loading || !q.trim()}
+              className="w-full sm:w-auto whitespace-nowrap flex items-center gap-2"
+            >
+              {loading && <Spinner className="w-4 h-4" />}
+              {loading ? "Génération…" : "Envoyer"}
+            </Button>
+          </form>
 
-        {/* Suggestions */}
-        <div style={{ marginTop: 14 }}>
-          <div className="chips">
-            {SUGGESTIONS.map((s, i) => (
-              <button
-                key={i}
-                type="button"
-                className="chip"
-                onClick={() => useSuggestion(s)}
-                title="Utiliser cette suggestion"
-              >
-                🔍 {s}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* États */}
-        {error && (
-          <div style={{ marginTop: 14, color: "var(--err)" }}>
-            ❌ {error}
-          </div>
-        )}
-
-        {/* Réponse */}
-        {answer && (
-          <div ref={ansRef} style={{ marginTop: 18 }}>
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <span className="badge">Réponse</span>
-              <div className="row">
-                <button className="btn btn-ghost" onClick={copyAnswer} type="button">Copier</button>
-                <button
-                  className="btn btn-secondary"
-                  type="button"
-                  onClick={() => {
-                    setAnswer("");
-                    setQ("");
-                    taRef.current?.focus();
-                  }}
-                >
-                  Effacer
-                </button>
+          {/* Suggestions */}
+          {!loading && (
+            <div className="mt-3.5 animate-fade-in">
+              <div className="flex flex-wrap gap-2.5">
+                {SUGGESTIONS.map((s, i) => (
+                  <Chip
+                    key={i}
+                    onClick={() => useSuggestion(s)}
+                    title="Utiliser cette suggestion"
+                  >
+                    🔍 {s}
+                  </Chip>
+                ))}
               </div>
             </div>
-            <div
-              className="answer"
-              style={{ marginTop: 8 }}
-              // eslint-disable-next-line react/no-danger
-              dangerouslySetInnerHTML={{ __html: answer }}
-            />
-          </div>
-        )}
+          )}
+
+          {/* Loading indicator */}
+          {loading && (
+            <div className="mt-5 flex items-center gap-3 text-muted animate-fade-in">
+              <Spinner />
+              <span>Recherche dans la base de connaissances...</span>
+            </div>
+          )}
+
+          {/* États */}
+          {error && (
+            <div className="mt-3.5 text-err flex items-start gap-2 animate-fade-in">
+              <span>❌</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Réponse */}
+          {answer && (
+            <div ref={ansRef} className="mt-5 animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                <Badge>Réponse</Badge>
+                <div className="flex gap-2.5">
+                  <Button variant="ghost" onClick={copyAnswer} type="button">
+                    Copier
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    onClick={() => {
+                      setAnswer("");
+                      setQ("");
+                      taRef.current?.focus();
+                    }}
+                  >
+                    Effacer
+                  </Button>
+                </div>
+              </div>
+              <div
+                className="whitespace-pre-wrap border-t border-dashed border-border pt-3.5 text-sm md:text-base leading-relaxed"
+                // eslint-disable-next-line react/no-danger
+                dangerouslySetInnerHTML={{ __html: answer }}
+              />
+            </div>
+          )}
+        </Card>
       </section>
 
-      {/* Colonne latérale (placeholders rubriques/fiches) */}
-      <aside className="panel side-card">
-        <h3 className="side-title">Rubriques</h3>
-        <div className="side-list">
-          <div className="side-item">🌿 Plantes médicinales (bientôt)</div>
-          <div className="side-item">🧪 Molécules / constituants (bientôt)</div>
-          <div className="side-item">🧩 Indications & axes (bientôt)</div>
-          <div className="side-item">⚗️ Formes galéniques & posologies (bientôt)</div>
-          <div className="side-item">📚 Références & niveaux d’évidence (bientôt)</div>
-        </div>
-        <div style={{ marginTop: 14, borderTop: "1px dashed var(--border)", paddingTop: 12 }}>
-          <h4 style={{ margin: "0 0 8px" }}>Astuce</h4>
-          <p style={{ margin: 0, color: "var(--muted)" }}>
-            Demandez toujours les références explicitement : “Ajoute (Source : Volume – section)”.
-          </p>
-        </div>
-      </aside>
+      {/* Sidebar responsive */}
+      <Sidebar />
     </div>
   );
 }

@@ -7,7 +7,27 @@ export default {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        bg: "var(--bg)",
+        panel: "var(--panel)",
+        "panel-2": "var(--panel-2)",
+        text: "var(--text)",
+        muted: "var(--muted)",
+        border: "var(--border)",
+        accent: "var(--accent)",
+        "accent-2": "var(--accent-2)",
+        ok: "var(--ok)",
+        warn: "var(--warn)",
+        err: "var(--err)",
+      },
+      borderRadius: {
+        custom: "var(--radius)",
+      },
+      boxShadow: {
+        custom: "var(--shadow)",
+      },
+    },
   },
   plugins: [],
 } satisfies Config;
