@@ -66,11 +66,6 @@ export default async function RootLayout({
                   <Link href="/fiches" className="nav-link nav-link--muted">
                     Fiches
                   </Link>
-                  {session.user.role === "ADMIN" && (
-                    <Link href="/admin/documents" className="nav-link">
-                      Admin
-                    </Link>
-                  )}
                   <span className="nav-link">{session.user.email}</span>
                   <SignOutButton />
                 </>
