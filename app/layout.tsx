@@ -57,6 +57,9 @@ export default async function RootLayout({
                   <Link href="/gemmo" className="nav-link">
                     🌿 Gemmo
                   </Link>
+                  <Link href="/aroma" className="nav-link">
+                    🌺 Aroma
+                  </Link>
                   <Link href="/fiches" className="nav-link nav-link--muted">
                     Fiches
                   </Link>
