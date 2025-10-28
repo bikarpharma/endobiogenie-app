@@ -8,18 +8,31 @@
  * Valeurs de laboratoire en entrée (toutes optionnelles)
  */
 export interface LabValues {
-  GR?: number; // Globules rouges
-  GB?: number; // Globules blancs
-  neutrophiles?: number;
-  lymphocytes?: number;
-  eosinophiles?: number;
-  monocytes?: number;
-  plaquettes?: number;
-  LDH?: number;
-  CPK?: number;
-  TSH?: number;
-  osteocalcine?: number;
-  PAOi?: number; // Isoenzyme osseuse phosphatase alcaline
+  // Globules
+  GR?: number; // Globules rouges (T/L)
+  GB?: number; // Globules blancs (G/L)
+  hemoglobine?: number; // Hémoglobine (g/dL) - nouveau
+
+  // Formule leucocytaire
+  neutrophiles?: number; // (G/L)
+  lymphocytes?: number; // (G/L)
+  eosinophiles?: number; // (G/L)
+  monocytes?: number; // (G/L)
+  plaquettes?: number; // (G/L)
+
+  // Enzymes / Remodelage tissulaire
+  LDH?: number; // (UI/L)
+  CPK?: number; // (UI/L)
+  PAOi?: number; // Phosphatase alcaline osseuse (UI/L)
+  osteocalcine?: number; // Ostéocalcine (ng/mL)
+
+  // Axe endocrinien central
+  TSH?: number; // (mUI/L)
+
+  // Paramètres avancés du terrain
+  VS?: number; // Vitesse de sédimentation (mm/h)
+  calcium?: number; // Calcium total (Ca2+)
+  potassium?: number; // Potassium (K+)
 }
 
 /**
@@ -31,7 +44,7 @@ export interface IndexValue {
 }
 
 /**
- * Ensemble des 6 index calculés
+ * Ensemble des 8 index calculés
  */
 export interface IndexResults {
   indexGenital: IndexValue;
@@ -40,6 +53,8 @@ export interface IndexResults {
   indexAdaptation: IndexValue;
   indexOestrogenique: IndexValue;
   turnover: IndexValue;
+  rendementThyroidien: IndexValue; // Nouveau : Rendement thyroïdien
+  remodelageOsseux: IndexValue; // Nouveau : Remodelage osseux
 }
 
 /**

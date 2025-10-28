@@ -17,20 +17,36 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
   const [ragContext, setRagContext] = useState<string | null>(null);
   const [ragError, setRagError] = useState<string | null>(null);
 
+  // État pour l'accordéon "Paramètres avancés"
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   // État pour les valeurs du formulaire
   const [formData, setFormData] = useState({
+    // Globules
     GR: "",
     GB: "",
+    hemoglobine: "",
+
+    // Formule leucocytaire
     neutrophiles: "",
     lymphocytes: "",
     eosinophiles: "",
     monocytes: "",
     plaquettes: "",
+
+    // Enzymes / Remodelage tissulaire
     LDH: "",
     CPK: "",
-    TSH: "",
-    osteocalcine: "",
     PAOi: "",
+    osteocalcine: "",
+
+    // Axe endocrinien central
+    TSH: "",
+
+    // Paramètres avancés du terrain
+    VS: "",
+    calcium: "",
+    potassium: "",
   });
 
   // Mettre à jour une valeur du formulaire
@@ -44,7 +60,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
     setLoading(true);
     setError(null);
     setResult(null);
-    setRagContext(null); // Reset RAG context
+    setRagContext(null);
     setRagError(null);
 
     try {
@@ -171,503 +187,412 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
   // Réinitialiser le formulaire
   const handleReset = () => {
     setFormData({
+      // Globules
       GR: "",
       GB: "",
+      hemoglobine: "",
+
+      // Formule leucocytaire
       neutrophiles: "",
       lymphocytes: "",
       eosinophiles: "",
       monocytes: "",
       plaquettes: "",
+
+      // Enzymes / Remodelage tissulaire
       LDH: "",
       CPK: "",
-      TSH: "",
-      osteocalcine: "",
       PAOi: "",
+      osteocalcine: "",
+
+      // Axe endocrinien central
+      TSH: "",
+
+      // Paramètres avancés du terrain
+      VS: "",
+      calcium: "",
+      potassium: "",
     });
     setResult(null);
     setError(null);
     setRagContext(null);
     setRagError(null);
+    setShowAdvanced(false);
+  };
+
+  // Styles communs
+  const sectionStyle = { marginBottom: "32px" };
+  const sectionTitleStyle = {
+    fontSize: "1.05rem",
+    marginBottom: "8px",
+    color: "#1f2937",
+    fontWeight: "600",
+  };
+  const sectionSubtitleStyle = {
+    fontSize: "0.85rem",
+    color: "#6b7280",
+    marginBottom: "16px",
+    fontStyle: "italic",
+    lineHeight: "1.4",
+  };
+  const inputGridStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gap: "16px",
+  };
+  const labelStyle = {
+    display: "block",
+    fontSize: "0.9rem",
+    marginBottom: "6px",
+    color: "#4b5563",
+    fontWeight: "500",
+  };
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    border: "1px solid #d1d5db",
+    borderRadius: "8px",
+    fontSize: "0.95rem",
+    transition: "border-color 0.2s",
   };
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
       {/* Formulaire de saisie */}
       <div
         style={{
           background: "white",
           borderRadius: "12px",
-          padding: "24px",
+          padding: "32px",
           marginBottom: "24px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
         }}
       >
         <h2
           style={{
-            fontSize: "1.3rem",
-            marginBottom: "20px",
+            fontSize: "1.5rem",
+            marginBottom: "24px",
             color: "#2563eb",
-            borderBottom: "2px solid #e5e7eb",
+            borderBottom: "3px solid #e5e7eb",
             paddingBottom: "12px",
+            fontWeight: "700",
           }}
         >
           🔬 Analyse Biologie des Fonctions (BdF)
         </h2>
 
         <form onSubmit={handleSubmit}>
-          {/* Globules */}
-          <div style={{ marginBottom: "24px" }}>
-            <h3
-              style={{
-                fontSize: "1rem",
-                marginBottom: "12px",
-                color: "#1f2937",
-                fontWeight: "600",
-              }}
-            >
-              Globules
-            </h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: "16px",
-              }}
-            >
+          {/* SECTION 1 - GLOBULES */}
+          <div style={sectionStyle}>
+            <h3 style={sectionTitleStyle}>1. Globules</h3>
+            <p style={sectionSubtitleStyle}>
+              Paramètres globaux d'oxygénation et de densité cellulaire du sang.
+            </p>
+            <div style={inputGridStyle}>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  GR (T/L)
-                </label>
+                <label style={labelStyle}>GR (T/L)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.GR}
                   onChange={(e) => handleChange("GR", e.target.value)}
                   placeholder="ex: 4.5"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  GB (G/L)
-                </label>
+                <label style={labelStyle}>GB (G/L)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.GB}
                   onChange={(e) => handleChange("GB", e.target.value)}
-                  placeholder="ex: 6.5"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
+                  placeholder="ex: 6.2"
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Hémoglobine (g/dL)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={formData.hemoglobine}
+                  onChange={(e) => handleChange("hemoglobine", e.target.value)}
+                  placeholder="ex: 14.5"
+                  style={inputStyle}
                 />
               </div>
             </div>
           </div>
 
-          {/* Formule leucocytaire */}
-          <div style={{ marginBottom: "24px" }}>
-            <h3
-              style={{
-                fontSize: "1rem",
-                marginBottom: "12px",
-                color: "#1f2937",
-                fontWeight: "600",
-              }}
-            >
-              Formule leucocytaire
-            </h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: "16px",
-              }}
-            >
+          {/* SECTION 2 - FORMULE LEUCOCYTAIRE */}
+          <div style={sectionStyle}>
+            <h3 style={sectionTitleStyle}>2. Formule leucocytaire</h3>
+            <p style={sectionSubtitleStyle}>
+              Profil de réponse immunitaire et d'adaptation aiguë / chronique.
+            </p>
+            <div style={inputGridStyle}>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  Neutrophiles (G/L)
-                </label>
+                <label style={labelStyle}>Neutrophiles (G/L)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.neutrophiles}
                   onChange={(e) => handleChange("neutrophiles", e.target.value)}
-                  placeholder="ex: 4.0"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
+                  placeholder="ex: 3.5"
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  Lymphocytes (G/L)
-                </label>
+                <label style={labelStyle}>Lymphocytes (G/L)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.lymphocytes}
                   onChange={(e) => handleChange("lymphocytes", e.target.value)}
-                  placeholder="ex: 2.5"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
+                  placeholder="ex: 2.0"
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  Éosinophiles (G/L)
-                </label>
+                <label style={labelStyle}>Éosinophiles (G/L)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.eosinophiles}
                   onChange={(e) => handleChange("eosinophiles", e.target.value)}
-                  placeholder="ex: 0.3"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
+                  placeholder="ex: 0.2"
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  Monocytes (G/L)
-                </label>
+                <label style={labelStyle}>Monocytes (G/L)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.monocytes}
                   onChange={(e) => handleChange("monocytes", e.target.value)}
                   placeholder="ex: 0.5"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  Plaquettes (G/L)
-                </label>
+                <label style={labelStyle}>Plaquettes (G/L)</label>
                 <input
                   type="number"
                   step="1"
                   value={formData.plaquettes}
                   onChange={(e) => handleChange("plaquettes", e.target.value)}
                   placeholder="ex: 250"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
+                  style={inputStyle}
                 />
               </div>
             </div>
           </div>
 
-          {/* Enzymes */}
-          <div style={{ marginBottom: "24px" }}>
-            <h3
-              style={{
-                fontSize: "1rem",
-                marginBottom: "12px",
-                color: "#1f2937",
-                fontWeight: "600",
-              }}
-            >
-              Enzymes
-            </h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: "16px",
-              }}
-            >
+          {/* SECTION 3 - ENZYMES / REMODELAGE TISSULAIRE */}
+          <div style={sectionStyle}>
+            <h3 style={sectionTitleStyle}>3. Enzymes / Remodelage tissulaire</h3>
+            <p style={sectionSubtitleStyle}>
+              Vitesse métabolique cellulaire, renouvellement musculaire et remodelage ostéo-tissulaire.
+            </p>
+            <div style={inputGridStyle}>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  LDH (UI/L)
-                </label>
+                <label style={labelStyle}>LDH (UI/L)</label>
                 <input
                   type="number"
                   step="1"
                   value={formData.LDH}
                   onChange={(e) => handleChange("LDH", e.target.value)}
                   placeholder="ex: 180"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  CPK (UI/L)
-                </label>
+                <label style={labelStyle}>CPK (UI/L)</label>
                 <input
                   type="number"
                   step="1"
                   value={formData.CPK}
                   onChange={(e) => handleChange("CPK", e.target.value)}
-                  placeholder="ex: 100"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Hormones et marqueurs */}
-          <div style={{ marginBottom: "24px" }}>
-            <h3
-              style={{
-                fontSize: "1rem",
-                marginBottom: "12px",
-                color: "#1f2937",
-                fontWeight: "600",
-              }}
-            >
-              Hormones et marqueurs
-            </h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: "16px",
-              }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  TSH (mUI/L)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.TSH}
-                  onChange={(e) => handleChange("TSH", e.target.value)}
-                  placeholder="ex: 2.5"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
+                  placeholder="ex: 90"
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  Ostéocalcine (ng/mL)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={formData.osteocalcine}
-                  onChange={(e) => handleChange("osteocalcine", e.target.value)}
-                  placeholder="ex: 15.0"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.9rem",
-                    marginBottom: "6px",
-                    color: "#4b5563",
-                  }}
-                >
-                  PAOi (UI/L)
-                </label>
+                <label style={labelStyle}>PAOi (UI/L)</label>
                 <input
                   type="number"
                   step="1"
                   value={formData.PAOi}
                   onChange={(e) => handleChange("PAOi", e.target.value)}
-                  placeholder="ex: 50"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
+                  placeholder="ex: 45"
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Ostéocalcine (ng/mL)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={formData.osteocalcine}
+                  onChange={(e) => handleChange("osteocalcine", e.target.value)}
+                  placeholder="ex: 15.5"
+                  style={inputStyle}
                 />
               </div>
             </div>
           </div>
 
-          {/* Boutons */}
-          <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
+          {/* SECTION 4 - AXE ENDOCRINIEN CENTRAL */}
+          <div style={sectionStyle}>
+            <h3 style={sectionTitleStyle}>4. Axe endocrinien central</h3>
+            <p style={sectionSubtitleStyle}>
+              Niveau de sollicitation centrale adressée aux tissus périphériques.
+            </p>
+            <div style={inputGridStyle}>
+              <div>
+                <label style={labelStyle}>TSH (mUI/L)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.TSH}
+                  onChange={(e) => handleChange("TSH", e.target.value)}
+                  placeholder="ex: 2.1"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 5 - PARAMÈTRES AVANCÉS (ACCORDÉON) */}
+          <div style={sectionStyle}>
+            <div
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              style={{
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "12px 16px",
+                background: "#f9fafb",
+                borderRadius: "8px",
+                border: "1px solid #e5e7eb",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#f3f4f6";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#f9fafb";
+              }}
+            >
+              <span style={{ fontSize: "1.2rem" }}>
+                {showAdvanced ? "▼" : "▶"}
+              </span>
+              <h3 style={{ fontSize: "1.05rem", margin: 0, color: "#1f2937", fontWeight: "600" }}>
+                5. Paramètres avancés du terrain
+              </h3>
+            </div>
+
+            {showAdvanced && (
+              <div style={{ marginTop: "16px" }}>
+                <p style={sectionSubtitleStyle}>
+                  Affinent la lecture du tonus métabolique, minéral et conjonctif. Facultatif.
+                </p>
+                <div style={inputGridStyle}>
+                  <div>
+                    <label style={labelStyle}>VS (mm/h)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={formData.VS}
+                      onChange={(e) => handleChange("VS", e.target.value)}
+                      placeholder="ex: 10"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Calcium total (Ca²⁺)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.calcium}
+                      onChange={(e) => handleChange("calcium", e.target.value)}
+                      placeholder="ex: 2.35"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Potassium (K⁺)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.potassium}
+                      onChange={(e) => handleChange("potassium", e.target.value)}
+                      placeholder="ex: 4.2"
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Boutons d'action */}
+          <div style={{ display: "flex", gap: "12px", marginTop: "32px" }}>
             <button
               type="submit"
               disabled={loading}
               style={{
-                padding: "12px 32px",
-                background: loading ? "#9ca3af" : "#2563eb",
+                padding: "14px 32px",
+                background: loading ? "#9ca3af" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                 color: "white",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "10px",
                 fontSize: "1rem",
-                fontWeight: "500",
+                fontWeight: "600",
                 cursor: loading ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
+                boxShadow: loading ? "none" : "0 4px 12px rgba(37, 99, 235, 0.3)",
+                transition: "all 0.3s",
               }}
               onMouseEnter={(e) => {
                 if (!loading) {
-                  e.currentTarget.style.background = "#1d4ed8";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(37, 99, 235, 0.4)";
                 }
               }}
               onMouseLeave={(e) => {
                 if (!loading) {
-                  e.currentTarget.style.background = "#2563eb";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(37, 99, 235, 0.3)";
                 }
               }}
             >
-              {loading ? "Analyse en cours..." : "Analyser"}
+              {loading ? "⏳ Analyse en cours..." : "Analyser"}
             </button>
+
             <button
               type="button"
               onClick={handleReset}
-              disabled={loading}
               style={{
-                padding: "12px 32px",
-                background: "transparent",
+                padding: "14px 24px",
+                background: "white",
                 color: "#6b7280",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
+                border: "2px solid #e5e7eb",
+                borderRadius: "10px",
                 fontSize: "1rem",
-                fontWeight: "500",
-                cursor: loading ? "not-allowed" : "pointer",
+                fontWeight: "600",
+                cursor: "pointer",
                 transition: "all 0.2s",
               }}
               onMouseEnter={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.background = "#f9fafb";
-                }
+                e.currentTarget.style.borderColor = "#d1d5db";
+                e.currentTarget.style.color = "#374151";
               }}
               onMouseLeave={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.background = "transparent";
-                }
+                e.currentTarget.style.borderColor = "#e5e7eb";
+                e.currentTarget.style.color = "#6b7280";
               }}
             >
               Réinitialiser
@@ -681,42 +606,73 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
         <div
           style={{
             background: "#fee2e2",
-            border: "1px solid #fecaca",
+            border: "2px solid #dc2626",
             borderRadius: "12px",
-            padding: "16px",
+            padding: "16px 20px",
             marginBottom: "24px",
             color: "#dc2626",
+            fontSize: "0.95rem",
           }}
         >
-          <strong>Erreur :</strong> {error}
+          <strong>Erreur:</strong> {error}
         </div>
       )}
 
-      {/* Résultats BdF standards */}
+      {/* Résultats de l'analyse */}
       {result && (
         <div
           style={{
             background: "white",
             borderRadius: "12px",
-            padding: "24px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            padding: "32px",
             marginBottom: "24px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
           }}
         >
           <h2
             style={{
-              fontSize: "1.3rem",
-              marginBottom: "20px",
+              fontSize: "1.5rem",
+              marginBottom: "24px",
               color: "#2563eb",
-              borderBottom: "2px solid #e5e7eb",
+              borderBottom: "3px solid #e5e7eb",
               paddingBottom: "12px",
+              fontWeight: "700",
             }}
           >
-            🧬 Résultats de l'analyse BdF
+            🔬 Résultats de l'analyse BdF
           </h2>
 
-          {/* Indexes */}
-          <div style={{ marginBottom: "24px" }}>
+          {/* Valeurs biologiques analysées */}
+          <div style={{ marginBottom: "32px" }}>
+            <h3
+              style={{
+                fontSize: "1.1rem",
+                marginBottom: "12px",
+                color: "#1f2937",
+                fontWeight: "600",
+              }}
+            >
+              📋 Valeurs biologiques analysées
+            </h3>
+            <div
+              style={{
+                background: "#f9fafb",
+                padding: "16px",
+                borderRadius: "8px",
+                fontSize: "0.9rem",
+                color: "#4b5563",
+                lineHeight: "1.6",
+              }}
+            >
+              {Object.entries(formData)
+                .filter(([_, value]) => value.trim() !== "")
+                .map(([key, value]) => `${key}: ${value}`)
+                .join(", ")}
+            </div>
+          </div>
+
+          {/* Lecture des index - GRILLE 2x4 */}
+          <div style={{ marginBottom: "32px" }}>
             <h3
               style={{
                 fontSize: "1.1rem",
@@ -727,63 +683,333 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
             >
               📊 Lecture des index
             </h3>
+
+            {/* Ligne 1: Index génital, Index thyroïdien, g/T, Index adaptation */}
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: "16px",
+                marginBottom: "16px",
+              }}
+            >
+              {/* Index génital */}
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  border: "2px solid #fbbf24",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    textTransform: "uppercase",
+                    fontWeight: "700",
+                    color: "#92400e",
+                    marginBottom: "8px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Index génital
+                </div>
+                <div
+                  style={{
+                    fontSize: "1.8rem",
+                    fontWeight: "700",
+                    color: "#78350f",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {result.indexes.indexGenital.value !== null
+                    ? result.indexes.indexGenital.value.toFixed(2)
+                    : "N/A"}
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#92400e", lineHeight: "1.4" }}>
+                  {result.indexes.indexGenital.comment}
+                </div>
+              </div>
+
+              {/* Index thyroïdien */}
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  border: "2px solid #3b82f6",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    textTransform: "uppercase",
+                    fontWeight: "700",
+                    color: "#1e3a8a",
+                    marginBottom: "8px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Index thyroïdien
+                </div>
+                <div
+                  style={{
+                    fontSize: "1.8rem",
+                    fontWeight: "700",
+                    color: "#1e40af",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {result.indexes.indexThyroidien.value !== null
+                    ? result.indexes.indexThyroidien.value.toFixed(2)
+                    : "N/A"}
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#1e3a8a", lineHeight: "1.4" }}>
+                  {result.indexes.indexThyroidien.comment}
+                </div>
+              </div>
+
+              {/* g/T (génito-thyroïdien) */}
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  border: "2px solid #ec4899",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    textTransform: "uppercase",
+                    fontWeight: "700",
+                    color: "#831843",
+                    marginBottom: "8px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  g/T (génito-thyroïdien)
+                </div>
+                <div
+                  style={{
+                    fontSize: "1.8rem",
+                    fontWeight: "700",
+                    color: "#9f1239",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {result.indexes.gT.value !== null
+                    ? result.indexes.gT.value.toFixed(2)
+                    : "N/A"}
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#831843", lineHeight: "1.4" }}>
+                  {result.indexes.gT.comment}
+                </div>
+              </div>
+
+              {/* Index adaptation */}
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  border: "2px solid #10b981",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    textTransform: "uppercase",
+                    fontWeight: "700",
+                    color: "#064e3b",
+                    marginBottom: "8px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Index adaptation
+                </div>
+                <div
+                  style={{
+                    fontSize: "1.8rem",
+                    fontWeight: "700",
+                    color: "#065f46",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {result.indexes.indexAdaptation.value !== null
+                    ? result.indexes.indexAdaptation.value.toFixed(2)
+                    : "N/A"}
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#064e3b", lineHeight: "1.4" }}>
+                  {result.indexes.indexAdaptation.comment}
+                </div>
+              </div>
+            </div>
+
+            {/* Ligne 2: Index œstrogénique, Turnover, Rendement thyroïdien, Remodelage osseux */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
                 gap: "16px",
               }}
             >
-              {Object.entries(result.indexes).map(([key, value]) => (
+              {/* Index œstrogénique */}
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  border: "2px solid #6366f1",
+                }}
+              >
                 <div
-                  key={key}
                   style={{
-                    background: "#f0f9ff",
-                    border: "1px solid #bfdbfe",
-                    borderRadius: "8px",
-                    padding: "16px",
+                    fontSize: "0.75rem",
+                    textTransform: "uppercase",
+                    fontWeight: "700",
+                    color: "#312e81",
+                    marginBottom: "8px",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "#6b7280",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {key
-                      .replace("index", "Index ")
-                      .replace("gT", "G/T")
-                      .replace("turnover", "Turnover")}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "1.5rem",
-                      fontWeight: "700",
-                      color: "#2563eb",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    {value.value !== null ? value.value.toFixed(2) : "N/A"}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.9rem",
-                      color: "#4b5563",
-                      lineHeight: "1.5",
-                    }}
-                  >
-                    {value.comment}
-                  </div>
+                  Index œstrogénique
                 </div>
-              ))}
+                <div
+                  style={{
+                    fontSize: "1.8rem",
+                    fontWeight: "700",
+                    color: "#3730a3",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {result.indexes.indexOestrogenique.value !== null
+                    ? result.indexes.indexOestrogenique.value.toFixed(2)
+                    : "N/A"}
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#312e81", lineHeight: "1.4" }}>
+                  {result.indexes.indexOestrogenique.comment}
+                </div>
+              </div>
+
+              {/* Turnover */}
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #fef3c7 0%, #fde047 100%)",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  border: "2px solid #eab308",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    textTransform: "uppercase",
+                    fontWeight: "700",
+                    color: "#713f12",
+                    marginBottom: "8px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Turnover tissulaire
+                </div>
+                <div
+                  style={{
+                    fontSize: "1.8rem",
+                    fontWeight: "700",
+                    color: "#854d0e",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {result.indexes.turnover.value !== null
+                    ? result.indexes.turnover.value.toFixed(2)
+                    : "N/A"}
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#713f12", lineHeight: "1.4" }}>
+                  {result.indexes.turnover.comment}
+                </div>
+              </div>
+
+              {/* Rendement thyroïdien */}
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  border: "2px solid #14b8a6",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    textTransform: "uppercase",
+                    fontWeight: "700",
+                    color: "#134e4a",
+                    marginBottom: "8px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Rendement thyroïdien
+                </div>
+                <div
+                  style={{
+                    fontSize: "1.8rem",
+                    fontWeight: "700",
+                    color: "#115e59",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {result.indexes.rendementThyroidien.value !== null
+                    ? result.indexes.rendementThyroidien.value.toFixed(2)
+                    : "N/A"}
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#134e4a", lineHeight: "1.4" }}>
+                  {result.indexes.rendementThyroidien.comment}
+                </div>
+              </div>
+
+              {/* Remodelage osseux */}
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  border: "2px solid #f97316",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    textTransform: "uppercase",
+                    fontWeight: "700",
+                    color: "#7c2d12",
+                    marginBottom: "8px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Remodelage osseux
+                </div>
+                <div
+                  style={{
+                    fontSize: "1.8rem",
+                    fontWeight: "700",
+                    color: "#9a3412",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {result.indexes.remodelageOsseux.value !== null
+                    ? result.indexes.remodelageOsseux.value.toFixed(2)
+                    : "N/A"}
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "#7c2d12", lineHeight: "1.4" }}>
+                  {result.indexes.remodelageOsseux.comment}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Summary */}
-          <div style={{ marginBottom: "24px" }}>
+          {/* Résumé fonctionnel */}
+          <div style={{ marginBottom: "32px" }}>
             <h3
               style={{
                 fontSize: "1.1rem",
@@ -796,47 +1022,50 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
             </h3>
             <div
               style={{
-                background: "#fef3c7",
-                border: "1px solid #fde047",
-                borderRadius: "8px",
-                padding: "16px",
+                background: "#f0f9ff",
+                padding: "20px",
+                borderRadius: "10px",
+                border: "2px solid #0ea5e9",
                 fontSize: "0.95rem",
-                lineHeight: "1.7",
-                color: "#78350f",
+                color: "#0c4a6e",
+                lineHeight: "1.8",
               }}
             >
               {result.summary}
             </div>
           </div>
 
-          {/* Axes dominants */}
-          <div style={{ marginBottom: "24px" }}>
-            <h3
-              style={{
-                fontSize: "1.1rem",
-                marginBottom: "12px",
-                color: "#1f2937",
-                fontWeight: "600",
-              }}
-            >
-              ⚙️ Axes sollicités
-            </h3>
-            <ul style={{ margin: 0, paddingLeft: "20px" }}>
-              {result.axesDominants.map((axe, i) => (
-                <li
-                  key={i}
-                  style={{
-                    fontSize: "0.95rem",
-                    color: "#4b5563",
-                    marginBottom: "8px",
-                    lineHeight: "1.6",
-                  }}
-                >
-                  {axe}
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Axes sollicités */}
+          {result.axesDominants.length > 0 && (
+            <div style={{ marginBottom: "32px" }}>
+              <h3
+                style={{
+                  fontSize: "1.1rem",
+                  marginBottom: "12px",
+                  color: "#1f2937",
+                  fontWeight: "600",
+                }}
+              >
+                ⚙️ Axes sollicités
+              </h3>
+              <ul
+                style={{
+                  background: "#fef3c7",
+                  padding: "20px 20px 20px 48px",
+                  borderRadius: "10px",
+                  border: "2px solid #fbbf24",
+                  fontSize: "0.95rem",
+                  color: "#78350f",
+                  lineHeight: "2",
+                  listStyle: "disc",
+                }}
+              >
+                {result.axesDominants.map((axe, idx) => (
+                  <li key={idx}>{axe}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Bouton pour charger le contexte RAG */}
           {!ragContext && (
@@ -977,17 +1206,22 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
                   background: "linear-gradient(135deg, #667eea15 0%, #764ba215 100%)",
                   border: "2px solid #667eea",
                   borderRadius: "12px",
-                  padding: "20px",
+                  padding: "24px",
+                  whiteSpace: "pre-wrap",
+                  lineHeight: "1.8",
                 }}
               >
                 <div
                   style={{
-                    whiteSpace: "pre-wrap",
-                    lineHeight: "1.8",
-                    fontSize: "0.95rem",
-                    color: "#1f2937",
+                    fontSize: "1.1rem",
+                    fontWeight: "700",
+                    color: "#667eea",
+                    marginBottom: "16px",
                   }}
                 >
+                  🧠 Lecture endobiogénique du terrain
+                </div>
+                <div style={{ color: "#1f2937", fontSize: "0.95rem" }}>
                   {ragContext}
                 </div>
               </div>
@@ -995,18 +1229,22 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
           )}
 
           {/* Note technique */}
-          <div
-            style={{
-              background: "#f3f4f6",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              padding: "12px 16px",
-              fontSize: "0.85rem",
-              color: "#6b7280",
-              fontStyle: "italic",
-            }}
-          >
-            🧾 {result.noteTechnique}
+          <div style={{ marginTop: "32px" }}>
+            <div
+              style={{
+                background: "#f9fafb",
+                padding: "16px",
+                borderRadius: "8px",
+                border: "1px solid #e5e7eb",
+                fontSize: "0.85rem",
+                color: "#6b7280",
+                fontStyle: "italic",
+                lineHeight: "1.6",
+              }}
+            >
+              <strong style={{ color: "#374151" }}>🧾 Note technique:</strong>{" "}
+              {result.noteTechnique}
+            </div>
           </div>
         </div>
       )}

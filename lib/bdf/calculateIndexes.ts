@@ -7,9 +7,9 @@
 import type { LabValues, IndexResults, IndexValue } from "./types";
 
 /**
- * Calcule les 6 index de Biologie des Fonctions
+ * Calcule les 8 index de Biologie des Fonctions
  * @param lab - Valeurs biologiques en entrée
- * @returns Les 6 index avec leurs commentaires
+ * @returns Les 8 index avec leurs commentaires
  */
 export function calculateIndexes(lab: LabValues): IndexResults {
   // ==========================================
@@ -48,6 +48,24 @@ export function calculateIndexes(lab: LabValues): IndexResults {
   // ==========================================
   const turnover = calculateTurnover(lab.TSH, lab.PAOi);
 
+  // ==========================================
+  // 7. RENDEMENT THYROÏDIEN ((LDH / CPK) / TSHcorr)
+  // ==========================================
+  const rendementThyroidien = calculateRendementThyroidien(
+    lab.LDH,
+    lab.CPK,
+    lab.TSH
+  );
+
+  // ==========================================
+  // 8. REMODELAGE OSSEUX ((TSHcorr * PAOi) / Ostéocalcine)
+  // ==========================================
+  const remodelageOsseux = calculateRemodelageOsseux(
+    lab.TSH,
+    lab.PAOi,
+    lab.osteocalcine
+  );
+
   return {
     indexGenital,
     indexThyroidien,
@@ -55,6 +73,8 @@ export function calculateIndexes(lab: LabValues): IndexResults {
     indexAdaptation,
     indexOestrogenique,
     turnover,
+    rendementThyroidien,
+    remodelageOsseux,
   };
 }
 
@@ -251,6 +271,84 @@ function calculateTurnover(TSH?: number, PAOi?: number): IndexValue {
     return {
       value,
       comment: "Renouvellement tissulaire non surchargé",
+    };
+  }
+}
+
+/**
+ * Rendement thyroïdien = (IndexThyroïdien) / TSHcorr
+ * = (LDH / CPK) / TSHcorr
+ * Évalue l'efficacité de la réponse thyroïdienne par rapport à la sollicitation centrale
+ */
+function calculateRendementThyroidien(
+  LDH?: number,
+  CPK?: number,
+  TSH?: number
+): IndexValue {
+  if (!LDH || !CPK || !TSH || CPK === 0) {
+    return {
+      value: null,
+      comment: "Calcul impossible (données manquantes)",
+    };
+  }
+
+  // Calcul de l'index thyroïdien
+  const indexThyroidien = LDH / CPK;
+
+  // Correction de TSH (entre 0.5 et 5)
+  const TSHcorr = correctTSH(TSH);
+
+  const value = indexThyroidien / TSHcorr;
+
+  // Interprétation (seuil arbitraire à 1.0)
+  if (value > 1.0) {
+    return {
+      value,
+      comment: "Réponse thyréotrope rapide par rapport à la sollicitation centrale",
+    };
+  } else {
+    return {
+      value,
+      comment: "Réponse thyréotrope plus lente / besoin de stimulation prolongée",
+    };
+  }
+}
+
+/**
+ * Remodelage osseux = Turnover / Ostéocalcine
+ * = (TSHcorr * PAOi) / Ostéocalcine
+ * Évalue la sollicitation du remodelage structurel osseux
+ */
+function calculateRemodelageOsseux(
+  TSH?: number,
+  PAOi?: number,
+  osteocalcine?: number
+): IndexValue {
+  if (!TSH || !PAOi || !osteocalcine || osteocalcine === 0) {
+    return {
+      value: null,
+      comment: "Calcul impossible (données manquantes)",
+    };
+  }
+
+  // Correction de TSH (entre 0.5 et 5)
+  const TSHcorr = correctTSH(TSH);
+
+  // Calcul du turnover
+  const turnover = TSHcorr * PAOi;
+
+  const value = turnover / osteocalcine;
+
+  // Interprétation (seuil arbitraire à 5.0)
+  if (value > 5.0) {
+    return {
+      value,
+      comment: "Sollicitation de remodelage structurel importante",
+    };
+  } else {
+    return {
+      value,
+      comment: "Remodelage tissulaire moins sollicité",
     };
   }
 }
