@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { InterpretationPayload } from "@/lib/bdf/types";
 
 interface BdfAnalyzerProps {
   userId: string;
@@ -8,8 +9,13 @@ interface BdfAnalyzerProps {
 
 export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
   const [loading, setLoading] = useState(false);
-  const [enrichedResult, setEnrichedResult] = useState<string | null>(null);
+  const [result, setResult] = useState<InterpretationPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // État pour le contexte RAG enrichi (chargé séparément)
+  const [loadingRag, setLoadingRag] = useState(false);
+  const [ragContext, setRagContext] = useState<string | null>(null);
+  const [ragError, setRagError] = useState<string | null>(null);
 
   // État pour les valeurs du formulaire
   const [formData, setFormData] = useState({
@@ -32,12 +38,55 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Soumettre l'analyse ENRICHIE avec RAG
+  // Soumettre l'analyse BdF (rapide)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setEnrichedResult(null);
+    setResult(null);
+    setRagContext(null); // Reset RAG context
+    setRagError(null);
+
+    try {
+      // Convertir les valeurs non vides en nombres
+      const labValues: any = {};
+      for (const [key, value] of Object.entries(formData)) {
+        if (value.trim() !== "") {
+          const num = parseFloat(value);
+          if (!isNaN(num)) {
+            labValues[key] = num;
+          }
+        }
+      }
+
+      // Appeler l'API BdF standard (rapide)
+      const res = await fetch("/api/bdf/analyse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(labValues),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Erreur lors de l'analyse");
+      }
+
+      const data: InterpretationPayload = await res.json();
+      setResult(data);
+    } catch (err: any) {
+      console.error("Erreur:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Charger le contexte RAG endobiogénie (sur demande)
+  const handleLoadRagContext = async () => {
+    if (!result) return;
+
+    setLoadingRag(true);
+    setRagError(null);
 
     try {
       // Construire un message texte à partir des valeurs du formulaire
@@ -50,10 +99,6 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
 
       const message = messageParts.join(" ");
 
-      if (message.trim() === "") {
-        throw new Error("Veuillez renseigner au moins une valeur biologique");
-      }
-
       // Appeler l'API chatbot enrichie (avec RAG)
       const res = await fetch("/api/chatbot", {
         method: "POST",
@@ -63,23 +108,44 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Erreur lors de l'analyse");
+        throw new Error(errorData.error || "Erreur lors du chargement du contexte");
       }
 
       const data = await res.json();
 
-      // Vérifier que c'est bien une analyse BdF
       if (data.mode === "BDF_ANALYSE") {
-        setEnrichedResult(data.reply);
+        // Extraire seulement la section "Lecture endobiogénique"
+        const reply = data.reply;
+        const ragSection = extractRagSection(reply);
+        setRagContext(ragSection);
       } else {
-        throw new Error("Le message n'a pas été reconnu comme une analyse BdF");
+        throw new Error("Réponse inattendue de l'API");
       }
     } catch (err: any) {
-      console.error("Erreur:", err);
-      setError(err.message);
+      console.error("Erreur RAG:", err);
+      setRagError(err.message);
     } finally {
-      setLoading(false);
+      setLoadingRag(false);
     }
+  };
+
+  // Extraire la section "Lecture endobiogénique" de la réponse complète
+  const extractRagSection = (fullReply: string): string => {
+    const ragMarker = "🧠 Lecture endobiogénique du terrain";
+    const noteMarker = "🧾 Note technique";
+
+    const ragStart = fullReply.indexOf(ragMarker);
+    const noteStart = fullReply.indexOf(noteMarker, ragStart);
+
+    if (ragStart === -1) {
+      return "Contexte endobiogénique non disponible.";
+    }
+
+    if (noteStart === -1) {
+      return fullReply.substring(ragStart);
+    }
+
+    return fullReply.substring(ragStart, noteStart).trim();
   };
 
   // Réinitialiser le formulaire
@@ -98,8 +164,10 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
       osteocalcine: "",
       PAOi: "",
     });
-    setEnrichedResult(null);
+    setResult(null);
     setError(null);
+    setRagContext(null);
+    setRagError(null);
   };
 
   return (
@@ -123,7 +191,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
             paddingBottom: "12px",
           }}
         >
-          🔬 Analyse Biologie des Fonctions (BdF) - ENRICHIE
+          🔬 Analyse Biologie des Fonctions (BdF)
         </h2>
 
         <form onSubmit={handleSubmit}>
@@ -554,7 +622,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
                 }
               }}
             >
-              {loading ? "Analyse en cours..." : "Analyser avec RAG"}
+              {loading ? "Analyse en cours..." : "Analyser"}
             </button>
             <button
               type="button"
@@ -604,25 +672,289 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
         </div>
       )}
 
-      {/* Résultats ENRICHIS */}
-      {enrichedResult && (
+      {/* Résultats BdF standards */}
+      {result && (
         <div
           style={{
             background: "white",
             borderRadius: "12px",
             padding: "24px",
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            marginBottom: "24px",
           }}
         >
-          <div
+          <h2
             style={{
-              whiteSpace: "pre-wrap",
-              lineHeight: "1.8",
-              fontSize: "0.95rem",
-              color: "#1f2937",
+              fontSize: "1.3rem",
+              marginBottom: "20px",
+              color: "#2563eb",
+              borderBottom: "2px solid #e5e7eb",
+              paddingBottom: "12px",
             }}
           >
-            {enrichedResult}
+            🧬 Résultats de l'analyse BdF
+          </h2>
+
+          {/* Indexes */}
+          <div style={{ marginBottom: "24px" }}>
+            <h3
+              style={{
+                fontSize: "1.1rem",
+                marginBottom: "16px",
+                color: "#1f2937",
+                fontWeight: "600",
+              }}
+            >
+              📊 Lecture des index
+            </h3>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                gap: "16px",
+              }}
+            >
+              {Object.entries(result.indexes).map(([key, value]) => (
+                <div
+                  key={key}
+                  style={{
+                    background: "#f0f9ff",
+                    border: "1px solid #bfdbfe",
+                    borderRadius: "8px",
+                    padding: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "0.85rem",
+                      color: "#6b7280",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {key
+                      .replace("index", "Index ")
+                      .replace("gT", "G/T")
+                      .replace("turnover", "Turnover")}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "1.5rem",
+                      fontWeight: "700",
+                      color: "#2563eb",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {value.value !== null ? value.value.toFixed(2) : "N/A"}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.9rem",
+                      color: "#4b5563",
+                      lineHeight: "1.5",
+                    }}
+                  >
+                    {value.comment}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div style={{ marginBottom: "24px" }}>
+            <h3
+              style={{
+                fontSize: "1.1rem",
+                marginBottom: "12px",
+                color: "#1f2937",
+                fontWeight: "600",
+              }}
+            >
+              🔬 Résumé fonctionnel
+            </h3>
+            <div
+              style={{
+                background: "#fef3c7",
+                border: "1px solid #fde047",
+                borderRadius: "8px",
+                padding: "16px",
+                fontSize: "0.95rem",
+                lineHeight: "1.7",
+                color: "#78350f",
+              }}
+            >
+              {result.summary}
+            </div>
+          </div>
+
+          {/* Axes dominants */}
+          <div style={{ marginBottom: "24px" }}>
+            <h3
+              style={{
+                fontSize: "1.1rem",
+                marginBottom: "12px",
+                color: "#1f2937",
+                fontWeight: "600",
+              }}
+            >
+              ⚙️ Axes sollicités
+            </h3>
+            <ul style={{ margin: 0, paddingLeft: "20px" }}>
+              {result.axesDominants.map((axe, i) => (
+                <li
+                  key={i}
+                  style={{
+                    fontSize: "0.95rem",
+                    color: "#4b5563",
+                    marginBottom: "8px",
+                    lineHeight: "1.6",
+                  }}
+                >
+                  {axe}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Bouton pour charger le contexte RAG */}
+          {!ragContext && (
+            <div style={{ marginBottom: "24px" }}>
+              <button
+                onClick={handleLoadRagContext}
+                disabled={loadingRag}
+                style={{
+                  padding: "14px 28px",
+                  background: loadingRag
+                    ? "#9ca3af"
+                    : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  fontSize: "1rem",
+                  fontWeight: "600",
+                  cursor: loadingRag ? "not-allowed" : "pointer",
+                  transition: "all 0.3s",
+                  boxShadow: loadingRag
+                    ? "none"
+                    : "0 4px 15px rgba(102, 126, 234, 0.4)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+                onMouseEnter={(e) => {
+                  if (!loadingRag) {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 6px 20px rgba(102, 126, 234, 0.6)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loadingRag) {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 15px rgba(102, 126, 234, 0.4)";
+                  }
+                }}
+              >
+                {loadingRag ? (
+                  <>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: "16px",
+                        height: "16px",
+                        border: "2px solid white",
+                        borderTopColor: "transparent",
+                        borderRadius: "50%",
+                        animation: "spin 0.6s linear infinite",
+                      }}
+                    />
+                    Chargement du contexte endobiogénique...
+                  </>
+                ) : (
+                  <>
+                    🧠 Obtenir la lecture endobiogénique du terrain
+                  </>
+                )}
+              </button>
+              <style jsx>{`
+                @keyframes spin {
+                  to {
+                    transform: rotate(360deg);
+                  }
+                }
+              `}</style>
+              <p
+                style={{
+                  fontSize: "0.85rem",
+                  color: "#6b7280",
+                  marginTop: "8px",
+                  fontStyle: "italic",
+                }}
+              >
+                💡 Cliquez pour approfondir l'analyse avec le contexte
+                endobiogénique depuis notre base de connaissances
+              </p>
+            </div>
+          )}
+
+          {/* Erreur RAG */}
+          {ragError && (
+            <div
+              style={{
+                background: "#fee2e2",
+                border: "1px solid #fecaca",
+                borderRadius: "8px",
+                padding: "12px 16px",
+                marginBottom: "24px",
+                color: "#dc2626",
+                fontSize: "0.9rem",
+              }}
+            >
+              <strong>Erreur contexte:</strong> {ragError}
+            </div>
+          )}
+
+          {/* Contexte RAG (affiché après le clic) */}
+          {ragContext && (
+            <div style={{ marginBottom: "24px" }}>
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #667eea15 0%, #764ba215 100%)",
+                  border: "2px solid #667eea",
+                  borderRadius: "12px",
+                  padding: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    lineHeight: "1.8",
+                    fontSize: "0.95rem",
+                    color: "#1f2937",
+                  }}
+                >
+                  {ragContext}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Note technique */}
+          <div
+            style={{
+              background: "#f3f4f6",
+              border: "1px solid #d1d5db",
+              borderRadius: "8px",
+              padding: "12px 16px",
+              fontSize: "0.85rem",
+              color: "#6b7280",
+              fontStyle: "italic",
+            }}
+          >
+            🧾 {result.noteTechnique}
           </div>
         </div>
       )}
