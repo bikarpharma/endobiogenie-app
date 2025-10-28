@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { InterpretationPayload } from "@/lib/bdf/types";
 
 interface BdfAnalyzerProps {
   userId: string;
@@ -9,7 +8,7 @@ interface BdfAnalyzerProps {
 
 export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<InterpretationPayload | null>(null);
+  const [enrichedResult, setEnrichedResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // État pour les valeurs du formulaire
@@ -33,29 +32,33 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Soumettre l'analyse
+  // Soumettre l'analyse ENRICHIE avec RAG
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setResult(null);
+    setEnrichedResult(null);
 
     try {
-      // Convertir les valeurs non vides en nombres
-      const labValues: any = {};
+      // Construire un message texte à partir des valeurs du formulaire
+      const messageParts: string[] = [];
       for (const [key, value] of Object.entries(formData)) {
         if (value.trim() !== "") {
-          const num = parseFloat(value);
-          if (!isNaN(num)) {
-            labValues[key] = num;
-          }
+          messageParts.push(`${key} ${value}`);
         }
       }
 
-      const res = await fetch("/api/bdf/analyse", {
+      const message = messageParts.join(" ");
+
+      if (message.trim() === "") {
+        throw new Error("Veuillez renseigner au moins une valeur biologique");
+      }
+
+      // Appeler l'API chatbot enrichie (avec RAG)
+      const res = await fetch("/api/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(labValues),
+        body: JSON.stringify({ message }),
       });
 
       if (!res.ok) {
@@ -63,8 +66,14 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
         throw new Error(errorData.error || "Erreur lors de l'analyse");
       }
 
-      const data: InterpretationPayload = await res.json();
-      setResult(data);
+      const data = await res.json();
+
+      // Vérifier que c'est bien une analyse BdF
+      if (data.mode === "BDF_ANALYSE") {
+        setEnrichedResult(data.reply);
+      } else {
+        throw new Error("Le message n'a pas été reconnu comme une analyse BdF");
+      }
     } catch (err: any) {
       console.error("Erreur:", err);
       setError(err.message);
@@ -89,7 +98,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
       osteocalcine: "",
       PAOi: "",
     });
-    setResult(null);
+    setEnrichedResult(null);
     setError(null);
   };
 
@@ -114,11 +123,11 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
             paddingBottom: "12px",
           }}
         >
-          📊 Valeurs biologiques
+          🔬 Analyse Biologie des Fonctions (BdF) - ENRICHIE
         </h2>
 
         <form onSubmit={handleSubmit}>
-          {/* Hémogramme */}
+          {/* Globules */}
           <div style={{ marginBottom: "24px" }}>
             <h3
               style={{
@@ -128,7 +137,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
                 fontWeight: "600",
               }}
             >
-              Hémogramme
+              Globules
             </h3>
             <div
               style={{
@@ -179,7 +188,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
                   step="0.01"
                   value={formData.GB}
                   onChange={(e) => handleChange("GB", e.target.value)}
-                  placeholder="ex: 7.2"
+                  placeholder="ex: 6.5"
                   style={{
                     width: "100%",
                     padding: "10px 12px",
@@ -189,6 +198,28 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
                   }}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Formule leucocytaire */}
+          <div style={{ marginBottom: "24px" }}>
+            <h3
+              style={{
+                fontSize: "1rem",
+                marginBottom: "12px",
+                color: "#1f2937",
+                fontWeight: "600",
+              }}
+            >
+              Formule leucocytaire
+            </h3>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "16px",
+              }}
+            >
               <div>
                 <label
                   style={{
@@ -457,7 +488,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
                   step="0.1"
                   value={formData.osteocalcine}
                   onChange={(e) => handleChange("osteocalcine", e.target.value)}
-                  placeholder="ex: 25"
+                  placeholder="ex: 15.0"
                   style={{
                     width: "100%",
                     padding: "10px 12px",
@@ -483,7 +514,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
                   step="1"
                   value={formData.PAOi}
                   onChange={(e) => handleChange("PAOi", e.target.value)}
-                  placeholder="ex: 45"
+                  placeholder="ex: 50"
                   style={{
                     width: "100%",
                     padding: "10px 12px",
@@ -523,7 +554,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
                 }
               }}
             >
-              {loading ? "Analyse en cours..." : "Analyser"}
+              {loading ? "Analyse en cours..." : "Analyser avec RAG"}
             </button>
             <button
               type="button"
@@ -573,8 +604,8 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
         </div>
       )}
 
-      {/* Résultats */}
-      {result && (
+      {/* Résultats ENRICHIS */}
+      {enrichedResult && (
         <div
           style={{
             background: "white",
@@ -583,154 +614,15 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           }}
         >
-          <h2
-            style={{
-              fontSize: "1.3rem",
-              marginBottom: "20px",
-              color: "#2563eb",
-              borderBottom: "2px solid #e5e7eb",
-              paddingBottom: "12px",
-            }}
-          >
-            🧬 Résultats de l'analyse BdF
-          </h2>
-
-          {/* Indexes */}
-          <div style={{ marginBottom: "24px" }}>
-            <h3
-              style={{
-                fontSize: "1.1rem",
-                marginBottom: "16px",
-                color: "#1f2937",
-                fontWeight: "600",
-              }}
-            >
-              Indices calculés
-            </h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                gap: "16px",
-              }}
-            >
-              {Object.entries(result.indexes).map(([key, value]) => (
-                <div
-                  key={key}
-                  style={{
-                    background: "#f0f9ff",
-                    border: "1px solid #bfdbfe",
-                    borderRadius: "8px",
-                    padding: "16px",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "#6b7280",
-                      marginBottom: "4px",
-                      textTransform: "uppercase",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {key
-                      .replace("index", "Index ")
-                      .replace("gT", "G/T")
-                      .replace("turnover", "Turnover")}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "1.5rem",
-                      fontWeight: "700",
-                      color: "#2563eb",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    {value.value !== null ? value.value.toFixed(2) : "N/A"}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.9rem",
-                      color: "#4b5563",
-                      lineHeight: "1.5",
-                    }}
-                  >
-                    {value.comment}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Summary */}
-          <div style={{ marginBottom: "24px" }}>
-            <h3
-              style={{
-                fontSize: "1.1rem",
-                marginBottom: "12px",
-                color: "#1f2937",
-                fontWeight: "600",
-              }}
-            >
-              Synthèse
-            </h3>
-            <div
-              style={{
-                background: "#fef3c7",
-                border: "1px solid #fde047",
-                borderRadius: "8px",
-                padding: "16px",
-                fontSize: "0.95rem",
-                lineHeight: "1.7",
-                color: "#78350f",
-              }}
-            >
-              {result.summary}
-            </div>
-          </div>
-
-          {/* Axes dominants */}
-          <div style={{ marginBottom: "24px" }}>
-            <h3
-              style={{
-                fontSize: "1.1rem",
-                marginBottom: "12px",
-                color: "#1f2937",
-                fontWeight: "600",
-              }}
-            >
-              Axes dominants
-            </h3>
-            <ul style={{ margin: 0, paddingLeft: "20px" }}>
-              {result.axesDominants.map((axe, i) => (
-                <li
-                  key={i}
-                  style={{
-                    fontSize: "0.95rem",
-                    color: "#4b5563",
-                    marginBottom: "8px",
-                    lineHeight: "1.6",
-                  }}
-                >
-                  {axe}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Note technique */}
           <div
             style={{
-              background: "#f3f4f6",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              padding: "12px 16px",
-              fontSize: "0.85rem",
-              color: "#6b7280",
-              fontStyle: "italic",
+              whiteSpace: "pre-wrap",
+              lineHeight: "1.8",
+              fontSize: "0.95rem",
+              color: "#1f2937",
             }}
           >
-            {result.noteTechnique}
+            {enrichedResult}
           </div>
         </div>
       )}
