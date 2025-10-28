@@ -98,32 +98,52 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
       }
 
       const message = messageParts.join(" ");
+      console.log("🔍 Appel API chatbot avec message:", message);
 
-      // Appeler l'API chatbot enrichie (avec RAG)
+      // Appeler l'API chatbot enrichie (avec RAG) avec un timeout de 40 secondes
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 40000);
+
       const res = await fetch("/api/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Erreur lors du chargement du contexte");
+        let errorMessage = `Erreur HTTP ${res.status}`;
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // Impossible de parser l'erreur JSON
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await res.json();
+      console.log("✅ Réponse API chatbot:", data);
 
       if (data.mode === "BDF_ANALYSE") {
         // Extraire seulement la section "Lecture endobiogénique"
         const reply = data.reply;
         const ragSection = extractRagSection(reply);
+        console.log("✅ Section RAG extraite (longueur):", ragSection.length);
         setRagContext(ragSection);
       } else {
-        throw new Error("Réponse inattendue de l'API");
+        throw new Error(`Mode inattendu: ${data.mode}`);
       }
     } catch (err: any) {
-      console.error("Erreur RAG:", err);
-      setRagError(err.message);
+      console.error("❌ Erreur RAG complète:", err);
+
+      if (err.name === 'AbortError') {
+        setRagError("Timeout: Le chargement du contexte prend trop de temps. Veuillez réessayer.");
+      } else {
+        setRagError(err.message || "Erreur inconnue lors du chargement du contexte");
+      }
     } finally {
       setLoadingRag(false);
     }
@@ -905,15 +925,47 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
             <div
               style={{
                 background: "#fee2e2",
-                border: "1px solid #fecaca",
-                borderRadius: "8px",
-                padding: "12px 16px",
+                border: "2px solid #dc2626",
+                borderRadius: "12px",
+                padding: "16px 20px",
                 marginBottom: "24px",
-                color: "#dc2626",
-                fontSize: "0.9rem",
               }}
             >
-              <strong>Erreur contexte:</strong> {ragError}
+              <div style={{ color: "#dc2626", fontSize: "1rem", fontWeight: "700", marginBottom: "8px" }}>
+                ⚠️ Erreur lors du chargement du contexte RAG
+              </div>
+              <div style={{ color: "#7f1d1d", fontSize: "0.9rem", marginBottom: "12px" }}>
+                {ragError}
+              </div>
+              <div style={{ color: "#991b1b", fontSize: "0.85rem", lineHeight: "1.6" }}>
+                <strong>Suggestions:</strong>
+                <ul style={{ marginTop: "8px", marginBottom: "0", paddingLeft: "20px" }}>
+                  <li>Vérifiez que votre clé OPENAI_API_KEY est configurée dans .env.local</li>
+                  <li>Vérifiez que vous avez des crédits disponibles sur votre compte OpenAI</li>
+                  <li>Vérifiez votre connexion internet</li>
+                  <li>Consultez les logs du serveur dans le terminal pour plus de détails</li>
+                  <li>Réessayez dans quelques secondes</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => {
+                  setRagError(null);
+                  handleLoadRagContext();
+                }}
+                style={{
+                  marginTop: "12px",
+                  padding: "8px 16px",
+                  background: "#dc2626",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Réessayer
+              </button>
             </div>
           )}
 

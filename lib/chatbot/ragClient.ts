@@ -93,30 +93,48 @@ export async function queryVectorStore(
     const client = getOpenAIClient();
 
     // 1. Récupérer ou créer l'assistant
+    console.log("🔍 Création/récupération de l'assistant...");
     const assistantId = await getOrCreateAssistant(client);
+    console.log("✅ Assistant ID:", assistantId);
 
     // 2. Créer un thread
+    console.log("🔍 Création du thread...");
     const thread = await client.beta.threads.create();
+    console.log("✅ Thread ID:", thread.id);
 
     // 3. Ajouter le message utilisateur
+    console.log("🔍 Ajout du message utilisateur...");
     await client.beta.threads.messages.create(thread.id, {
       role: "user",
       content: userQuery,
     });
 
-    // 4. Lancer le run avec file_search
-    const run = await client.beta.threads.runs.createAndPoll(thread.id, {
-      assistant_id: assistantId,
-    });
+    // 4. Lancer le run avec file_search (avec timeout de 30 secondes)
+    console.log("🔍 Lancement du run avec file_search...");
+    const run = await Promise.race([
+      client.beta.threads.runs.createAndPoll(thread.id, {
+        assistant_id: assistantId,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout: le vector store met trop de temps à répondre")), 30000)
+      )
+    ]) as OpenAI.Beta.Threads.Runs.Run;
+
+    console.log("✅ Run status:", run.status);
 
     // 5. Vérifier le statut du run
     if (run.status !== "completed") {
       console.error("❌ Run non complété:", run.status);
-      return [];
+      if (run.last_error) {
+        console.error("❌ Erreur détaillée:", run.last_error);
+      }
+      return getDefaultChunks();
     }
 
     // 6. Récupérer les messages de l'assistant
+    console.log("🔍 Récupération des messages...");
     const messages = await client.beta.threads.messages.list(thread.id);
+    console.log("✅ Nombre de messages:", messages.data.length);
 
     // 7. Extraire les réponses textuelles
     const chunks: RAGChunk[] = [];
@@ -126,6 +144,7 @@ export async function queryVectorStore(
         for (const content of message.content) {
           if (content.type === "text") {
             const text = content.text.value;
+            console.log("✅ Texte reçu de l'assistant (longueur):", text.length);
 
             // Nettoyer les annotations/citations si présentes
             let cleanedText = text;
@@ -138,6 +157,8 @@ export async function queryVectorStore(
               .split("\n\n")
               .map((p) => p.trim())
               .filter((p) => p.length > 50); // Min 50 caractères
+
+            console.log("✅ Paragraphes extraits:", paragraphs.length);
 
             // Prendre les premiers paragraphes jusqu'à topK
             for (let i = 0; i < Math.min(paragraphs.length, topK); i++) {
@@ -154,18 +175,24 @@ export async function queryVectorStore(
       }
     }
 
+    console.log("✅ Nombre total de chunks:", chunks.length);
+
     // 8. Nettoyer le thread (optionnel, économise les tokens)
     try {
       await client.beta.threads.del(thread.id);
+      console.log("✅ Thread supprimé");
     } catch (e) {
-      // Ignorer les erreurs de suppression
+      console.warn("⚠️ Impossible de supprimer le thread:", e);
     }
 
     return chunks.slice(0, topK);
   } catch (error: any) {
     console.error("❌ Erreur lors de la requête vector store:", error);
+    console.error("❌ Message d'erreur:", error.message);
+    console.error("❌ Stack:", error.stack);
 
     // En cas d'erreur, retourner des chunks par défaut
+    console.log("⚠️ Utilisation des chunks par défaut");
     return getDefaultChunks();
   }
 }
