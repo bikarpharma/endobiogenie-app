@@ -51,9 +51,10 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     ok: true,
-    message: "Chatbot orchestrateur opérationnel",
+    message: "Chatbot orchestrateur opérationnel - Version enrichie avec RAG",
     capabilities: [
       "Analyse automatique de valeurs biologiques (BdF)",
+      "Enrichissement avec contexte endobiogénique (Vector Store)",
       "Réponses aux questions sur l'endobiogénie",
       "Classification intelligente des requêtes",
     ],
