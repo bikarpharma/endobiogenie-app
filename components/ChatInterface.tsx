@@ -1,15 +1,25 @@
 // ========================================
-// COMPOSANT CHAT INTERFACE
+// COMPOSANT CHAT INTERFACE avec BdF
 // ========================================
-// 📖 Explication simple :
 // Interface de chat qui :
 // 1. Envoie les questions à l'assistant RAG
 // 2. Affiche les réponses
 // 3. Sauvegarde automatiquement l'historique
+// 4. Détecte les valeurs biologiques et propose l'analyse BdF
+// 5. Affiche les résultats BdF dans un Drawer réutilisable
 
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BdfResultDrawer } from "./BdfResultDrawer";
+import { useBdfSession } from "@/store/useBdfSession";
+import {
+  detectLabValues,
+  shouldSuggestBdfAnalysis,
+  formatDetectedValues,
+} from "@/lib/bdf/detectLabValues";
+import { convertToBdfAnalysis } from "@/lib/bdf/convertToAnalysis";
+import type { BdfAnalysis, BdfInputs } from "@/types/bdf";
 
 type ApiReply = { reply?: string; error?: string; chatId?: string };
 
@@ -22,12 +32,28 @@ const SUGGESTIONS = [
 
 export function ChatInterface({ userId }: { userId: string }) {
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [messages, setMessages] = useState<
+    Array<{
+      role: string;
+      content: string;
+      bdfSuggestion?: { values: BdfInputs; formatted: string };
+    }>
+  >([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // État pour le Drawer BdF
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { lastAnalysis, setLastAnalysis } = useBdfSession();
+  const [bdfAnalyzing, setBdfAnalyzing] = useState(false);
+
+  // État pour le RAG
+  const [ragContent, setRagContent] = useState<string | null>(null);
+  const [ragLoading, setRagLoading] = useState(false);
+  const [ragError, setRagError] = useState<string | null>(null);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -52,8 +78,18 @@ export function ChatInterface({ userId }: { userId: string }) {
     setLoading(true);
     setError("");
 
+    // Détecter les valeurs biologiques
+    const detection = detectLabValues(message);
+    const shouldSuggest = shouldSuggestBdfAnalysis(message);
+
     // Ajouter le message de l'utilisateur immédiatement
-    const userMessage = { role: "user", content: message };
+    const userMessage: any = { role: "user", content: message };
+    if (shouldSuggest) {
+      userMessage.bdfSuggestion = {
+        values: detection.values,
+        formatted: formatDetectedValues(detection.values),
+      };
+    }
     setMessages((prev) => [...prev, userMessage]);
 
     try {
@@ -63,14 +99,16 @@ export function ChatInterface({ userId }: { userId: string }) {
         body: JSON.stringify({
           message,
           chatId,
-          userId
+          userId,
         }),
       });
 
       const data: ApiReply = await res.json();
 
       if (!res.ok) {
-        setError(typeof data?.error === "string" ? data.error : res.statusText);
+        setError(
+          typeof data?.error === "string" ? data.error : res.statusText
+        );
         // Retirer le message utilisateur en cas d'erreur
         setMessages((prev) => prev.slice(0, -1));
         return;
@@ -117,13 +155,141 @@ export function ChatInterface({ userId }: { userId: string }) {
     navigator.clipboard.writeText(content);
   }
 
+  // Lancer l'analyse BdF
+  async function handleLaunchBdfAnalysis(inputs: BdfInputs) {
+    setBdfAnalyzing(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/bdf/analyse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inputs),
+      });
+
+      if (!res.ok) {
+        throw new Error("Erreur lors de l'analyse BdF");
+      }
+
+      const apiPayload = await res.json();
+      const analysis = convertToBdfAnalysis(apiPayload, inputs);
+
+      // Stocker et ouvrir
+      setLastAnalysis(analysis);
+      setIsDrawerOpen(true);
+
+      // Ajouter un message système
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "system",
+          content:
+            "✅ Analyse BdF effectuée avec succès. Cliquez sur le bouton ci-dessus pour voir les résultats.",
+        },
+      ]);
+    } catch (err: any) {
+      console.error("Erreur BdF:", err);
+      setError("Analyse BdF indisponible : " + err.message);
+    } finally {
+      setBdfAnalyzing(false);
+    }
+  }
+
+  // Gérer l'appel RAG
+  async function handleRequestRag(analysis: BdfAnalysis) {
+    setRagLoading(true);
+    setRagError(null);
+    setRagContent(null);
+
+    try {
+      // Construire le prompt RAG
+      const indexesSummary = analysis.indexes
+        .map((idx) => `${idx.label}: ${idx.value?.toFixed(2) || "N/A"}`)
+        .join(", ");
+
+      const ragQuery = `
+Analyse BdF effectuée :
+- Index calculés : ${indexesSummary}
+- Résumé fonctionnel : ${analysis.summary}
+- Axes neuroendocriniens sollicités : ${analysis.axes.join(", ")}
+
+Produis une lecture endobiogénique contextualisée de ce terrain biologique.
+Utilise les documents du vector store pour expliquer :
+1. La dynamique adaptative révélée par ces index
+2. Les axes neuroendocriniens en jeu
+3. La cohérence fonctionnelle globale du terrain
+
+Sois pédagogique et accessible. Pas de diagnostic médical.
+      `.trim();
+
+      // Utiliser le RAG client existant
+      const { queryVectorStore } = await import("@/lib/chatbot/ragClient");
+      const chunks = await queryVectorStore(ragQuery, 3);
+
+      if (chunks.length === 0) {
+        throw new Error("Aucune réponse du vector store");
+      }
+
+      // Combiner les chunks
+      const ragText = chunks.map((c) => c.text).join("\n\n");
+      setRagContent(ragText);
+    } catch (err: any) {
+      console.error("Erreur RAG:", err);
+      setRagError(
+        "Lecture endobiogénique indisponible : " + (err.message || "Erreur")
+      );
+    } finally {
+      setRagLoading(false);
+    }
+  }
+
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <h1>💬 Chat RAG - Endobiogénie</h1>
-        <p className="muted">
-          Posez vos questions. Les réponses s'appuient sur vos volumes indexés.
-        </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <h1>💬 Chat RAG - Endobiogénie</h1>
+            <p className="muted">
+              Posez vos questions. Les réponses s'appuient sur vos volumes
+              indexés.
+            </p>
+          </div>
+
+          {/* Bouton BdF global */}
+          <button
+            onClick={() => lastAnalysis && setIsDrawerOpen(true)}
+            disabled={!lastAnalysis}
+            style={{
+              padding: "10px 20px",
+              background: lastAnalysis
+                ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
+                : "#e5e7eb",
+              color: lastAnalysis ? "white" : "#9ca3af",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "0.9rem",
+              fontWeight: "600",
+              cursor: lastAnalysis ? "pointer" : "not-allowed",
+              transition: "all 0.3s",
+              boxShadow: lastAnalysis
+                ? "0 4px 12px rgba(37, 99, 235, 0.3)"
+                : "none",
+            }}
+            title={
+              lastAnalysis
+                ? "Ouvrir la dernière analyse BdF"
+                : "Aucune analyse BdF disponible"
+            }
+          >
+            🔬 Ouvrir l'analyse BdF
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
@@ -131,7 +297,9 @@ export function ChatInterface({ userId }: { userId: string }) {
         {messages.length === 0 ? (
           <div className="chat-empty">
             <span style={{ fontSize: "48px" }}>🌿</span>
-            <p className="muted">Commencez une conversation en posant une question</p>
+            <p className="muted">
+              Commencez une conversation en posant une question
+            </p>
             <div className="suggestions">
               {SUGGESTIONS.map((s, i) => (
                 <button
@@ -149,22 +317,88 @@ export function ChatInterface({ userId }: { userId: string }) {
         ) : (
           <>
             {messages.map((msg, idx) => (
-              <div key={idx} className={`message message-${msg.role}`}>
-                <div className="message-avatar">
-                  {msg.role === "user" ? "👤" : "🤖"}
+              <div key={idx}>
+                <div className={`message message-${msg.role}`}>
+                  <div className="message-avatar">
+                    {msg.role === "user"
+                      ? "👤"
+                      : msg.role === "system"
+                      ? "ℹ️"
+                      : "🤖"}
+                  </div>
+                  <div className="message-content">
+                    <div className="message-text">{msg.content}</div>
+                    {msg.role === "assistant" && (
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => copyMessage(msg.content)}
+                        title="Copier"
+                      >
+                        📋 Copier
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="message-content">
-                  <div className="message-text">{msg.content}</div>
-                  {msg.role === "assistant" && (
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => copyMessage(msg.content)}
-                      title="Copier"
+
+                {/* Carte suggestion BdF */}
+                {msg.bdfSuggestion && (
+                  <div
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+                      border: "2px solid #3b82f6",
+                      borderRadius: "12px",
+                      padding: "20px",
+                      margin: "16px 0 16px 60px",
+                      maxWidth: "600px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: "600",
+                        color: "#1e3a8a",
+                        marginBottom: "8px",
+                      }}
                     >
-                      📋 Copier
+                      💊 Valeurs biologiques détectées
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.9rem",
+                        color: "#1e40af",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      {msg.bdfSuggestion.formatted}
+                    </div>
+                    <button
+                      onClick={() =>
+                        handleLaunchBdfAnalysis(msg.bdfSuggestion!.values)
+                      }
+                      disabled={bdfAnalyzing}
+                      style={{
+                        padding: "12px 24px",
+                        background: bdfAnalyzing
+                          ? "#9ca3af"
+                          : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "0.95rem",
+                        fontWeight: "600",
+                        cursor: bdfAnalyzing ? "not-allowed" : "pointer",
+                        boxShadow: bdfAnalyzing
+                          ? "none"
+                          : "0 4px 12px rgba(59, 130, 246, 0.3)",
+                      }}
+                    >
+                      {bdfAnalyzing
+                        ? "⏳ Analyse en cours..."
+                        : "🔬 Lancer l'analyse BdF"}
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -184,7 +418,7 @@ export function ChatInterface({ userId }: { userId: string }) {
         <textarea
           ref={textareaRef}
           className="chat-textarea"
-          placeholder="Ex. Explique la dynamique αΣ ↔ βΣ ↔ πΣ…"
+          placeholder="Ex. Explique la dynamique αΣ ↔ βΣ ↔ πΣ ou GR: 4.5, GB: 6, TSH: 2.1…"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           disabled={loading}
@@ -203,6 +437,21 @@ export function ChatInterface({ userId }: { userId: string }) {
           {loading ? "Génération…" : "Envoyer"}
         </button>
       </form>
+
+      {/* Drawer BdF */}
+      <BdfResultDrawer
+        analysis={lastAnalysis}
+        isOpen={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setRagContent(null);
+          setRagError(null);
+        }}
+        onRequestRag={handleRequestRag}
+        ragContent={ragContent}
+        ragLoading={ragLoading}
+        ragError={ragError}
+      />
     </div>
   );
 }

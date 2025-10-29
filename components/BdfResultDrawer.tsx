@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { BdfResultDrawerProps } from "@/types/bdf";
 import { BdfIndexGrid } from "./BdfIndexGrid";
 
@@ -9,29 +8,15 @@ export function BdfResultDrawer({
   isOpen,
   onClose,
   onRequestRag,
+  ragContent,
+  ragLoading = false,
+  ragError,
 }: BdfResultDrawerProps) {
-  const [loadingRag, setLoadingRag] = useState(false);
-  const [ragContent, setRagContent] = useState<string | null>(null);
-  const [ragError, setRagError] = useState<string | null>(null);
-
   if (!isOpen || !analysis) return null;
 
   const handleRequestRag = async () => {
     if (!onRequestRag || !analysis) return;
-
-    setLoadingRag(true);
-    setRagError(null);
-
-    try {
-      await onRequestRag(analysis);
-      // Le contenu RAG sera géré par le parent via une callback ou un état partagé
-      // Pour l'instant, on simule un chargement
-      setRagContent("Lecture endobiogénique chargée");
-    } catch (error: any) {
-      setRagError(error.message || "Erreur lors du chargement");
-    } finally {
-      setLoadingRag(false);
-    }
+    await onRequestRag(analysis);
   };
 
   return (
@@ -216,11 +201,11 @@ export function BdfResultDrawer({
             <div style={{ marginBottom: "24px" }}>
               <button
                 onClick={handleRequestRag}
-                disabled={loadingRag}
+                disabled={ragLoading}
                 style={{
                   width: "100%",
                   padding: "16px 24px",
-                  background: loadingRag
+                  background: ragLoading
                     ? "#9ca3af"
                     : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                   color: "white",
@@ -228,8 +213,8 @@ export function BdfResultDrawer({
                   borderRadius: "12px",
                   fontSize: "1rem",
                   fontWeight: "600",
-                  cursor: loadingRag ? "not-allowed" : "pointer",
-                  boxShadow: loadingRag
+                  cursor: ragLoading ? "not-allowed" : "pointer",
+                  boxShadow: ragLoading
                     ? "none"
                     : "0 4px 15px rgba(102, 126, 234, 0.4)",
                   transition: "all 0.3s",
@@ -239,7 +224,7 @@ export function BdfResultDrawer({
                   gap: "10px",
                 }}
               >
-                {loadingRag ? (
+                {ragLoading ? (
                   <>
                     <span
                       style={{
