@@ -291,35 +291,14 @@ export function ChatInterface({ userId }: { userId: string }) {
 
     setLoadingRag(true);
     try {
-      // Construire le prompt contextuel pour le RAG
-      const ragQuery = `
-Profil fonctionnel : ${bdfAnalysis.summary}
-
-Axes dominants : ${bdfAnalysis.axes.join(", ")}
-
-Index calculés :
-${bdfAnalysis.indexes
-  .map((idx) => `- ${idx.label}: ${idx.value !== null ? idx.value.toFixed(2) : "N/A"} (${idx.comment})`)
-  .join("\n")}
-
-À partir de ces données biologiques fonctionnelles, donne une lecture endobiogénique du terrain en français. Explique :
-- Le rôle de l'axe corticotrope (ACTH → cortisol) dans l'adaptation
-- La réponse de l'axe thyréotrope (métabolisme cellulaire et vitesse de réponse)
-- La pression pro-croissance/anabolique (balance androgènes/œstrogènes)
-- L'équilibre entre catabolisme et anabolisme
-- Le remodelage et renouvellement tissulaire
-
-Utilise le vocabulaire "profil fonctionnel", "axe sollicité", "dynamique adaptative", "terrain".
-Pas de diagnostic médical, pas de traitement. Reste dans l'analyse fonctionnelle du terrain.
-`;
-
-      const res = await fetch("/api/chat", {
+      // Appeler l'API BdF RAG dédiée (sans références, optimisée pour BdF)
+      const res = await fetch("/api/bdf/rag", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: ragQuery,
-          chatId: null, // Nouvelle conversation pour RAG
-          userId,
+          profileSummary: bdfAnalysis.summary,
+          axes: bdfAnalysis.axes,
+          indexes: bdfAnalysis.indexes,
         }),
       });
 
@@ -329,7 +308,7 @@ Pas de diagnostic médical, pas de traitement. Reste dans l'analyse fonctionnell
       }
 
       const ragData = await res.json();
-      setRagText(ragData.reply || "Aucune interprétation disponible.");
+      setRagText(ragData.interpretation || "Aucune interprétation disponible.");
     } catch (e: any) {
       setRagText(`Erreur : ${e?.message || "Impossible de générer la lecture endobiogénique"}`);
     } finally {
