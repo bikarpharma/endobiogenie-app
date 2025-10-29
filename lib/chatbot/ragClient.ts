@@ -46,6 +46,28 @@ function getOpenAIClient(): OpenAI {
 let cachedAssistantId: string | null = null;
 
 /**
+ * Vérifie que le vector store existe et est accessible
+ */
+async function checkVectorStore(client: OpenAI): Promise<boolean> {
+  try {
+    console.log("🔍 Vérification du vector store:", VECTOR_STORE_ID);
+    const vectorStore = await client.beta.vectorStores.retrieve(VECTOR_STORE_ID);
+    console.log("✅ Vector store trouvé:", vectorStore.name, "| Status:", vectorStore.status);
+    console.log("✅ Fichiers dans le vector store:", vectorStore.file_counts.completed);
+
+    if (vectorStore.status !== "completed") {
+      console.warn("⚠️ Vector store pas encore complété:", vectorStore.status);
+      return false;
+    }
+
+    return true;
+  } catch (error: any) {
+    console.error("❌ Vector store inaccessible:", error.message);
+    return false;
+  }
+}
+
+/**
  * Crée ou récupère un assistant configuré avec file_search
  */
 async function getOrCreateAssistant(client: OpenAI): Promise<string> {
@@ -54,6 +76,12 @@ async function getOrCreateAssistant(client: OpenAI): Promise<string> {
   }
 
   try {
+    // Vérifier le vector store avant de créer l'assistant
+    const vsOk = await checkVectorStore(client);
+    if (!vsOk) {
+      throw new Error("Vector store indisponible ou non complété");
+    }
+
     // Créer un assistant avec file_search et notre vector store
     const assistant = await client.beta.assistants.create({
       name: "Endobiogenie RAG Assistant",
@@ -109,25 +137,41 @@ export async function queryVectorStore(
       content: userQuery,
     });
 
-    // 4. Lancer le run avec file_search (avec timeout de 30 secondes)
+    // 4. Lancer le run avec file_search (avec timeout de 90 secondes)
     console.log("🔍 Lancement du run avec file_search...");
+    const startTime = Date.now();
     const run = await Promise.race([
       client.beta.threads.runs.createAndPoll(thread.id, {
         assistant_id: assistantId,
+        // Augmenter le poll_interval pour réduire la fréquence de vérification
+        poll_interval_ms: 2000, // Vérifier toutes les 2 secondes au lieu de 1
       }),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout: le vector store met trop de temps à répondre")), 30000)
+        setTimeout(() => reject(new Error("Timeout: le vector store met trop de temps à répondre (>90s)")), 90000)
       )
     ]) as OpenAI.Beta.Threads.Runs.Run;
+
+    const duration = Date.now() - startTime;
+    console.log(`✅ Run complété en ${duration}ms`);
 
     console.log("✅ Run status:", run.status);
 
     // 5. Vérifier le statut du run
     if (run.status !== "completed") {
       console.error("❌ Run non complété:", run.status);
+
       if (run.last_error) {
         console.error("❌ Erreur détaillée:", run.last_error);
+        console.error("❌ Code erreur:", run.last_error.code);
+        console.error("❌ Message erreur:", run.last_error.message);
       }
+
+      // Log des étapes du run pour debug
+      if (run.required_action) {
+        console.log("🔍 Action requise:", run.required_action);
+      }
+
+      console.log("⚠️ Utilisation des chunks par défaut suite à run non complété");
       return getDefaultChunks();
     }
 
