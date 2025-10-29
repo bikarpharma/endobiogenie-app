@@ -80,10 +80,10 @@ export default function Page() {
     navigator.clipboard.writeText(answer.replace(/<[^>]+>/g, ""));
   }
 
-  // Mise en forme légère : met en évidence "(Source : ...)"
+  // Mise en forme légère de la réponse
   function formatAnswer(text: string) {
-    const withSources = text.replace(/\(Source\s*:[^)]+\)/gi, (m) => `<span class="src">${m}</span>`);
-    return withSources;
+    // Retourner le texte tel quel (plus de mise en évidence des sources)
+    return text;
   }
 
   return (
@@ -175,7 +175,7 @@ export default function Page() {
         <div style={{ marginTop: 14, borderTop: "1px dashed var(--border)", paddingTop: 12 }}>
           <h4 style={{ margin: "0 0 8px" }}>Astuce</h4>
           <p style={{ margin: 0, color: "var(--muted)" }}>
-            Demandez toujours les références explicitement : “Ajoute (Source : Volume – section)”.
+            Les réponses s'appuient sur les volumes d'endobiogénie indexés. Posez des questions précises pour obtenir des explications détaillées.
           </p>
         </div>
       </aside>
