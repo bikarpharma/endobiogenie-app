@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fileSearchTool, Agent, AgentInputItem, Runner } from "@openai/agents";
 import { prisma } from "@/lib/prisma";
+import { removeAnnotations } from "@/lib/utils/removeAnnotations";
 
 export const runtime = "nodejs";
 
@@ -82,7 +83,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Pas de sortie" }, { status: 500 });
     }
 
-    const reply = result.finalOutput;
+    // Nettoyer les annotations/citations【X†source】
+    const reply = removeAnnotations(result.finalOutput);
 
     // 4️⃣ Sauvegarder la réponse de l'assistant
     await prisma.message.create({
