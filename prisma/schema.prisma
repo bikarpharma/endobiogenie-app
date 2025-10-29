@@ -19,14 +19,14 @@ datasource db {
 // Table "users" : tous vos utilisateurs
 model User {
   id            String    @id @default(cuid()) // ID unique auto-généré
-  name          String?                        // Nom (optionnel)
-  email         String    @unique              // Email (unique, obligatoire)
-  emailVerified DateTime?                      // Date de vérification email
-  password      String?                        // Mot de passe crypté (null si OAuth)
-  image         String?                        // Photo de profil
-  role          Role      @default(USER)       // Rôle : USER ou ADMIN
-  createdAt     DateTime  @default(now())      // Date de création
-  updatedAt     DateTime  @updatedAt           // Date de dernière modification
+  name          String? // Nom (optionnel)
+  email         String    @unique // Email (unique, obligatoire)
+  emailVerified DateTime? // Date de vérification email
+  password      String? // Mot de passe crypté (null si OAuth)
+  image         String? // Photo de profil
+  role          Role      @default(USER) // Rôle : USER ou ADMIN
+  createdAt     DateTime  @default(now()) // Date de création
+  updatedAt     DateTime  @updatedAt // Date de dernière modification
 
   // Relations : un User peut avoir plusieurs comptes, sessions, chats
   accounts Account[]
@@ -38,15 +38,15 @@ model User {
 
 // Rôles possibles
 enum Role {
-  USER   // Utilisateur normal
-  ADMIN  // Administrateur
+  USER // Utilisateur normal
+  ADMIN // Administrateur
 }
 
 // Table "accounts" : connexions OAuth (Google, GitHub, etc.)
 model Account {
   userId            String
   type              String
-  provider          String   // ex: "google", "github"
+  provider          String // ex: "google", "github"
   providerAccountId String
   refresh_token     String?
   access_token      String?
@@ -94,25 +94,25 @@ model VerificationToken {
 model Chat {
   id        String    @id @default(cuid())
   title     String    @default("Nouvelle conversation") // Titre du chat
-  userId    String                                       // Qui possède ce chat ?
+  userId    String // Qui possède ce chat ?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages  Message[]                                    // Liste des messages
+  messages  Message[] // Liste des messages
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@map("chats")
   @@index([userId, createdAt]) // Accélère les recherches
+  @@map("chats")
 }
 
 // Table "messages" : messages dans chaque conversation
 model Message {
   id        String   @id @default(cuid())
-  chatId    String                          // Dans quel chat ?
+  chatId    String // Dans quel chat ?
   chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  role      String                          // "user" ou "assistant"
-  content   String   @db.Text              // Texte du message
+  role      String // "user" ou "assistant"
+  content   String   @db.Text // Texte du message
   createdAt DateTime @default(now())
 
-  @@map("messages")
   @@index([chatId, createdAt])
+  @@map("messages")
 }
