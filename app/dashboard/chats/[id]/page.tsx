@@ -57,7 +57,6 @@ export default async function ChatHistoryPage({
         chatId={chat.id}
         chatTitle={chat.title}
         initialMessages={chat.messages}
-        userId={session.user.id}
       />
     </div>
   );
