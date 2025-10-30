@@ -195,7 +195,49 @@ export function BdfResultDrawer({
               </ul>
             </div>
           )}
+ {/* Bouton Associer à un patient */}
+          <div style={{ marginBottom: "24px" }}>
+            <button
+              onClick={() => {
+                // Pour l'instant, stocker l'analyse dans sessionStorage
+                sessionStorage.setItem("pendingBdfAnalysis", JSON.stringify(analysis));
+                // Rediriger vers la page patients
+                window.location.href = "/patients";
+              }}
+              style={{
+                width: "100%",
+                padding: "16px 24px",
+                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                color: "white",
+                border: "none",
+                borderRadius: "12px",
+                fontSize: "1rem",
+                fontWeight: "600",
+                cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(16, 185, 129, 0.4)",
+                transition: "all 0.3s",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+              }}
+            >
+              📁 Associer à un dossier patient
+            </button>
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#6b7280",
+                marginTop: "8px",
+                fontStyle: "italic",
+                textAlign: "center",
+              }}
+            >
+              💡 Enregistrer cette analyse dans l'historique d'un patient
+            </p>
+          </div>
 
+        
           {/* Bouton RAG */}
           {onRequestRag && !ragContent && (
             <div style={{ marginBottom: "24px" }}>

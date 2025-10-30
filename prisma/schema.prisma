@@ -32,6 +32,7 @@ model User {
   accounts Account[]
   sessions Session[]
   chats    Chat[]
+  patients Patient[]
 
   @@map("users") // Nom réel de la table en base
 }
@@ -115,4 +116,59 @@ model Message {
 
   @@index([chatId, createdAt])
   @@map("messages")
+}
+model Patient {
+  id              String          @id @default(cuid())
+  userId          String
+
+  numeroPatient   String          @unique
+  nom             String
+  prenom          String
+  dateNaissance   DateTime?
+  sexe            String?
+  telephone       String?
+  email           String?
+  notes           String?         @db.Text
+
+  consentementRGPD Boolean       @default(false)
+  dateConsentement DateTime?
+
+  isArchived      Boolean         @default(false)
+  archivedAt      DateTime?
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultations   Consultation[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("patients")
+  @@index([userId, nom, prenom])
+  @@index([numeroPatient])
+}
+
+model Consultation {
+  id                String    @id @default(cuid())
+  patientId         String
+  dateConsultation  DateTime  @default(now())
+
+  type              String?
+  motifConsultation String?   @db.Text
+
+  inputs            Json
+  indexes           Json
+  summary           String    @db.Text
+  axes              Json
+  ragText           String?   @db.Text
+
+  commentaire       String?   @db.Text
+  prescriptions     String?   @db.Text
+
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("consultations")
+  @@index([patientId, dateConsultation])
 }
