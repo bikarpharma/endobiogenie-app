@@ -1066,7 +1066,85 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
               </ul>
             </div>
           )}
+  {/* Bouton Associer à un patient */}
+          <div style={{ marginBottom: "24px" }}>
+            <button
+              onClick={() => {
+                // Convertir les données du formulaire en inputs
+                const inputs: Record<string, number> = {};
+                for (const [key, value] of Object.entries(formData)) {
+                  if (value.trim() !== "") {
+                    const num = parseFloat(value);
+                    if (!isNaN(num)) {
+                      inputs[key] = num;
+                    }
+                  }
+                }
 
+                // Créer un objet d'analyse compatible
+                const analysisData = {
+                  inputs,
+                  indexes: [
+                    { name: "Index génital", value: result.indexes.indexGenital.value, comment: result.indexes.indexGenital.comment },
+                    { name: "Index thyroïdien", value: result.indexes.indexThyroidien.value, comment: result.indexes.indexThyroidien.comment },
+                    { name: "g/T", value: result.indexes.gT.value, comment: result.indexes.gT.comment },
+                    { name: "Index adaptation", value: result.indexes.indexAdaptation.value, comment: result.indexes.indexAdaptation.comment },
+                    { name: "Index œstrogénique", value: result.indexes.indexOestrogenique.value, comment: result.indexes.indexOestrogenique.comment },
+                    { name: "Turnover", value: result.indexes.turnover.value, comment: result.indexes.turnover.comment },
+                    { name: "Rendement thyroïdien", value: result.indexes.rendementThyroidien.value, comment: result.indexes.rendementThyroidien.comment },
+                    { name: "Remodelage osseux", value: result.indexes.remodelageOsseux.value, comment: result.indexes.remodelageOsseux.comment },
+                  ],
+                  summary: result.summary,
+                  axes: result.axesDominants,
+                  ragText: ragContext || undefined,
+                };
+
+                // Stocker dans sessionStorage
+                sessionStorage.setItem("pendingBdfAnalysis", JSON.stringify(analysisData));
+
+                // Rediriger vers la page patients
+                window.location.href = "/patients";
+              }}
+              style={{
+                width: "100%",
+                padding: "14px 28px",
+                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                color: "white",
+                border: "none",
+                borderRadius: "10px",
+                fontSize: "1rem",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.3s",
+                boxShadow: "0 4px 15px rgba(16, 185, 129, 0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 20px rgba(16, 185, 129, 0.6)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 15px rgba(16, 185, 129, 0.4)";
+              }}
+            >
+              📁 Associer à un dossier patient
+            </button>
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#6b7280",
+                marginTop: "8px",
+                fontStyle: "italic",
+                textAlign: "center",
+              }}
+            >
+              💡 Enregistrer cette analyse dans l'historique d'un patient
+            </p>
+          </div>
           {/* Bouton pour charger le contexte RAG */}
           {!ragContext && (
             <div style={{ marginBottom: "24px" }}>
