@@ -23,12 +23,10 @@ export function ChatHistory({
   chatId,
   chatTitle,
   initialMessages,
-  userId,
 }: {
   chatId: string;
   chatTitle: string;
   initialMessages: Message[];
-  userId: string;
 }) {
   const [messages, setMessages] = useState(initialMessages);
   const [question, setQuestion] = useState("");
@@ -77,7 +75,6 @@ export function ChatHistory({
         body: JSON.stringify({
           message,
           chatId,
-          userId,
         }),
       });
 
