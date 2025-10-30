@@ -117,27 +117,48 @@ model Message {
   @@index([chatId, createdAt])
   @@map("messages")
 }
+
+
+
+// ===== MODULE PATIENTS & BDF =====
+
+// Table "patients" : dossiers patients
 model Patient {
   id              String          @id @default(cuid())
-  userId          String
+  userId          String          // Praticien propriétaire
 
-  numeroPatient   String          @unique
+  // Informations patient
+  numeroPatient   String          @unique  // PAT-001, PAT-002, etc.
   nom             String
   prenom          String
   dateNaissance   DateTime?
-  sexe            String?
+  sexe            String?         // "H" | "F" | "Autre"
   telephone       String?
   email           String?
   notes           String?         @db.Text
 
+  // ATCD & Allergies (champs texte libres)
+  allergies            String?   @db.Text
+  atcdMedicaux         String?   @db.Text
+  atcdChirurgicaux     String?   @db.Text
+  traitements          String?   @db.Text  // Traitements en cours
+
+  // Tags prédéfinis (stockés en JSON array)
+  tags                 Json?     // ["Diabète", "Thyroïde", "HTA", ...]
+
+  // RGPD (optionnel)
   consentementRGPD Boolean       @default(false)
   dateConsentement DateTime?
 
+  // Archivage (soft delete - suppression interdite)
   isArchived      Boolean         @default(false)
   archivedAt      DateTime?
 
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  consultations   Consultation[]
+  // Relations
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultations      Consultation[]
+  bdfAnalyses        BdfAnalysis[]
+  anthropometries    Anthropometrie[]
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -147,23 +168,69 @@ model Patient {
   @@index([numeroPatient])
 }
 
+// Table "anthropometries" : mesures anthropométriques
+model Anthropometrie {
+  id          String    @id @default(cuid())
+  patientId   String
+  date        DateTime  @default(now())
+
+  poids       Float?    // kg
+  taille      Float?    // cm
+  imc         Float?    // calculé
+  paSys       Int?      // mmHg (systolique)
+  paDia       Int?      // mmHg (diastolique)
+  pouls       Int?      // bpm
+
+  // Relations
+  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+
+  @@map("anthropometries")
+  @@index([patientId, date])
+}
+
+// Table "bdf_analyses" : analyses Biologie des Fonctions
+model BdfAnalysis {
+  id                String    @id @default(cuid())
+  patientId         String
+  date              DateTime  @default(now())
+
+  // Données BdF (JSON pour flexibilité)
+  inputs            Json      // { GR, GB, LDH, CPK, TSH, etc. }
+  indexes           Json      // BdfIndex[] (8 cartes min)
+  summary           String    @db.Text  // Résumé fonctionnel
+  axes              Json      // string[] des axes sollicités
+  ragText           String?   @db.Text  // Lecture endobiogénique du terrain
+
+  // Relations
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("bdf_analyses")
+  @@index([patientId, date])
+}
+
+// Table "consultations" : consultations praticien
 model Consultation {
   id                String    @id @default(cuid())
   patientId         String
   dateConsultation  DateTime  @default(now())
 
-  type              String?
+  // Type et contexte
+  type              String?   // "initiale" | "suivi" | "urgence"
   motifConsultation String?   @db.Text
 
-  inputs            Json
-  indexes           Json
-  summary           String    @db.Text
-  axes              Json
-  ragText           String?   @db.Text
-
+  // Notes praticien
   commentaire       String?   @db.Text
   prescriptions     String?   @db.Text
 
+  // Lien optionnel vers analyse BdF (si consultation suite à BdF)
+  bdfAnalysisId     String?
+
+  // Relations
   patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   createdAt         DateTime  @default(now())
