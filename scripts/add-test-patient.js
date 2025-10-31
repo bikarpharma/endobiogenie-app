@@ -52,52 +52,44 @@ async function main() {
           },
           indexes: [
             {
-              nom: "Index Alpha",
-              valeur: 2.8,
-              interpretation: "Normotrophie",
-              statut: "normal"
+              name: "Index Alpha",
+              value: 2.8,
+              comment: "Normotrophie"
             },
             {
-              nom: "Index Bêta",
-              valeur: 1.5,
-              interpretation: "Équilibre sympathique",
-              statut: "normal"
+              name: "Index Bêta",
+              value: 1.5,
+              comment: "Équilibre sympathique"
             },
             {
-              nom: "Index Gamma",
-              valeur: 3.2,
-              interpretation: "Bon fonctionnement parasympathique",
-              statut: "normal"
+              name: "Index Gamma",
+              value: 3.2,
+              comment: "Bon fonctionnement parasympathique"
             },
             {
-              nom: "Index Delta",
-              valeur: 0.85,
-              interpretation: "Équilibre neuro-hormonal",
-              statut: "normal"
+              name: "Index Delta",
+              value: 0.85,
+              comment: "Équilibre neuro-hormonal"
             },
             {
-              nom: "Rapport A/G",
-              valeur: 0.875,
-              interpretation: "Terrain équilibré",
-              statut: "normal"
+              name: "Rapport A/G",
+              value: 0.875,
+              comment: "Terrain équilibré"
             },
             {
-              nom: "Index Cortico-Thyroïdien",
-              valeur: 1.2,
-              interpretation: "Normothyroïdie",
-              statut: "normal"
+              name: "Index Cortico-Thyroïdien",
+              value: 1.2,
+              comment: "Normothyroïdie"
             },
             {
-              nom: "Index Génito-Thyroïdien",
-              valeur: 1.8,
-              interpretation: "Bon équilibre hormonal",
-              statut: "normal"
+              name: "Index Génito-Thyroïdien",
+              value: 1.8,
+              comment: "Bon équilibre hormonal"
             },
             {
-              nom: "Index Global",
-              valeur: 92,
-              interpretation: "Vitalité globale satisfaisante",
-              statut: "normal"
+              name: "Index Global",
+              value: 92,
+              comment: "Vitalité globale satisfaisante"
             }
           ],
           summary: "Terrain globalement équilibré avec légère tendance à la carence en vitamine D. Les index de la Biologie des Fonctions sont dans les normes. Surveillance de la ferritine recommandée (limite basse).",
