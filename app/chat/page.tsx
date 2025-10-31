@@ -18,7 +18,7 @@ export default async function ChatPage() {
 
   return (
     <div style={{ paddingTop: "20px" }}>
-      <ChatInterface userId={session.user.id} />
+      <ChatInterface />
     </div>
   );
 }

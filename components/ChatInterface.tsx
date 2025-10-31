@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BdfResultDrawer } from "./BdfResultDrawer";
 import { useBdfSession } from "@/store/useBdfSession";
 import {
@@ -21,7 +21,26 @@ import {
 import { convertToBdfAnalysis } from "@/lib/bdf/convertToAnalysis";
 import type { BdfAnalysis, BdfInputs } from "@/types/bdf";
 
-type ApiReply = { reply?: string; error?: string; chatId?: string };
+type ApiReply = {
+  reply?: string;
+  error?: string;
+  chatId?: string;
+  chatTitle?: string;
+  created?: boolean;
+};
+
+type ChatSummary = {
+  id: string;
+  title: string;
+  updatedAt: string;
+};
+
+type StoredMessage = {
+  id: string;
+  role: string;
+  content: string;
+  createdAt: string;
+};
 
 const SUGGESTIONS = [
   "Explique la relation αΣ / βΣ / πΣ dans l'adaptation immédiate.",
@@ -30,7 +49,7 @@ const SUGGESTIONS = [
   "Différence TM / EPS / macérat glycériné sur l'axe thyréotrope.",
 ];
 
-export function ChatInterface({ userId }: { userId: string }) {
+export function ChatInterface() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<
     Array<{
@@ -41,7 +60,10 @@ export function ChatInterface({ userId }: { userId: string }) {
   >([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [chatId, setChatId] = useState<string | null>(null);
+  const [chatTitle, setChatTitle] = useState<string | null>(null);
+  const [availableChats, setAvailableChats] = useState<ChatSummary[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -54,6 +76,92 @@ export function ChatInterface({ userId }: { userId: string }) {
   const [ragContent, setRagContent] = useState<string | null>(null);
   const [ragLoading, setRagLoading] = useState(false);
   const [ragError, setRagError] = useState<string | null>(null);
+
+  const hasMessages = messages.length > 0;
+
+  useEffect(() => {
+    async function bootstrapHistory() {
+      try {
+        setHistoryLoading(true);
+        const res = await fetch("/api/chat");
+        if (!res.ok) {
+          throw new Error("Impossible de charger l'historique");
+        }
+
+        const data: {
+          chats?: ChatSummary[];
+          activeChatId?: string | null;
+          activeChatTitle?: string | null;
+          messages?: StoredMessage[];
+        } = await res.json();
+
+        setAvailableChats(data.chats ?? []);
+
+        if (data.activeChatId && data.messages && data.messages.length > 0) {
+          setChatId(data.activeChatId);
+          setChatTitle(data.activeChatTitle ?? null);
+          setMessages(
+            data.messages.map((msg) => ({
+              role: msg.role,
+              content: msg.content,
+            }))
+          );
+        }
+      } catch (err: any) {
+        setError(err?.message ?? "Erreur lors du chargement de l'historique");
+      } finally {
+        setHistoryLoading(false);
+      }
+    }
+
+    bootstrapHistory();
+  }, []);
+
+  async function loadChatHistory(selectedChatId: string) {
+    try {
+      setHistoryLoading(true);
+      const res = await fetch(`/api/chat?chatId=${selectedChatId}`);
+      if (!res.ok) {
+        throw new Error("Conversation introuvable");
+      }
+
+      const data: {
+        chat?: { id: string; title: string };
+        messages?: StoredMessage[];
+      } = await res.json();
+
+      setChatId(selectedChatId);
+      setChatTitle(data.chat?.title ?? null);
+      setMessages(
+        (data.messages ?? []).map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }))
+      );
+    } catch (err: any) {
+      setError(err?.message ?? "Impossible de charger la conversation");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  function startNewConversation() {
+    setChatId(null);
+    setChatTitle(null);
+    setMessages([]);
+  }
+
+  function handleChatSelection(e: React.ChangeEvent<HTMLSelectElement>) {
+    const selected = e.target.value;
+    if (!selected) {
+      startNewConversation();
+      return;
+    }
+
+    loadChatHistory(selected).catch(() => {
+      /* erreur déjà gérée */
+    });
+  }
 
   // Auto-resize textarea
   useEffect(() => {
@@ -99,7 +207,6 @@ export function ChatInterface({ userId }: { userId: string }) {
         body: JSON.stringify({
           message,
           chatId,
-          userId,
         }),
       });
 
@@ -122,8 +229,29 @@ export function ChatInterface({ userId }: { userId: string }) {
       }
 
       // Sauvegarder le chatId si c'est le premier message
-      if (data.chatId && !chatId) {
+      if (data.chatId) {
         setChatId(data.chatId);
+        if (data.chatTitle) {
+          setChatTitle(data.chatTitle);
+        }
+
+        setAvailableChats((prev) => {
+          const updatedAt = new Date().toISOString();
+          const existingIndex = prev.findIndex((chat) => chat.id === data.chatId);
+          const summary: ChatSummary = {
+            id: data.chatId!,
+            title: data.chatTitle ?? "Nouvelle conversation",
+            updatedAt,
+          };
+
+          if (existingIndex >= 0) {
+            const clone = [...prev];
+            clone.splice(existingIndex, 1);
+            return [summary, ...clone];
+          }
+
+          return [summary, ...prev];
+        });
       }
 
       // Ajouter la réponse de l'assistant
@@ -243,6 +371,8 @@ Sois pédagogique et accessible. Pas de diagnostic médical.
     }
   }
 
+  const chatSelectValue = useMemo(() => chatId ?? "", [chatId]);
+
   return (
     <div className="chat-container">
       <div className="chat-header">
@@ -259,6 +389,53 @@ Sois pédagogique et accessible. Pas de diagnostic médical.
               Posez vos questions. Les réponses s'appuient sur vos volumes
               indexés.
             </p>
+            {availableChats.length > 0 && (
+              <div
+                style={{
+                  marginTop: "12px",
+                  display: "flex",
+                  gap: "8px",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <label htmlFor="chat-history-select" className="muted">
+                  Conversations enregistrées :
+                </label>
+                <select
+                  id="chat-history-select"
+                  value={chatSelectValue}
+                  onChange={handleChatSelection}
+                  disabled={loading || historyLoading}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #d1d5db",
+                    minWidth: "240px",
+                  }}
+                >
+                  <option value="">Nouvelle conversation</option>
+                  {availableChats.map((chat) => (
+                    <option key={chat.id} value={chat.id}>
+                      {chat.title}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={startNewConversation}
+                  disabled={loading}
+                  className="btn btn-ghost"
+                >
+                  + Réinitialiser
+                </button>
+              </div>
+            )}
+            {chatTitle && (
+              <p className="muted" style={{ marginTop: "8px", fontSize: "0.9rem" }}>
+                Conversation : {chatTitle}
+              </p>
+            )}
           </div>
 
           {/* Bouton BdF global */}
@@ -294,7 +471,12 @@ Sois pédagogique et accessible. Pas de diagnostic médical.
 
       {/* Messages */}
       <div className="chat-messages">
-        {messages.length === 0 ? (
+        {historyLoading ? (
+          <div className="chat-empty">
+            <span style={{ fontSize: "32px" }}>⏳</span>
+            <p className="muted">Chargement de vos conversations…</p>
+          </div>
+        ) : !hasMessages ? (
           <div className="chat-empty">
             <span style={{ fontSize: "48px" }}>🌿</span>
             <p className="muted">
