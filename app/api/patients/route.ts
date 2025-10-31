@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/patients
- * Créer un nouveau patient
+ * Créer un nouveau patient (avec association BdF optionnelle)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Récupérer les données du body
-    const body: PatientCreateInput = await req.json();
+    const body: any = await req.json();
 
     // Validation
     if (!body.nom || !body.prenom) {
@@ -124,45 +124,78 @@ export async function POST(req: NextRequest) {
 
     const numeroPatient = generateNumeroPatient(lastPatient?.numeroPatient);
 
-    // Créer le patient
+    // Préparer les données du patient
+    const patientData: any = {
+      userId,
+      numeroPatient,
+      nom: body.nom.trim(),
+      prenom: body.prenom.trim(),
+      dateNaissance: body.dateNaissance ? new Date(body.dateNaissance) : null,
+      sexe: body.sexe || null,
+      telephone: body.telephone?.trim() || null,
+      email: body.email?.trim() || null,
+      allergies: body.allergies?.trim() || null,
+      atcdMedicaux: body.atcdMedicaux?.trim() || null,
+      atcdChirurgicaux: body.atcdChirurgicaux?.trim() || null,
+      traitements: body.traitements?.trim() || null,
+      notes: body.notes?.trim() || null,
+      consentementRGPD: body.consentementRGPD || false,
+      dateConsentement: body.consentementRGPD ? new Date() : null,
+    };
+
+    // Si une analyse BdF est fournie, l'ajouter
+    if (body.bdfAnalysis) {
+      patientData.bdfAnalyses = {
+        create: {
+          date: new Date(),
+          inputs: body.bdfAnalysis.inputs,
+          indexes: body.bdfAnalysis.indexes,
+          summary: body.bdfAnalysis.summary,
+          axes: body.bdfAnalysis.axes,
+          ragText: body.bdfAnalysis.ragText || null,
+        },
+      };
+    }
+
+    // Créer le patient (avec BdF si fournie)
     const patient = await prisma.patient.create({
-      data: {
-        userId,
-        numeroPatient,
-        nom: body.nom.trim(),
-        prenom: body.prenom.trim(),
-        dateNaissance: body.dateNaissance
-          ? new Date(body.dateNaissance)
-          : null,
-        sexe: body.sexe || null,
-        telephone: body.telephone?.trim() || null,
-        email: body.email?.trim() || null,
-        notes: body.notes?.trim() || null,
-        consentementRGPD: body.consentementRGPD || false,
-        dateConsentement:
-          body.consentementRGPD ? new Date() : null,
+      data: patientData,
+      include: {
+        bdfAnalyses: true,
       },
     });
 
+    console.log("✅ Patient créé:", patient.id);
+    if (body.bdfAnalysis) {
+      console.log("✅ Analyse BdF associée");
+    }
+
     // Formatter la réponse
-    const response: PatientListItem = {
-      id: patient.id,
-      userId: patient.userId,
-      numeroPatient: patient.numeroPatient,
-      nom: patient.nom,
-      prenom: patient.prenom,
-      dateNaissance: patient.dateNaissance?.toISOString() || null,
-      sexe: patient.sexe as "H" | "F" | "Autre" | null,
-      telephone: patient.telephone,
-      email: patient.email,
-      notes: patient.notes,
-      consentementRGPD: patient.consentementRGPD,
-      dateConsentement: patient.dateConsentement?.toISOString() || null,
-      isArchived: patient.isArchived,
-      archivedAt: patient.archivedAt?.toISOString() || null,
-      createdAt: patient.createdAt.toISOString(),
-      updatedAt: patient.updatedAt.toISOString(),
-      _count: { consultations: 0 },
+    const response = {
+      patient: {
+        id: patient.id,
+        userId: patient.userId,
+        numeroPatient: patient.numeroPatient,
+        nom: patient.nom,
+        prenom: patient.prenom,
+        dateNaissance: patient.dateNaissance?.toISOString() || null,
+        sexe: patient.sexe,
+        telephone: patient.telephone,
+        email: patient.email,
+        allergies: patient.allergies,
+        atcdMedicaux: patient.atcdMedicaux,
+        atcdChirurgicaux: patient.atcdChirurgicaux,
+        traitements: patient.traitements,
+        notes: patient.notes,
+        consentementRGPD: patient.consentementRGPD,
+        dateConsentement: patient.dateConsentement?.toISOString() || null,
+        isArchived: patient.isArchived,
+        archivedAt: patient.archivedAt?.toISOString() || null,
+        createdAt: patient.createdAt.toISOString(),
+        updatedAt: patient.updatedAt.toISOString(),
+        _count: { consultations: 0 },
+      },
+      bdfAssociated: !!body.bdfAnalysis,
     };
 
     return NextResponse.json(response, { status: 201 });

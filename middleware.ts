@@ -33,6 +33,19 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
+  // ===== AJOUTER L'USER ID AUX HEADERS API =====
+  // Pour les routes API, ajouter l'userId dans les headers
+  if (pathname.startsWith("/api/") && isAuth && req.auth?.user?.id) {
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-user-id", req.auth.user.id);
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
   // Sinon, laisser passer
   return NextResponse.next();
 });
