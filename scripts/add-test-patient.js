@@ -36,15 +36,73 @@ async function main() {
       bdfAnalyses: {
         create: {
           date: new Date('2025-10-15'),
-          nom: 'Analyse BdF complète',
-          resultats: JSON.stringify({
-            hemoglobine: 13.5,
-            ferritine: 45,
-            vitB12: 350,
-            vitD: 28
-          }),
-          interpretations: 'Légère carence en vitamine D. Ferritine dans la norme basse.',
-          recommandations: 'Supplémentation en vitamine D 2000 UI/jour',
+          inputs: {
+            GR: 4.5,
+            GB: 7.2,
+            HB: 13.5,
+            HT: 42,
+            VGM: 88,
+            TCMH: 29,
+            CCMH: 33,
+            PLQ: 250,
+            FERRITINE: 45,
+            VITB12: 350,
+            VITD: 28,
+            TSH: 2.1
+          },
+          indexes: [
+            {
+              nom: "Index Alpha",
+              valeur: 2.8,
+              interpretation: "Normotrophie",
+              statut: "normal"
+            },
+            {
+              nom: "Index Bêta",
+              valeur: 1.5,
+              interpretation: "Équilibre sympathique",
+              statut: "normal"
+            },
+            {
+              nom: "Index Gamma",
+              valeur: 3.2,
+              interpretation: "Bon fonctionnement parasympathique",
+              statut: "normal"
+            },
+            {
+              nom: "Index Delta",
+              valeur: 0.85,
+              interpretation: "Équilibre neuro-hormonal",
+              statut: "normal"
+            },
+            {
+              nom: "Rapport A/G",
+              valeur: 0.875,
+              interpretation: "Terrain équilibré",
+              statut: "normal"
+            },
+            {
+              nom: "Index Cortico-Thyroïdien",
+              valeur: 1.2,
+              interpretation: "Normothyroïdie",
+              statut: "normal"
+            },
+            {
+              nom: "Index Génito-Thyroïdien",
+              valeur: 1.8,
+              interpretation: "Bon équilibre hormonal",
+              statut: "normal"
+            },
+            {
+              nom: "Index Global",
+              valeur: 92,
+              interpretation: "Vitalité globale satisfaisante",
+              statut: "normal"
+            }
+          ],
+          summary: "Terrain globalement équilibré avec légère tendance à la carence en vitamine D. Les index de la Biologie des Fonctions sont dans les normes. Surveillance de la ferritine recommandée (limite basse).",
+          axes: ["Axe Thyroïdien", "Axe Métabolique"],
+          ragText: "Le terrain présente une normotrophie alpha avec un équilibre sympatho-vagal satisfaisant. La légère carence en vitamine D suggère une attention particulière à l'exposition solaire et à la supplémentation. La ferritine en limite basse nécessite une surveillance sans intervention immédiate."
         }
       },
 
@@ -52,11 +110,10 @@ async function main() {
       consultations: {
         create: {
           dateConsultation: new Date('2025-10-20'),
-          motif: 'Suivi de contrôle - Fatigue persistante',
-          diagnostic: 'Carence en vitamine D confirmée',
-          traitement: 'Vitamine D3 2000 UI/jour pendant 3 mois',
-          notes: 'Patiente rapporte une amélioration de l\'énergie depuis la dernière visite.',
-          dureeMinutes: 30,
+          type: 'suivi',
+          motifConsultation: 'Suivi de contrôle - Fatigue persistante suite à analyse BdF',
+          commentaire: 'Patiente rapporte une amélioration de l\'énergie depuis la dernière visite. Légère carence en vitamine D confirmée par les résultats biologiques. Ferritine en limite basse à surveiller.',
+          prescriptions: '- Vitamine D3 2000 UI/jour pendant 3 mois\n- Contrôle ferritine dans 3 mois\n- Exposition solaire quotidienne 15-20min si possible',
         }
       },
 
@@ -67,8 +124,9 @@ async function main() {
           poids: 65.5,
           taille: 168,
           imc: 23.2,
-          tourTaille: 78,
-          tourHanches: 95,
+          paSys: 125,
+          paDia: 78,
+          pouls: 72,
         }
       }
     },
