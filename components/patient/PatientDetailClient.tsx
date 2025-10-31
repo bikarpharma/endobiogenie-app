@@ -7,6 +7,7 @@ import { OngletApercu } from "./OngletApercu";
 import { OngletIdentite } from "./OngletIdentite";
 import { OngletAnalyses } from "./OngletAnalyses";
 import { OngletConsultations } from "./OngletConsultations";
+import { OngletOrdonnances } from "./OngletOrdonnances";
 
 type PatientData = {
   id: string;
@@ -32,9 +33,10 @@ type PatientData = {
   bdfAnalyses: any[];
   consultations: any[];
   anthropometries: any[];
+  ordonnances: any[];
 };
 
-type Tab = "apercu" | "identite" | "analyses" | "consultations";
+type Tab = "apercu" | "identite" | "analyses" | "consultations" | "ordonnances";
 
 export function PatientDetailClient({ patient }: { patient: PatientData }) {
   const [activeTab, setActiveTab] = useState<Tab>("apercu");
@@ -180,6 +182,24 @@ export function PatientDetailClient({ patient }: { patient: PatientData }) {
           >
             📋 Consultations ({patient.consultations.length})
           </button>
+          <button
+            onClick={() => setActiveTab("ordonnances")}
+            style={{
+              flex: 1,
+              padding: "16px 24px",
+              background: activeTab === "ordonnances" ? "white" : "transparent",
+              border: "none",
+              borderBottom:
+                activeTab === "ordonnances" ? "3px solid #2563eb" : "3px solid transparent",
+              fontSize: "0.95rem",
+              fontWeight: activeTab === "ordonnances" ? "600" : "500",
+              color: activeTab === "ordonnances" ? "#2563eb" : "#6b7280",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            💊 Ordonnances ({patient.ordonnances?.length || 0})
+          </button>
         </div>
 
         {/* Contenu de l'onglet actif */}
@@ -188,6 +208,7 @@ export function PatientDetailClient({ patient }: { patient: PatientData }) {
           {activeTab === "identite" && <OngletIdentite patient={patient} />}
           {activeTab === "analyses" && <OngletAnalyses patient={patient} />}
           {activeTab === "consultations" && <OngletConsultations patient={patient} />}
+          {activeTab === "ordonnances" && <OngletOrdonnances patient={patient} />}
         </div>
       </div>
     </div>

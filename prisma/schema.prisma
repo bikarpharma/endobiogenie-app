@@ -159,6 +159,7 @@ model Patient {
   consultations      Consultation[]
   bdfAnalyses        BdfAnalysis[]
   anthropometries    Anthropometrie[]
+  ordonnances        Ordonnance[]
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -238,4 +239,36 @@ model Consultation {
 
   @@map("consultations")
   @@index([patientId, dateConsultation])
+}
+
+// Table "ordonnances" : ordonnances phyto générées par IA
+model Ordonnance {
+  id                String    @id @default(cuid())
+  patientId         String
+  bdfAnalysisId     String?   // Lien optionnel vers l'analyse BdF source
+
+  // Métadonnées
+  dateOrdonnance    DateTime  @default(now())
+  titre             String    // Ex: "Traitement terrain HypoAlpha"
+
+  // Contenu généré par IA
+  interpretation    String    @db.Text  // Lecture endobiogénique du terrain
+  recommandations   Json      // Array de { plante, posologie, duree, remarques }
+  conseils          String?   @db.Text  // Conseils hygiéno-diététiques
+
+  // Statut
+  statut            String    @default("brouillon") // "brouillon" | "validee" | "imprimee"
+
+  // Édition manuelle
+  isModified        Boolean   @default(false)  // true si le praticien a modifié l'IA
+  notesPraticien    String?   @db.Text
+
+  // Relations
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("ordonnances")
+  @@index([patientId, dateOrdonnance])
 }
