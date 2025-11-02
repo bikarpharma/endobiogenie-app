@@ -21,7 +21,7 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   try {
     // Récupérer le message
-    const body: ChatRequest = await req.json();
+    const body = await req.json();
     const { message } = body;
 
     // Validation
