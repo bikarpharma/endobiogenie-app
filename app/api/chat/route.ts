@@ -116,18 +116,21 @@ export async function POST(req: NextRequest) {
       orderBy: { createdAt: "asc" },
     });
 
-    const conversation = history.map((msg) => ({
-      role:
-        msg.role === "assistant" || msg.role === "user"
-          ? (msg.role as "assistant" | "user")
-          : "system",
-      content: [
-        {
-          type: msg.role === "assistant" ? "output_text" : "input_text",
-          text: msg.content,
-        },
-      ],
-    }));
+const conversation = history.map((msg) => {
+  const role = (msg.role === "assistant" || msg.role === "user" 
+    ? msg.role 
+    : "system") as "user" | "assistant" | "system";
+  
+  const contentType = msg.role === "assistant" ? "output_text" : "input_text";
+  
+  return {
+    role,
+    content: [{
+      type: contentType as "input_text" | "output_text",
+      text: msg.content,
+    }],
+  };
+});
 
     const runner = new Runner();
     const result = await runner.run(agent, conversation);
