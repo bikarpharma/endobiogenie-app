@@ -7,8 +7,10 @@
 // - Répond aux questions générales sur l'endobiogénie sinon
 
 import { NextRequest, NextResponse } from "next/server";
-import { respondToUser } from "@/lib/chatbot/orchestrator";
-import type { ChatRequest, ChatReply } from "@/lib/chatbot/types";
+import { fileSearchTool, Agent, Runner } from "@openai/agents";
+import type { AgentInputItem } from "@openai/agents";
+import { prisma } from "@/lib/prisma";
+import { removeAnnotations } from "@/lib/utils/removeAnnotations";
 
 export const runtime = "nodejs";
 

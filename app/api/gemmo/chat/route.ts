@@ -2,7 +2,8 @@
 // API GEMMO CHAT - /api/gemmo/chat
 // ========================================
 import { NextRequest, NextResponse } from "next/server";
-import { fileSearchTool, Agent, AgentInputItem, Runner } from "@openai/agents";
+import { fileSearchTool, Agent, Runner } from "@openai/agents";
+import type { AgentInputItem } from "@openai/agents";
 import { prisma } from "@/lib/prisma";
 import { removeAnnotations } from "@/lib/utils/removeAnnotations";
 
