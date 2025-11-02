@@ -117,10 +117,25 @@ orderBy: { createdAt: "asc" },
 });
 
 const conversation: AgentInputItem[] = history.map((msg) => {
-      const role = (msg.role === "assistant" || msg.role === "user")
-        ? msg.role
-        : "system";
-      return { role, content: msg.content };
+      const role = (
+        msg.role === "assistant" || msg.role === "user" ? msg.role : "system"
+      ) as "user" | "assistant" | "system";
+
+      if (role === 'system') {
+        // Les messages système ont un contenu de type string
+        return { role, content: msg.content };
+      }
+
+      // Les messages user/assistant ont un contenu de type tableau d'objets
+      return {
+        role,
+        content: [
+          {
+            type: role === "user" ? "input_text" : "output_text",
+            text: msg.content,
+          },
+        ],
+      };
     });
 
     const runner = new Runner();
