@@ -16,7 +16,7 @@ export const runtime = "nodejs";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+{ params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = req.headers.get("x-user-id");
@@ -28,7 +28,7 @@ export async function GET(
       );
     }
 
-    const { id: patientId } = params;
+const { id: patientId } = await params;
 
     // Vérifier que le patient appartient au praticien
     const patient = await prisma.patient.findUnique({
@@ -90,7 +90,7 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+{ params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = req.headers.get("x-user-id");
@@ -102,7 +102,7 @@ export async function POST(
       );
     }
 
-    const { id: patientId } = params;
+const { id: patientId } = await params;
 
     // Vérifier que le patient appartient au praticien
     const patient = await prisma.patient.findUnique({
