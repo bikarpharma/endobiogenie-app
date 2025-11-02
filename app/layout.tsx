@@ -1,44 +1,105 @@
+// ========================================
+// LAYOUT GLOBAL - Structure de toutes les pages
+// ========================================
+// 📖 Explication simple :
+// Ce fichier définit la structure HTML commune à toutes les pages :
+// - Header (navigation)
+// - Main (contenu de la page)
+// - Footer
+//
+// La navigation s'adapte selon l'état de connexion :
+// - Non connecté : Accueil, Connexion, Inscription
+// - Connecté : Dashboard, Chat, Fiches, Admin (si ADMIN), Déconnexion
+
+import { auth } from "@/lib/auth";
+import Link from "next/link";
+import { SignOutButton } from "@/components/SignOutButton";
+import "./globals.css";
+
 export const metadata = {
-  title: "Endobiogénie RAG",
-  description:
-    "Assistant RAG basé sur les volumes d’endobiogénie — démonstrateur avec chat + rubriques.",
+  title: "Endobiogénie SaaS",
+  description: "Assistant RAG avec auth, historique et fiches plantes.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const lang = "fr";
+  // Récupérer la session (qui est connecté ?)
+  const session = await auth();
+
   return (
-    <html lang={lang}>
+    <html lang="fr">
       <body>
+        {/* ===== HEADER ===== */}
         <header className="site-header">
           <div className="container header-inner">
+            {/* Logo */}
             <div className="brand">
               <span className="logo">🌿</span>
-              <strong>Agent Endobiogénie</strong>
+              <Link href={session ? "/dashboard" : "/"}>
+                <strong>Agent Endobiogénie</strong>
+              </Link>
             </div>
+
+            {/* Navigation adaptée */}
             <nav className="nav">
-              <a href="/" className="nav-link">Chat</a>
-              <a className="nav-link nav-link--muted" title="À venir">Fiches</a>
-              <a className="nav-link nav-link--muted" title="À venir">Plantes</a>
-              <a className="nav-link nav-link--muted" title="À venir">Indications</a>
+              {session ? (
+                // Utilisateur connecté
+                <>
+                  <Link href="/dashboard" className="nav-link">
+                    Dashboard
+                  </Link>
+                  <Link href="/chat" className="nav-link">
+                    Chat
+                  </Link>
+                  <Link href="/bdf" className="nav-link">
+                    🧬 BdF
+                  </Link>
+                   <Link href="/patients" className="nav-link">
+                    👤 Patients
+                  </Link>
+                  <Link href="/gemmo" className="nav-link">
+                    🌿 Gemmo
+                  </Link>
+                  <Link href="/aroma" className="nav-link">
+                    🌺 Aroma
+                  </Link>
+                  <Link href="/phyto" className="nav-link">
+                    🌿 Phyto
+                  </Link>
+                  <Link href="/fiches" className="nav-link nav-link--muted">
+                    Fiches
+                  </Link>
+                  <span className="nav-link">{session.user.email}</span>
+                  <SignOutButton />
+                </>
+              ) : (
+                // Utilisateur non connecté
+                <>
+                  <Link href="/" className="nav-link">
+                    Accueil
+                  </Link>
+                  <Link href="/login" className="nav-link">
+                    Connexion
+                  </Link>
+                  <Link href="/register" className="nav-link">
+                    Inscription
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         </header>
+
+        {/* ===== CONTENU PRINCIPAL ===== */}
         <main className="container">{children}</main>
+
+        {/* ===== FOOTER ===== */}
         <footer className="site-footer">
           <div className="container footer-inner">
-            <span>© {new Date().getFullYear()} Endobiogénie RAG — Démo</span>
-            <a
-              className="nav-link"
-              href="https://endobiogenie-rag.vercel.app"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Projet
-            </a>
+            <span>© {new Date().getFullYear()} Endobiogénie SaaS</span>
           </div>
         </footer>
       </body>

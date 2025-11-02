@@ -1,0 +1,25 @@
+# ========================================
+# DOCKER COMPOSE - PostgreSQL local
+# ========================================
+# 📖 Explication simple :
+# Ce fichier permet de lancer une base de données PostgreSQL en local
+# avec Docker en UNE seule commande : docker-compose up -d
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: endobiogenie-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: endobiogenie
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
