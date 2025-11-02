@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Appeler l'orchestrateur
-    const response: ChatReply = await respondToUser(message);
+    const response = await respondToUser(message);
 
     // Retourner la réponse
     return NextResponse.json(response, { status: 200 });
