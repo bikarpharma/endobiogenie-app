@@ -11,6 +11,8 @@
 // - Non connecté : Accueil, Connexion, Inscription
 // - Connecté : Dashboard, Chat, Fiches, Admin (si ADMIN), Déconnexion
 
+export const dynamic = 'force-dynamic';
+
 import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";

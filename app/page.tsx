@@ -6,6 +6,8 @@
 // - Si connecté : redirige vers /dashboard
 // - Si non connecté : affiche une landing page avec boutons "S'inscrire" et "Se connecter"
 
+export const dynamic = 'force-dynamic';
+
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";

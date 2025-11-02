@@ -116,19 +116,15 @@ where: { chatId: currentChatId },
 orderBy: { createdAt: "asc" },
 });
 
-const conversation = history.map((msg) => {
-    const role = (msg.role === "assistant" || msg.role === "user"
+const conversation: AgentInputItem[] = history.map((msg) => {
+      const role = (msg.role === "assistant" || msg.role === "user")
         ? msg.role
-        : "system") as "user" | "assistant" | "system";
+        : "system";
+      return { role, content: msg.content };
+    });
 
-    return {
-        role,
-        content: msg.content,
-    };
-});
-
-const runner = new Runner();
-const result = await runner.run(agent, conversation as AgentInputItem[]);
+    const runner = new Runner();
+    const result = await runner.run(agent, conversation);
 
 if (!result.finalOutput) {
 return NextResponse.json({ error: "Pas de sortie" }, { status: 500 });
