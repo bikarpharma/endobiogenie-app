@@ -83,7 +83,7 @@ export async function GET(
     const filename = `conversation_${sanitizedTitle}_${Date.now()}.pdf`;
 
     // 7️⃣ Retourner le PDF en téléchargement
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer.buffer, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${filename}"`,
