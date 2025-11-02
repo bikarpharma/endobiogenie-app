@@ -133,7 +133,7 @@ const conversation = history.map((msg) => {
 });
 
     const runner = new Runner();
-    const result = await runner.run(agent, conversation);
+    const result = await runner.run(agent, conversation as AgentInputItem[]);
 
     if (!result.finalOutput) {
       return NextResponse.json({ error: "Pas de sortie" }, { status: 500 });
