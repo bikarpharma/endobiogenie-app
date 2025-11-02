@@ -224,6 +224,13 @@ model Consultation {
   type              String?   // "initiale" | "suivi" | "urgence"
   motifConsultation String?   @db.Text
 
+  // Données BdF (copie locale depuis l'analyse)
+  inputs            Json?     // BdfInputs: valeurs biologiques saisies
+  indexes           Json?     // BdfIndex[]: indexes calculés
+  summary           String?   @db.Text // Résumé de l'analyse
+  axes              Json?     // string[]: axes thérapeutiques
+  ragText           String?   @db.Text // Texte enrichi par RAG
+
   // Notes praticien
   commentaire       String?   @db.Text
   prescriptions     String?   @db.Text
