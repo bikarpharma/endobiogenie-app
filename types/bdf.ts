@@ -7,6 +7,7 @@
  * Valeurs biologiques en entrée (toutes optionnelles)
  */
 export type BdfInputs = {
+  [key: string]: number | undefined;
   GR?: number; // Globules rouges (T/L)
   GB?: number; // Globules blancs (G/L)
   hemoglobine?: number; // Hémoglobine (g/dL)

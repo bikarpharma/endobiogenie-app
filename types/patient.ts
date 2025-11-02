@@ -100,6 +100,7 @@ export interface Consultation {
 
 // Types BdF (importés ou redéfinis)
 export interface BdfInputs {
+  [key: string]: number | undefined;
   GR?: number;
   GB?: number;
   LDH?: number;
