@@ -7,7 +7,7 @@
 // - Connexion avec Google (plus tard)
 // - Sessions utilisateur (qui est connecté ?)
 
-import NextAuth, { DefaultSession } from "next-auth";
+import NextAuth, { type DefaultSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 // import Google from "next-auth/providers/google"; // Décommentez plus tard
 import { compare } from "bcryptjs";
