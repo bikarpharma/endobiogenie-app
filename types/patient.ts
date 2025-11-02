@@ -82,7 +82,7 @@ export interface Consultation {
   // Données BdF
   inputs: BdfInputs;
   indexes: BdfIndex[];
-  summary: string;
+  summary: string | null;
   axes: string[];
   ragText: string | null;
 
