@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fileSearchTool, Agent, Runner } from "@openai/agents";
 import type { AgentInputItem } from "@openai/agents";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { removeAnnotations } from "@/lib/utils/removeAnnotations";
 
