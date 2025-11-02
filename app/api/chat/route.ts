@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
       orderBy: { createdAt: "asc" },
     });
 
-    const conversation: AgentInputItem[] = history.map((msg) => ({
+    const conversation = history.map((msg) => ({
       role:
         msg.role === "assistant" || msg.role === "user"
           ? (msg.role as "assistant" | "user")
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
     }));
 
     const runner = new Runner();
-    const result = await runner.run(agent, conversation);
+    const result = await runner.run(agent, conversation as AgentInputItem[]);
 
     if (!result.finalOutput) {
       return NextResponse.json({ error: "Pas de sortie" }, { status: 500 });
