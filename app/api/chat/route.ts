@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
       orderBy: { createdAt: "asc" },
     });
 
-    const conversation: AgentInputItem[] = history.map((msg) => ({
+    const conversation = history.map((msg) => ({
       role:
         msg.role === "assistant" || msg.role === "user"
           ? (msg.role as "assistant" | "user")
