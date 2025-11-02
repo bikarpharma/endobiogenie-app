@@ -17,7 +17,7 @@ export const runtime = "nodejs";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = req.headers.get("x-user-id");
@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Récupérer le patient avec ses consultations
     const patient = await prisma.patient.findUnique({
@@ -118,7 +118,7 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = req.headers.get("x-user-id");
@@ -130,7 +130,7 @@ export async function PUT(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body: PatientUpdateInput = await req.json();
 
     // Vérifier que le patient existe et appartient au praticien
@@ -218,7 +218,7 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = req.headers.get("x-user-id");
@@ -230,7 +230,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Vérifier que le patient existe et appartient au praticien
     const existing = await prisma.patient.findUnique({
