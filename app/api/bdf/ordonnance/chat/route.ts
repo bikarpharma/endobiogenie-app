@@ -131,21 +131,24 @@ IMPORTANT :
       max_tokens: 2000,
     });
 
-    const runner = new Runner({
-      apiKey: process.env.OPENAI_API_KEY!,
-      model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-    });
+    const runner = new Runner();
 
     // 4️⃣ Construire les messages à envoyer (historique + nouveau message)
-    const messages = [
-      ...conversationHistory,
-      { role: "user", content: message },
+    const messages: AgentInputItem[] = [
+      ...conversationHistory.map((msg: any) => ({
+        role: msg.role as "user" | "assistant",
+        content: [{ type: "input_text" as const, text: msg.content }],
+      })),
+      {
+        role: "user" as const,
+        content: [{ type: "input_text" as const, text: message }],
+      },
     ];
 
     console.log("🔄 Chat ordonnance - Message:", message);
-    const result = await runner.run(agent, messages.map(m => m.content));
+    const result = await runner.run(agent, messages);
 
-    const reply = result.finalContent || "Désolé, je n'ai pas pu générer de réponse.";
+    const reply = result.finalOutput || "Désolé, je n'ai pas pu générer de réponse.";
 
     return NextResponse.json({ reply });
   } catch (error: any) {

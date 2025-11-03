@@ -123,18 +123,21 @@ CONTRAINTES :
       max_tokens: 4000,
     });
 
-    const runnerEndo = new Runner({
-      apiKey: process.env.OPENAI_API_KEY!,
-      model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-    });
+    const runnerEndo = new Runner();
 
     // 3️⃣ Génération de l'ordonnance avec source principale (Endo)
     console.log("🔄 Génération ordonnance avec VS Endobiogénie...");
     const resultEndo = await runnerEndo.run(agentEndo, [
-      "Génère l'ordonnance phytothérapeutique complète en suivant exactement la structure demandée.",
-    ]);
+      {
+        role: "user",
+        content: [{
+          type: "input_text",
+          text: "Génère l'ordonnance phytothérapeutique complète en suivant exactement la structure demandée."
+        }],
+      },
+    ] as AgentInputItem[]);
 
-    let ordonnanceText = resultEndo.finalContent || "";
+    let ordonnanceText = resultEndo.finalOutput || "";
 
     // 4️⃣ Enrichissement optionnel avec sources secondaires (Gemmo, Aroma, Phyto)
     // On enrichit uniquement si on peut apporter des précisions galéniques
@@ -169,10 +172,16 @@ Reste concis (3-5 lignes maximum).`,
 
     console.log("🔄 Enrichissement avec VS secondaires (Gemmo/Aroma/Phyto)...");
     const resultSecondary = await runnerEndo.run(agentSecondary, [
-      "Enrichis l'ordonnance avec des précisions galéniques si pertinent.",
-    ]);
+      {
+        role: "user",
+        content: [{
+          type: "input_text",
+          text: "Enrichis l'ordonnance avec des précisions galéniques si pertinent."
+        }],
+      },
+    ] as AgentInputItem[]);
 
-    const enrichmentText = resultSecondary.finalContent || "";
+    const enrichmentText = resultSecondary.finalOutput || "";
 
     // 5️⃣ Ajouter l'enrichissement si pertinent
     if (enrichmentText && !enrichmentText.includes("AUCUN ENRICHISSEMENT")) {

@@ -42,33 +42,68 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Générer le numéro patient
-    const lastPatient = await prisma.patient.findFirst({
-      where: { userId: session.user.id },
-      orderBy: { numeroPatient: "desc" },
-      select: { numeroPatient: true },
-    });
+    // Générer le numéro patient avec gestion des collisions
+    let numeroPatient: string;
+    let patient;
+    let attempts = 0;
+    const maxAttempts = 10;
 
-    const numeroPatient = generateNumeroPatient(lastPatient?.numeroPatient);
+    while (attempts < maxAttempts) {
+      try {
+        // Récupérer le dernier numéro patient pour cet utilisateur
+        const lastPatient = await prisma.patient.findFirst({
+          where: { userId: session.user.id },
+          orderBy: { createdAt: "desc" },
+          select: { numeroPatient: true },
+        });
 
-    // Créer le patient
-    const patient = await prisma.patient.create({
-      data: {
-        userId: session.user.id,
-        numeroPatient,
-        nom: nomClean,
-        prenom: prenomClean,
-        dateNaissance: null,
-        sexe: null,
-        telephone: null,
-        email: null,
-        notes: null,
-        consentementRGPD: false,
-        dateConsentement: null,
-        isArchived: false,
-        archivedAt: null,
-      },
-    });
+        // Générer le numéro (avec offset pour éviter les collisions)
+        const baseNumber = lastPatient?.numeroPatient || "PAT-000";
+        numeroPatient = generateNumeroPatient(baseNumber);
+
+        // Si ce n'est pas la première tentative, ajouter un suffix
+        if (attempts > 0) {
+          const parts = numeroPatient.split("-");
+          const num = parseInt(parts[1]) + attempts;
+          numeroPatient = `PAT-${num.toString().padStart(3, "0")}`;
+        }
+
+        // Créer le patient
+        patient = await prisma.patient.create({
+          data: {
+            userId: session.user.id,
+            numeroPatient,
+            nom: nomClean,
+            prenom: prenomClean,
+            dateNaissance: null,
+            sexe: null,
+            telephone: null,
+            email: null,
+            notes: null,
+            consentementRGPD: false,
+            dateConsentement: null,
+            isArchived: false,
+            archivedAt: null,
+          },
+        });
+
+        // Succès - sortir de la boucle
+        break;
+      } catch (e: any) {
+        // Si c'est une erreur de contrainte unique, réessayer
+        if (e.code === "P2002" && attempts < maxAttempts - 1) {
+          attempts++;
+          console.log(`Collision numéro patient, tentative ${attempts + 1}/${maxAttempts}`);
+          continue;
+        }
+        // Sinon, propager l'erreur
+        throw e;
+      }
+    }
+
+    if (!patient) {
+      throw new Error("Impossible de créer le patient après plusieurs tentatives");
+    }
 
     return NextResponse.json({
       id: patient.id,
