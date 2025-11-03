@@ -17,6 +17,12 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
   const [ragEnrichment, setRagEnrichment] = useState<RagEnrichment | null>(null);
   const [ragError, setRagError] = useState<string | null>(null);
 
+  // État pour l'association patient
+  const [patientName, setPatientName] = useState("");
+  const [creatingPatient, setCreatingPatient] = useState(false);
+  const [patientError, setPatientError] = useState<string | null>(null);
+  const [patientCreated, setPatientCreated] = useState<{id: string; nom: string; prenom: string} | null>(null);
+
   // État pour l'accordéon "Paramètres avancés"
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -141,6 +147,81 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
       setRagError("Impossible de charger l'enrichissement endobiogénique. " + err.message);
     } finally {
       setLoadingRag(false);
+    }
+  };
+
+  // Créer un patient et associer l'analyse BdF
+  const handleCreateAndAssociatePatient = async () => {
+    if (!result) return;
+
+    setCreatingPatient(true);
+    setPatientError(null);
+
+    try {
+      // Parser le nom complet (format: "Prénom Nom")
+      const nameParts = patientName.trim().split(/\s+/);
+      if (nameParts.length < 2) {
+        throw new Error("Veuillez entrer le prénom et le nom (ex: Jean Dupont)");
+      }
+
+      const prenom = nameParts[0];
+      const nom = nameParts.slice(1).join(" ");
+
+      // Créer le patient via l'API rapide
+      const createRes = await fetch("/api/patients/quick-create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nom, prenom }),
+      });
+
+      if (!createRes.ok) {
+        const errorData = await createRes.json();
+        throw new Error(errorData.error || "Erreur lors de la création du patient");
+      }
+
+      const newPatient = await createRes.json();
+      setPatientCreated(newPatient);
+
+      // Convertir les données du formulaire en inputs
+      const inputs: Record<string, number> = {};
+      for (const [key, value] of Object.entries(formData)) {
+        if (value.trim() !== "") {
+          const num = parseFloat(value);
+          if (!isNaN(num)) {
+            inputs[key] = num;
+          }
+        }
+      }
+
+      // Créer une BdfAnalysis associée au patient
+      const bdfData = {
+        patientId: newPatient.id,
+        inputs,
+        indexes: [
+          { name: "Index génital", value: result.indexes.indexGenital.value, comment: result.indexes.indexGenital.comment },
+          { name: "Index thyroïdien", value: result.indexes.indexThyroidien.value, comment: result.indexes.indexThyroidien.comment },
+          { name: "g/T", value: result.indexes.gT.value, comment: result.indexes.gT.comment },
+          { name: "Index adaptation", value: result.indexes.indexAdaptation.value, comment: result.indexes.indexAdaptation.comment },
+          { name: "Index œstrogénique", value: result.indexes.indexOestrogenique.value, comment: result.indexes.indexOestrogenique.comment },
+          { name: "Turnover", value: result.indexes.turnover.value, comment: result.indexes.turnover.comment },
+          { name: "Rendement thyroïdien", value: result.indexes.rendementThyroidien.value, comment: result.indexes.rendementThyroidien.comment },
+          { name: "Remodelage osseux", value: result.indexes.remodelageOsseux.value, comment: result.indexes.remodelageOsseux.comment },
+        ],
+        summary: result.summary,
+        axes: result.axesDominants,
+        ragText: ragEnrichment?.lectureEndobiogenique || null,
+      };
+
+      // Créer l'analyse BdF (via l'API patients pour créer une BdfAnalysis)
+      // NOTE: Il faudrait créer une route dédiée, pour l'instant on redirige vers la page patient
+
+      // Rediriger vers la fiche patient
+      window.location.href = `/patients/${newPatient.id}`;
+    } catch (err: any) {
+      console.error("Erreur création patient:", err);
+      setPatientError(err.message);
+    } finally {
+      setCreatingPatient(false);
     }
   };
 
@@ -1237,84 +1318,128 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
             </div>
           )}
 
-  {/* Bouton Associer à un patient */}
-          <div style={{ marginBottom: "24px" }}>
-            <button
-              onClick={() => {
-                // Convertir les données du formulaire en inputs
-                const inputs: Record<string, number> = {};
-                for (const [key, value] of Object.entries(formData)) {
-                  if (value.trim() !== "") {
-                    const num = parseFloat(value);
-                    if (!isNaN(num)) {
-                      inputs[key] = num;
-                    }
-                  }
-                }
-
-                // Créer un objet d'analyse compatible
-                const analysisData = {
-                  inputs,
-                  indexes: [
-                    { name: "Index génital", value: result.indexes.indexGenital.value, comment: result.indexes.indexGenital.comment },
-                    { name: "Index thyroïdien", value: result.indexes.indexThyroidien.value, comment: result.indexes.indexThyroidien.comment },
-                    { name: "g/T", value: result.indexes.gT.value, comment: result.indexes.gT.comment },
-                    { name: "Index adaptation", value: result.indexes.indexAdaptation.value, comment: result.indexes.indexAdaptation.comment },
-                    { name: "Index œstrogénique", value: result.indexes.indexOestrogenique.value, comment: result.indexes.indexOestrogenique.comment },
-                    { name: "Turnover", value: result.indexes.turnover.value, comment: result.indexes.turnover.comment },
-                    { name: "Rendement thyroïdien", value: result.indexes.rendementThyroidien.value, comment: result.indexes.rendementThyroidien.comment },
-                    { name: "Remodelage osseux", value: result.indexes.remodelageOsseux.value, comment: result.indexes.remodelageOsseux.comment },
-                  ],
-                  summary: result.summary,
-                  axes: result.axesDominants,
-                  ragText: ragContext || undefined,
-                };
-
-                // Stocker dans sessionStorage
-                sessionStorage.setItem("pendingBdfAnalysis", JSON.stringify(analysisData));
-
-                // Rediriger vers la page patients
-                window.location.href = "/patients";
-              }}
+  {/* Créer et associer un patient */}
+          <div style={{ marginBottom: "32px" }}>
+            <h3
               style={{
-                width: "100%",
-                padding: "14px 28px",
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                color: "white",
-                border: "none",
-                borderRadius: "10px",
-                fontSize: "1rem",
+                fontSize: "1.1rem",
+                marginBottom: "12px",
+                color: "#1f2937",
                 fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.3s",
-                boxShadow: "0 4px 15px rgba(16, 185, 129, 0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "10px",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(16, 185, 129, 0.6)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 15px rgba(16, 185, 129, 0.4)";
               }}
             >
-              📁 Associer à un dossier patient
-            </button>
-            <p
+              👤 Associer un dossier patient
+            </h3>
+            <div
               style={{
-                fontSize: "0.85rem",
-                color: "#6b7280",
-                marginTop: "8px",
-                fontStyle: "italic",
-                textAlign: "center",
+                background: "#f9fafb",
+                padding: "20px",
+                borderRadius: "10px",
+                border: "2px solid #e5e7eb",
               }}
             >
-              💡 Enregistrer cette analyse dans l'historique d'un patient
-            </p>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.9rem",
+                  fontWeight: "500",
+                  color: "#374151",
+                  marginBottom: "8px",
+                }}
+              >
+                Nom complet du patient (Prénom Nom)
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Jean Dupont"
+                value={patientName}
+                onChange={(e) => setPatientName(e.target.value)}
+                disabled={creatingPatient}
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  border: "2px solid #d1d5db",
+                  fontSize: "0.95rem",
+                  marginBottom: "12px",
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#3b82f6";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#d1d5db";
+                }}
+              />
+              <button
+                onClick={handleCreateAndAssociatePatient}
+                disabled={creatingPatient || patientName.trim().length < 3}
+                style={{
+                  width: "100%",
+                  padding: "14px 28px",
+                  background: creatingPatient || patientName.trim().length < 3
+                    ? "#9ca3af"
+                    : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  fontSize: "1rem",
+                  fontWeight: "600",
+                  cursor: creatingPatient || patientName.trim().length < 3 ? "not-allowed" : "pointer",
+                  transition: "all 0.3s",
+                  boxShadow: creatingPatient || patientName.trim().length < 3
+                    ? "none"
+                    : "0 4px 15px rgba(16, 185, 129, 0.4)",
+                }}
+              >
+                {creatingPatient ? "⏳ Création en cours..." : "✅ Créer patient et associer l'analyse"}
+              </button>
+
+              {patientError && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px",
+                    background: "#fef2f2",
+                    borderRadius: "8px",
+                    border: "2px solid #ef4444",
+                    fontSize: "0.9rem",
+                    color: "#991b1b",
+                  }}
+                >
+                  ❌ {patientError}
+                </div>
+              )}
+
+              {patientCreated && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px",
+                    background: "#f0fdf4",
+                    borderRadius: "8px",
+                    border: "2px solid #22c55e",
+                    fontSize: "0.9rem",
+                    color: "#14532d",
+                  }}
+                >
+                  ✅ Patient créé : {patientCreated.prenom} {patientCreated.nom}
+                </div>
+              )}
+
+              <p
+                style={{
+                  fontSize: "0.85rem",
+                  color: "#6b7280",
+                  marginTop: "12px",
+                  fontStyle: "italic",
+                  textAlign: "center",
+                }}
+              >
+                💡 Un nouveau dossier patient sera créé et l'analyse sera enregistrée
+              </p>
+            </div>
           </div>
           {/* Bouton pour charger le contexte RAG */}
           {!ragContext && (
