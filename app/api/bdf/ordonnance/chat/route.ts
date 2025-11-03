@@ -7,8 +7,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { Agent } from "@openai/agents";
-import { Runner } from "@openai/agents/orchestrator";
+import { fileSearchTool, Agent, Runner } from "@openai/agents";
+import type { AgentInputItem } from "@openai/agents";
 
 // Vector stores IDs
 const VS_ENDO = "vs_68e87a07ae6c81918d805c8251526bda"; // Endobiogénie (priorité absolue)
