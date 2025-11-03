@@ -6,7 +6,7 @@
 // Multi-VS : Priorité Endo, secondaires Gemmo+Aroma+Phyto
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { Agent } from "@openai/agents";
 import { Runner } from "@openai/agents/orchestrator";
 
