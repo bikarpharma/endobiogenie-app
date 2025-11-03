@@ -56,4 +56,7 @@ export type BdfResultDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
   onRequestRag?: (analysis: BdfAnalysis) => void;
+  ragContent?: string;
+  ragLoading?: boolean;
+  ragError?: string;
 };
