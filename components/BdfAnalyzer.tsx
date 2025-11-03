@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { InterpretationPayload, RagEnrichment } from "@/lib/bdf/types";
+import { OrdonnanceChat } from "./OrdonnanceChat";
 
 interface BdfAnalyzerProps {
   userId: string;
@@ -22,6 +23,11 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
   const [creatingPatient, setCreatingPatient] = useState(false);
   const [patientError, setPatientError] = useState<string | null>(null);
   const [patientCreated, setPatientCreated] = useState<{id: string; nom: string; prenom: string} | null>(null);
+
+  // État pour la génération d'ordonnance
+  const [ordonnance, setOrdonnance] = useState<string | null>(null);
+  const [loadingOrdonnance, setLoadingOrdonnance] = useState(false);
+  const [ordonnanceError, setOrdonnanceError] = useState<string | null>(null);
 
   // État pour l'accordéon "Paramètres avancés"
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -147,6 +153,63 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
       setRagError("Impossible de charger l'enrichissement endobiogénique. " + err.message);
     } finally {
       setLoadingRag(false);
+    }
+  };
+
+  // Générer l'ordonnance phytothérapeutique
+  const handleGenerateOrdonnance = async () => {
+    if (!result) return;
+
+    setLoadingOrdonnance(true);
+    setOrdonnanceError(null);
+
+    try {
+      // Convertir les index en format tableau
+      const indexesArray = [
+        { label: "Index génital", value: result.indexes.indexGenital.value, comment: result.indexes.indexGenital.comment },
+        { label: "Index thyroïdien", value: result.indexes.indexThyroidien.value, comment: result.indexes.indexThyroidien.comment },
+        { label: "Index génito-thyroïdien (gT)", value: result.indexes.gT.value, comment: result.indexes.gT.comment },
+        { label: "Index d'adaptation", value: result.indexes.indexAdaptation.value, comment: result.indexes.indexAdaptation.comment },
+        { label: "Index œstrogénique", value: result.indexes.indexOestrogenique.value, comment: result.indexes.indexOestrogenique.comment },
+        { label: "Turnover", value: result.indexes.turnover.value, comment: result.indexes.turnover.comment },
+        { label: "Rendement thyroïdien", value: result.indexes.rendementThyroidien.value, comment: result.indexes.rendementThyroidien.comment },
+        { label: "Remodelage osseux", value: result.indexes.remodelageOsseux.value, comment: result.indexes.remodelageOsseux.comment },
+      ];
+
+      // Convertir formData en inputs
+      const inputs: Record<string, number> = {};
+      for (const [key, value] of Object.entries(formData)) {
+        if (value.trim() !== "") {
+          const num = parseFloat(value);
+          if (!isNaN(num)) {
+            inputs[key] = num;
+          }
+        }
+      }
+
+      // Appel API génération ordonnance
+      const ordoRes = await fetch("/api/bdf/ordonnance/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          indexes: indexesArray,
+          inputs,
+          ragEnrichment,
+        }),
+      });
+
+      if (!ordoRes.ok) {
+        const errorData = await ordoRes.json();
+        throw new Error(errorData.error || "Erreur lors de la génération de l'ordonnance");
+      }
+
+      const ordoData = await ordoRes.json();
+      setOrdonnance(ordoData.ordonnance);
+    } catch (err: any) {
+      console.error("Erreur génération ordonnance:", err);
+      setOrdonnanceError(err.message || "Erreur inconnue");
+    } finally {
+      setLoadingOrdonnance(false);
     }
   };
 
@@ -1441,6 +1504,192 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
               </p>
             </div>
           </div>
+
+          {/* ========================================
+              GÉNÉRATION D'ORDONNANCE
+              ======================================== */}
+
+          {/* Bouton génération ordonnance */}
+          {ragEnrichment && !ordonnance && (
+            <div style={{ marginBottom: "32px" }}>
+              <h3
+                style={{
+                  fontSize: "1.1rem",
+                  marginBottom: "12px",
+                  color: "#1f2937",
+                  fontWeight: "600",
+                }}
+              >
+                💊 Ordonnance phytothérapeutique
+              </h3>
+              <div
+                style={{
+                  background: "#faf5ff",
+                  padding: "20px",
+                  borderRadius: "10px",
+                  border: "2px solid #a855f7",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "0.95rem",
+                    color: "#581c87",
+                    marginBottom: "16px",
+                    lineHeight: "1.6",
+                  }}
+                >
+                  📋 Générez une ordonnance personnalisée basée sur l'analyse BdF et l'enrichissement endobiogénique.
+                </p>
+                <button
+                  onClick={handleGenerateOrdonnance}
+                  disabled={loadingOrdonnance}
+                  style={{
+                    width: "100%",
+                    padding: "16px 32px",
+                    background: loadingOrdonnance
+                      ? "#9ca3af"
+                      : "linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "10px",
+                    fontSize: "1.05rem",
+                    fontWeight: "600",
+                    cursor: loadingOrdonnance ? "not-allowed" : "pointer",
+                    transition: "all 0.3s",
+                    boxShadow: loadingOrdonnance
+                      ? "none"
+                      : "0 4px 15px rgba(168, 85, 247, 0.4)",
+                  }}
+                >
+                  {loadingOrdonnance ? "⏳ Génération en cours..." : "💊 Générer l'ordonnance"}
+                </button>
+                <p
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "#6b7280",
+                    marginTop: "12px",
+                    fontStyle: "italic",
+                    textAlign: "center",
+                  }}
+                >
+                  🌿 Sources : Endobiogénie (priorité) + Gemmothérapie + Aromathérapie + Phytothérapie
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Erreur ordonnance */}
+          {ordonnanceError && (
+            <div style={{ marginBottom: "32px" }}>
+              <div
+                style={{
+                  background: "#fef2f2",
+                  padding: "16px",
+                  borderRadius: "8px",
+                  border: "2px solid #ef4444",
+                  fontSize: "0.9rem",
+                  color: "#991b1b",
+                }}
+              >
+                ⚠️ {ordonnanceError}
+              </div>
+            </div>
+          )}
+
+          {/* Affichage de l'ordonnance générée */}
+          {ordonnance && (
+            <div style={{ marginBottom: "32px" }}>
+              <h3
+                style={{
+                  fontSize: "1.1rem",
+                  marginBottom: "12px",
+                  color: "#1f2937",
+                  fontWeight: "600",
+                }}
+              >
+                💊 Ordonnance phytothérapeutique générée
+              </h3>
+              <div
+                style={{
+                  background: "#fefce8",
+                  padding: "24px",
+                  borderRadius: "12px",
+                  border: "3px solid #a855f7",
+                  fontSize: "0.95rem",
+                  color: "#1f2937",
+                  lineHeight: "1.8",
+                  whiteSpace: "pre-wrap",
+                  boxShadow: "0 4px 20px rgba(168, 85, 247, 0.15)",
+                }}
+              >
+                {ordonnance}
+              </div>
+
+              {/* Boutons d'action sur l'ordonnance */}
+              <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+                <button
+                  onClick={() => navigator.clipboard.writeText(ordonnance)}
+                  style={{
+                    padding: "12px 24px",
+                    background: "white",
+                    color: "#6b7280",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "0.95rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  📋 Copier
+                </button>
+                <button
+                  onClick={() => {
+                    setOrdonnance(null);
+                    setOrdonnanceError(null);
+                  }}
+                  style={{
+                    padding: "12px 24px",
+                    background: "white",
+                    color: "#6b7280",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "0.95rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  🔄 Régénérer
+                </button>
+              </div>
+
+              {/* Chat de discussion sur l'ordonnance */}
+              <OrdonnanceChat
+                ordonnance={ordonnance}
+                bdfContext={{
+                  indexes: [
+                    { label: "Index génital", value: result.indexes.indexGenital.value, comment: result.indexes.indexGenital.comment },
+                    { label: "Index thyroïdien", value: result.indexes.indexThyroidien.value, comment: result.indexes.indexThyroidien.comment },
+                    { label: "Index génito-thyroïdien (gT)", value: result.indexes.gT.value, comment: result.indexes.gT.comment },
+                    { label: "Index d'adaptation", value: result.indexes.indexAdaptation.value, comment: result.indexes.indexAdaptation.comment },
+                    { label: "Index œstrogénique", value: result.indexes.indexOestrogenique.value, comment: result.indexes.indexOestrogenique.comment },
+                    { label: "Turnover", value: result.indexes.turnover.value, comment: result.indexes.turnover.comment },
+                    { label: "Rendement thyroïdien", value: result.indexes.rendementThyroidien.value, comment: result.indexes.rendementThyroidien.comment },
+                    { label: "Remodelage osseux", value: result.indexes.remodelageOsseux.value, comment: result.indexes.remodelageOsseux.comment },
+                  ],
+                  inputs: Object.fromEntries(
+                    Object.entries(formData)
+                      .filter(([_, value]) => value.trim() !== "")
+                      .map(([key, value]) => [key, parseFloat(value)])
+                      .filter(([_, value]) => !isNaN(value as number))
+                  ),
+                  ragEnrichment,
+                }}
+              />
+            </div>
+          )}
+
           {/* Bouton pour charger le contexte RAG */}
           {!ragContext && (
             <div style={{ marginBottom: "24px" }}>
