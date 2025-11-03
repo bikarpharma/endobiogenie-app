@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { InterpretationPayload } from "@/lib/bdf/types";
+import type { InterpretationPayload, RagEnrichment } from "@/lib/bdf/types";
 
 interface BdfAnalyzerProps {
   userId: string;
@@ -12,9 +12,9 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
   const [result, setResult] = useState<InterpretationPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // État pour le contexte RAG enrichi (chargé séparément)
+  // État pour l'enrichissement RAG (résumé, axes, lecture endobiogénique)
   const [loadingRag, setLoadingRag] = useState(false);
-  const [ragContext, setRagContext] = useState<string | null>(null);
+  const [ragEnrichment, setRagEnrichment] = useState<RagEnrichment | null>(null);
   const [ragError, setRagError] = useState<string | null>(null);
 
   // État pour l'accordéon "Paramètres avancés"
@@ -60,7 +60,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
     setLoading(true);
     setError(null);
     setResult(null);
-    setRagContext(null);
+    setRagEnrichment(null);
     setRagError(null);
 
     try {
@@ -75,7 +75,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
         }
       }
 
-      // Appeler l'API BdF standard (rapide)
+      // Appeler l'API BdF standard (rapide - calcul des index)
       const res = await fetch("/api/bdf/analyse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -89,11 +89,58 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
 
       const data: InterpretationPayload = await res.json();
       setResult(data);
+
+      // Lancer l'enrichissement RAG en arrière-plan (sans bloquer l'affichage)
+      loadRagEnrichment(data, labValues);
     } catch (err: any) {
       console.error("Erreur:", err);
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Charger l'enrichissement RAG (résumé, axes, lecture endobiogénique)
+  const loadRagEnrichment = async (
+    interpretationResult: InterpretationPayload,
+    inputs: any
+  ) => {
+    setLoadingRag(true);
+    setRagError(null);
+
+    try {
+      // Convertir les index en format tableau pour l'API
+      const indexesArray = [
+        { label: "Index génital", value: interpretationResult.indexes.indexGenital.value, comment: interpretationResult.indexes.indexGenital.comment },
+        { label: "Index thyroïdien", value: interpretationResult.indexes.indexThyroidien.value, comment: interpretationResult.indexes.indexThyroidien.comment },
+        { label: "Index génito-thyroïdien (gT)", value: interpretationResult.indexes.gT.value, comment: interpretationResult.indexes.gT.comment },
+        { label: "Index d'adaptation", value: interpretationResult.indexes.indexAdaptation.value, comment: interpretationResult.indexes.indexAdaptation.comment },
+        { label: "Index œstrogénique", value: interpretationResult.indexes.indexOestrogenique.value, comment: interpretationResult.indexes.indexOestrogenique.comment },
+        { label: "Turnover", value: interpretationResult.indexes.turnover.value, comment: interpretationResult.indexes.turnover.comment },
+        { label: "Rendement thyroïdien", value: interpretationResult.indexes.rendementThyroidien.value, comment: interpretationResult.indexes.rendementThyroidien.comment },
+        { label: "Remodelage osseux", value: interpretationResult.indexes.remodelageOsseux.value, comment: interpretationResult.indexes.remodelageOsseux.comment },
+      ];
+
+      const ragRes = await fetch("/api/bdf/rag-enrichment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          indexes: indexesArray,
+          inputs,
+        }),
+      });
+
+      if (!ragRes.ok) {
+        throw new Error("Erreur lors de l'enrichissement RAG");
+      }
+
+      const ragData: RagEnrichment = await ragRes.json();
+      setRagEnrichment(ragData);
+    } catch (err: any) {
+      console.error("Erreur RAG:", err);
+      setRagError("Impossible de charger l'enrichissement endobiogénique. " + err.message);
+    } finally {
+      setLoadingRag(false);
     }
   };
 
@@ -1066,6 +1113,130 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
               </ul>
             </div>
           )}
+
+          {/* ========================================
+              ENRICHISSEMENT RAG ENDOBIOGÉNIE
+              ======================================== */}
+
+          {/* Résumé fonctionnel (RAG) */}
+          {ragEnrichment && (
+            <div style={{ marginBottom: "32px" }}>
+              <h3
+                style={{
+                  fontSize: "1.1rem",
+                  marginBottom: "12px",
+                  color: "#1f2937",
+                  fontWeight: "600",
+                }}
+              >
+                🔬 Résumé fonctionnel (via RAG Endobiogénie)
+              </h3>
+              <div
+                style={{
+                  background: "#f0fdf4",
+                  padding: "20px",
+                  borderRadius: "10px",
+                  border: "2px solid #22c55e",
+                  fontSize: "0.95rem",
+                  color: "#14532d",
+                  lineHeight: "1.8",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {ragEnrichment.resumeFonctionnel}
+              </div>
+            </div>
+          )}
+
+          {/* Axes sollicités (RAG) */}
+          {ragEnrichment && ragEnrichment.axesSollicites.length > 0 && (
+            <div style={{ marginBottom: "32px" }}>
+              <h3
+                style={{
+                  fontSize: "1.1rem",
+                  marginBottom: "12px",
+                  color: "#1f2937",
+                  fontWeight: "600",
+                }}
+              >
+                ⚙️ Axes sollicités (via RAG Endobiogénie)
+              </h3>
+              <ul
+                style={{
+                  background: "#fef3c7",
+                  padding: "20px 20px 20px 48px",
+                  borderRadius: "10px",
+                  border: "2px solid #f59e0b",
+                  fontSize: "0.95rem",
+                  color: "#78350f",
+                  lineHeight: "2",
+                  listStyle: "disc",
+                }}
+              >
+                {ragEnrichment.axesSollicites.map((axe, idx) => (
+                  <li key={idx}>{axe}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Lecture endobiogénique du terrain (RAG) */}
+          {ragEnrichment && (
+            <div style={{ marginBottom: "32px" }}>
+              <h3
+                style={{
+                  fontSize: "1.1rem",
+                  marginBottom: "12px",
+                  color: "#1f2937",
+                  fontWeight: "600",
+                }}
+              >
+                🌿 Lecture endobiogénique du terrain
+              </h3>
+              <div
+                style={{
+                  background: "#faf5ff",
+                  padding: "20px",
+                  borderRadius: "10px",
+                  border: "2px solid #a855f7",
+                  fontSize: "0.95rem",
+                  color: "#581c87",
+                  lineHeight: "1.8",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {ragEnrichment.lectureEndobiogenique}
+              </div>
+            </div>
+          )}
+
+          {/* Indicateur de chargement RAG */}
+          {loadingRag && (
+            <div style={{ marginBottom: "32px", textAlign: "center" }}>
+              <div style={{ fontSize: "0.95rem", color: "#6b7280", marginBottom: "8px" }}>
+                ⏳ Enrichissement endobiogénique en cours...
+              </div>
+            </div>
+          )}
+
+          {/* Erreur RAG */}
+          {ragError && (
+            <div style={{ marginBottom: "32px" }}>
+              <div
+                style={{
+                  background: "#fef2f2",
+                  padding: "16px",
+                  borderRadius: "8px",
+                  border: "2px solid #ef4444",
+                  fontSize: "0.9rem",
+                  color: "#991b1b",
+                }}
+              >
+                ⚠️ {ragError}
+              </div>
+            </div>
+          )}
+
   {/* Bouton Associer à un patient */}
           <div style={{ marginBottom: "24px" }}>
             <button

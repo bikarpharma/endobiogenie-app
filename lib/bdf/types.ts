@@ -66,3 +66,12 @@ export interface InterpretationPayload {
   axesDominants: string[]; // Axes biologiques identifiés
   noteTechnique: string; // Note de prudence clinique
 }
+
+/**
+ * Enrichissement RAG endobiogénie
+ */
+export interface RagEnrichment {
+  resumeFonctionnel: string; // Résumé fonctionnel approfondi via RAG
+  axesSollicites: string[]; // Axes neuroendocriniens sollicités via RAG
+  lectureEndobiogenique: string; // Lecture endobiogénique complète du terrain
+}
