@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { InterpretationPayload, RagEnrichment } from "@/lib/bdf/types";
+import type { AnalyseResponse, RagEnrichment } from "@/lib/bdf/types";
 import { OrdonnanceChat } from "./OrdonnanceChat";
 
 interface BdfAnalyzerProps {
@@ -10,7 +10,7 @@ interface BdfAnalyzerProps {
 
 export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<InterpretationPayload | null>(null);
+  const [result, setResult] = useState<AnalyseResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // État pour l'enrichissement RAG (résumé, axes, lecture endobiogénique)
@@ -99,7 +99,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
         throw new Error(errorData.error || "Erreur lors de l'analyse");
       }
 
-      const data: InterpretationPayload = await res.json();
+      const data: AnalyseResponse = await res.json();
       setResult(data);
 
       // Lancer l'enrichissement RAG en arrière-plan (sans bloquer l'affichage)
@@ -114,7 +114,7 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
 
   // Charger l'enrichissement RAG (résumé, axes, lecture endobiogénique)
   const loadRagEnrichment = async (
-    interpretationResult: InterpretationPayload,
+    interpretationResult: AnalyseResponse,
     inputs: any
   ) => {
     setLoadingRag(true);
@@ -1124,64 +1124,6 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
             </div>
           </div>
 
-          {/* Résumé fonctionnel */}
-          <div style={{ marginBottom: "32px" }}>
-            <h3
-              style={{
-                fontSize: "1.1rem",
-                marginBottom: "12px",
-                color: "#1f2937",
-                fontWeight: "600",
-              }}
-            >
-              🔬 Résumé fonctionnel
-            </h3>
-            <div
-              style={{
-                background: "#f0f9ff",
-                padding: "20px",
-                borderRadius: "10px",
-                border: "2px solid #0ea5e9",
-                fontSize: "0.95rem",
-                color: "#0c4a6e",
-                lineHeight: "1.8",
-              }}
-            >
-              {result.summary}
-            </div>
-          </div>
-
-          {/* Axes sollicités */}
-          {result.axesDominants.length > 0 && (
-            <div style={{ marginBottom: "32px" }}>
-              <h3
-                style={{
-                  fontSize: "1.1rem",
-                  marginBottom: "12px",
-                  color: "#1f2937",
-                  fontWeight: "600",
-                }}
-              >
-                ⚙️ Axes sollicités
-              </h3>
-              <ul
-                style={{
-                  background: "#fef3c7",
-                  padding: "20px 20px 20px 48px",
-                  borderRadius: "10px",
-                  border: "2px solid #fbbf24",
-                  fontSize: "0.95rem",
-                  color: "#78350f",
-                  lineHeight: "2",
-                  listStyle: "disc",
-                }}
-              >
-                {result.axesDominants.map((axe, idx) => (
-                  <li key={idx}>{axe}</li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           {/* ========================================
               ENRICHISSEMENT RAG ENDOBIOGÉNIE

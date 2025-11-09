@@ -59,12 +59,22 @@ export interface IndexResults {
 
 /**
  * Payload final renvoyé par l'API
+ * @deprecated Utilisé uniquement pour la compatibilité. L'API retourne maintenant AnalyseResponse
  */
 export interface InterpretationPayload {
   indexes: IndexResults;
   summary: string; // Résumé fonctionnel global (1-2 phrases)
   axesDominants: string[]; // Axes biologiques identifiés
   noteTechnique: string; // Note de prudence clinique
+}
+
+/**
+ * Réponse de l'API /api/bdf/analyse (version optimisée)
+ * Retourne uniquement les index calculés (pas de résumé rapide)
+ */
+export interface AnalyseResponse {
+  indexes: IndexResults;
+  noteTechnique: string;
 }
 
 /**
