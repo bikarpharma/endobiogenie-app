@@ -214,7 +214,8 @@ export async function PUT(
 
 /**
  * DELETE /api/patients/[id]
- * Archiver un patient (soft delete - pas de suppression réelle)
+ * Supprimer définitivement un patient ou l'archiver (soft delete)
+ * Query param: ?permanent=true pour suppression définitive
  */
 export async function DELETE(
   req: NextRequest,
@@ -231,11 +232,13 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const { searchParams } = new URL(req.url);
+    const isPermanent = searchParams.get("permanent") === "true";
 
     // Vérifier que le patient existe et appartient au praticien
     const existing = await prisma.patient.findUnique({
       where: { id },
-      select: { userId: true, isArchived: true },
+      select: { userId: true, isArchived: true, nom: true, prenom: true },
     });
 
     if (!existing) {
@@ -252,7 +255,22 @@ export async function DELETE(
       );
     }
 
-    // Archiver (soft delete)
+    // Suppression définitive (DANGER : toutes les données associées seront supprimées)
+    if (isPermanent) {
+      await prisma.patient.delete({
+        where: { id },
+      });
+
+      console.log(`🗑️ Patient supprimé définitivement : ${existing.nom} ${existing.prenom} (ID: ${id})`);
+
+      return NextResponse.json({
+        message: "Patient supprimé définitivement",
+        id,
+        permanent: true,
+      });
+    }
+
+    // Archiver (soft delete - recommandé)
     const patient = await prisma.patient.update({
       where: { id },
       data: {
@@ -261,9 +279,12 @@ export async function DELETE(
       },
     });
 
+    console.log(`📦 Patient archivé : ${existing.nom} ${existing.prenom} (ID: ${id})`);
+
     return NextResponse.json({
       message: "Patient archivé avec succès",
       id: patient.id,
+      permanent: false,
     });
   } catch (error: any) {
     console.error("Erreur DELETE /api/patients/[id]:", error);
