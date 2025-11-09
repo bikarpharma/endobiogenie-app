@@ -31,7 +31,7 @@ export default async function RootLayout({
 
   return (
     <html lang="fr">
-      <body>
+      <body suppressHydrationWarning>
         {/* ===== HEADER ===== */}
         <header className="site-header">
           <div className="container header-inner">
