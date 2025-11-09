@@ -258,7 +258,6 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
 
       // Créer une BdfAnalysis associée au patient
       const bdfData = {
-        patientId: newPatient.id,
         inputs,
         indexes: [
           { name: "Index génital", value: result.indexes.indexGenital.value, comment: result.indexes.indexGenital.comment },
@@ -270,13 +269,24 @@ export function BdfAnalyzer({ userId }: BdfAnalyzerProps) {
           { name: "Rendement thyroïdien", value: result.indexes.rendementThyroidien.value, comment: result.indexes.rendementThyroidien.comment },
           { name: "Remodelage osseux", value: result.indexes.remodelageOsseux.value, comment: result.indexes.remodelageOsseux.comment },
         ],
-        summary: result.summary,
-        axes: result.axesDominants,
+        summary: ragEnrichment?.resumeFonctionnel || "Analyse fonctionnelle du terrain",
+        axes: ragEnrichment?.axesSollicites || [],
         ragText: ragEnrichment?.lectureEndobiogenique || null,
       };
 
-      // Créer l'analyse BdF (via l'API patients pour créer une BdfAnalysis)
-      // NOTE: Il faudrait créer une route dédiée, pour l'instant on redirige vers la page patient
+      // Créer l'analyse BdF via l'API dédiée
+      const bdfRes = await fetch(`/api/patients/${newPatient.id}/bdf-analyses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bdfData),
+      });
+
+      if (!bdfRes.ok) {
+        const errorData = await bdfRes.json();
+        throw new Error(errorData.error || "Erreur lors de la sauvegarde de l'analyse BdF");
+      }
+
+      console.log("✅ Analyse BdF sauvegardée avec succès");
 
       // Rediriger vers la fiche patient
       window.location.href = `/patients/${newPatient.id}`;

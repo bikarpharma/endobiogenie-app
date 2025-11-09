@@ -8,13 +8,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { LabValues } from "@/lib/bdf/types";
 import { calculateIndexes } from "@/lib/bdf/calculateIndexes";
-import { interpretResults } from "@/lib/bdf/interpretResults";
 
 export const runtime = "nodejs";
 
 /**
  * POST /api/bdf/analyse
  * Analyse des valeurs biologiques selon la Biologie des Fonctions
+ * Retourne UNIQUEMENT les 8 index calculés (pas de résumé rapide)
+ * Le résumé/axes/lecture seront générés par la route RAG si demandé
  */
 export async function POST(req: NextRequest) {
   try {
@@ -30,14 +31,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1️⃣ Calculer les 6 index
+    // Calculer les 8 index BdF
     const indexes = calculateIndexes(labValues);
 
-    // 2️⃣ Générer l'interprétation globale
-    const interpretation = interpretResults(indexes);
-
-    // 3️⃣ Renvoyer le payload complet
-    return NextResponse.json(interpretation, { status: 200 });
+    // Renvoyer les index avec une note technique
+    return NextResponse.json({
+      indexes,
+      noteTechnique: "Analyse fonctionnelle du terrain selon la Biologie des Fonctions. À corréler au contexte clinique.",
+    }, { status: 200 });
   } catch (e: any) {
     console.error("Erreur API /bdf/analyse:", e);
     return NextResponse.json(

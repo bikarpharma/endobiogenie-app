@@ -3,6 +3,7 @@
 // ========================================
 // POST : Enrichir les résultats BdF avec le RAG endobiogénie
 // Génère : résumé fonctionnel, axes sollicités, lecture endobiogénique
+// VERSION OPTIMISÉE : 1 seul appel IA + cache + gpt-4o-mini
 
 import { NextRequest, NextResponse } from "next/server";
 import { fileSearchTool, Agent, Runner } from "@openai/agents";
@@ -16,7 +17,8 @@ const fileSearch = fileSearchTool([
   "vs_68e87a07ae6c81918d805c8251526bda",
 ]);
 
-const MODEL = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
+// Modèle optimisé pour rapidité + qualité
+const MODEL = "gpt-4o-mini";
 
 const agent = new Agent({
   name: "Agent Enrichissement BdF",
@@ -27,7 +29,8 @@ RÈGLES STRICTES :
 2. Si une information n'est pas disponible, dis simplement : "Information non disponible dans mes sources."
 3. NE MENTIONNE JAMAIS les sources, volumes, pages ou chapitres.
 4. Sois précis, pédagogique et appliqué.
-5. Évite tout diagnostic médical - reste sur une lecture fonctionnelle du terrain.`,
+5. Évite tout diagnostic médical - reste sur une lecture fonctionnelle du terrain.
+6. Réponds TOUJOURS en format JSON strict.`,
   model: MODEL,
   tools: [fileSearch],
   modelSettings: { store: true },
@@ -54,6 +57,20 @@ type EnrichmentResponse = {
   lectureEndobiogenique: string;
 };
 
+// Cache en mémoire (Map simple)
+const cache = new Map<string, EnrichmentResponse>();
+
+/**
+ * Générer une clé de cache basée sur les index
+ */
+function generateCacheKey(indexes: BdfIndex[]): string {
+  return indexes
+    .filter(idx => idx.value !== null)
+    .map(idx => `${idx.label}:${idx.value?.toFixed(1)}`)
+    .sort()
+    .join('|');
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { indexes, inputs }: EnrichmentRequest = await req.json();
@@ -64,6 +81,13 @@ export async function POST(req: NextRequest) {
         { error: "Index BdF requis" },
         { status: 400 }
       );
+    }
+
+    // Vérifier le cache
+    const cacheKey = generateCacheKey(indexes);
+    if (cache.has(cacheKey)) {
+      console.log("✅ Cache hit - Réponse instantanée");
+      return NextResponse.json(cache.get(cacheKey));
     }
 
     // Construire le contexte BdF
@@ -78,106 +102,76 @@ export async function POST(req: NextRequest) {
       .join(", ");
 
     // ========================================
-    // 1️⃣ RÉSUMÉ FONCTIONNEL
+    // PROMPT UNIFIÉ (1 seul appel IA)
     // ========================================
-    const resumePrompt = `
+    const promptUnifie = `
 Analyse endobiogénique basée sur les index calculés suivants :
 
 ${indexesSummary}
 
 Valeurs biologiques de départ : ${inputsSummary}
 
-**Question** : Produis un résumé fonctionnel global de ce terrain biologique en 3-4 phrases maximum. Décris la dynamique adaptative et les tendances fonctionnelles principales révélées par ces index.
+**Instructions** : Produis une analyse complète en format JSON avec cette structure EXACTE :
 
-Reste factuel, pédagogique et accessible. Pas de diagnostic médical.
+{
+  "resumeFonctionnel": "Résumé fonctionnel global en 3-4 phrases maximum. Décris la dynamique adaptative et les tendances fonctionnelles principales révélées par ces index.",
+  "axesSollicites": ["Axe 1", "Axe 2", "Axe 3"],
+  "lectureEndobiogenique": "Lecture approfondie en 5-6 phrases. Explique la dynamique adaptative, les axes neuroendocriniens en jeu, la cohérence fonctionnelle globale et les tendances métaboliques observées."
+}
+
+RÈGLES STRICTES :
+- Réponds UNIQUEMENT à partir des documents retrouvés via File Search
+- Liste 2-3 axes neuroendocriniens maximum (exemples : axe génital, axe thyroïdien, axe corticotrope, axe somatotrope)
+- Reste factuel, pédagogique et accessible
+- Pas de diagnostic médical
+- Pas de mention de sources
+- Format JSON strict (pas de markdown, juste le JSON brut)
     `.trim();
 
-    const resumeRunner = new Runner();
-    const resumeResult = await resumeRunner.run(agent, [
+    // UN SEUL appel IA
+    const runner = new Runner();
+    const result = await runner.run(agent, [
       {
         role: "user",
-        content: [{ type: "input_text", text: resumePrompt }],
+        content: [{ type: "input_text", text: promptUnifie }],
       },
     ] as AgentInputItem[]);
 
-    const resumeFonctionnel = resumeResult.finalOutput?.trim() || "Résumé non disponible.";
+    const rawOutput = result.finalOutput?.trim() || "{}";
 
-    // ========================================
-    // 2️⃣ AXES SOLLICITÉS
-    // ========================================
-    const axesPrompt = `
-Analyse endobiogénique basée sur les index calculés suivants :
-
-${indexesSummary}
-
-**Question** : Identifie les 2-3 axes neuroendocriniens principaux sollicités par ce terrain (exemples : axe génital, axe thyroïdien, axe corticotrope, axe somatotrope, etc.).
-
-Réponds par une liste courte de 2-3 axes maximum, sans explication détaillée. Format : ["Axe 1", "Axe 2", "Axe 3"]
-    `.trim();
-
-    const axesRunner = new Runner();
-    const axesResult = await axesRunner.run(agent, [
-      {
-        role: "user",
-        content: [{ type: "input_text", text: axesPrompt }],
-      },
-    ] as AgentInputItem[]);
-
-    const axesRaw = axesResult.finalOutput?.trim() || "[]";
-
-    // Extraire les axes (parser simple)
-    let axesSollicites: string[] = [];
+    // Parser le JSON (avec gestion d'erreur)
+    let response: EnrichmentResponse;
     try {
-      // Tenter de parser comme JSON
-      axesSollicites = JSON.parse(axesRaw);
-    } catch {
-      // Si échec, extraire les axes manuellement (phrases séparées par virgule ou saut de ligne)
-      axesSollicites = axesRaw
-        .split(/[,\n]/)
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.startsWith('[') && !s.startsWith('{'))
-        .slice(0, 3);
+      // Nettoyer le markdown si présent (```json ... ```)
+      const cleanedOutput = rawOutput.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      response = JSON.parse(cleanedOutput);
+    } catch (parseError) {
+      console.error("Erreur parsing JSON:", parseError);
+      console.error("Output brut:", rawOutput);
+
+      // Fallback en cas d'erreur de parsing
+      response = {
+        resumeFonctionnel: "Erreur de parsing - veuillez réessayer",
+        axesSollicites: [],
+        lectureEndobiogenique: rawOutput,
+      };
     }
 
-    // ========================================
-    // 3️⃣ LECTURE ENDOBIOGÉNIQUE DU TERRAIN
-    // ========================================
-    const lecturePrompt = `
-Analyse endobiogénique basée sur les index calculés suivants :
+    // Validation de la structure
+    if (!response.resumeFonctionnel || !response.axesSollicites || !response.lectureEndobiogenique) {
+      throw new Error("Structure JSON invalide retournée par l'IA");
+    }
 
-${indexesSummary}
+    // Mettre en cache (max 100 entrées pour éviter memory leak)
+    if (cache.size >= 100) {
+      const firstKey = cache.keys().next().value;
+      if (firstKey) {
+        cache.delete(firstKey);
+      }
+    }
+    cache.set(cacheKey, response);
 
-Résumé fonctionnel : ${resumeFonctionnel}
-
-Axes sollicités : ${axesSollicites.join(", ")}
-
-**Question** : Produis une lecture endobiogénique approfondie du terrain biologique en 5-6 phrases. Explique :
-1. La dynamique adaptative révélée par ces index
-2. Les axes neuroendocriniens en jeu
-3. La cohérence fonctionnelle globale du terrain
-4. Les tendances métaboliques observées
-
-Sois pédagogique, précis et accessible. Pas de diagnostic médical.
-    `.trim();
-
-    const lectureRunner = new Runner();
-    const lectureResult = await lectureRunner.run(agent, [
-      {
-        role: "user",
-        content: [{ type: "input_text", text: lecturePrompt }],
-      },
-    ] as AgentInputItem[]);
-
-    const lectureEndobiogenique = lectureResult.finalOutput?.trim() || "Lecture non disponible.";
-
-    // ========================================
-    // RETOUR RÉSULTAT
-    // ========================================
-    const response: EnrichmentResponse = {
-      resumeFonctionnel,
-      axesSollicites,
-      lectureEndobiogenique,
-    };
+    console.log(`✅ Enrichissement RAG réussi - ${indexes.filter(i => i.value !== null).length} index analysés`);
 
     return NextResponse.json(response);
   } catch (e: any) {
