@@ -172,6 +172,7 @@ export function bdfToConsultationData(
  * Générer le prochain numéro patient (PAT-XXX)
  * @param lastNumero - Dernier numéro utilisé (ex: "PAT-042")
  * @returns Nouveau numéro (ex: "PAT-043")
+ * @deprecated Utiliser generateNextNumeroPatient() avec tous les numéros existants
  */
 export function generateNumeroPatient(lastNumero?: string): string {
   if (!lastNumero) return "PAT-001";
@@ -180,6 +181,39 @@ export function generateNumeroPatient(lastNumero?: string): string {
   if (!match) return "PAT-001";
 
   const nextNumber = parseInt(match[1], 10) + 1;
+  return `PAT-${nextNumber.toString().padStart(3, "0")}`;
+}
+
+/**
+ * Générer le prochain numéro patient de manière sûre
+ * Cette fonction garantit l'unicité en analysant TOUS les numéros existants
+ * @param existingNumeros - Liste de tous les numéros existants (ex: ["PAT-001", "PAT-005", "PAT-010"])
+ * @returns Nouveau numéro unique (ex: "PAT-011")
+ */
+export function generateNextNumeroPatient(existingNumeros: string[]): string {
+  // Si aucun patient, commencer à PAT-001
+  if (!existingNumeros || existingNumeros.length === 0) {
+    return "PAT-001";
+  }
+
+  // Extraire tous les numéros valides et les convertir en entiers
+  const numbers: number[] = existingNumeros
+    .map((numero) => {
+      const match = numero.match(/PAT-(\d+)/);
+      return match ? parseInt(match[1], 10) : null;
+    })
+    .filter((n): n is number => n !== null); // Filtrer les null et typer correctement
+
+  // Si aucun numéro valide trouvé, commencer à PAT-001
+  if (numbers.length === 0) {
+    return "PAT-001";
+  }
+
+  // Trouver le maximum numérique (pas alphabétique !)
+  const maxNumber = Math.max(...numbers);
+
+  // Générer le prochain numéro
+  const nextNumber = maxNumber + 1;
   return `PAT-${nextNumber.toString().padStart(3, "0")}`;
 }
 
@@ -207,3 +241,4 @@ export function calculateAge(dateNaissance: string | null): number | null {
   }
 
   return age;
+}

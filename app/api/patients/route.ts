@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateNumeroPatient } from "@/types/patient";
+import { generateNextNumeroPatient } from "@/types/patient";
 import type { PatientCreateInput, PatientListItem } from "@/types/patient";
 
 export const runtime = "nodejs";
@@ -115,14 +115,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Générer le numéro patient (PAT-XXX)
-    const lastPatient = await prisma.patient.findFirst({
+    // Générer le numéro patient (PAT-XXX) - récupérer TOUS les numéros existants
+    const existingPatients = await prisma.patient.findMany({
       where: { userId },
-      orderBy: { numeroPatient: "desc" },
       select: { numeroPatient: true },
     });
 
-    const numeroPatient = generateNumeroPatient(lastPatient?.numeroPatient);
+    const existingNumeros = existingPatients.map((p) => p.numeroPatient);
+    const numeroPatient = generateNextNumeroPatient(existingNumeros);
 
     // Préparer les données du patient
     const patientData: any = {
