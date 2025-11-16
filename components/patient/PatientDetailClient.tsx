@@ -5,9 +5,10 @@ import Link from "next/link";
 import { calculateAge } from "@/types/patient";
 import { OngletApercu } from "./OngletApercu";
 import { OngletIdentite } from "./OngletIdentite";
+import { OngletInterrogatoire } from "./OngletInterrogatoire";
 import { OngletAnalyses } from "./OngletAnalyses";
 import { OngletConsultations } from "./OngletConsultations";
-import { OngletOrdonnances } from "./OngletOrdonnances";
+import { OngletOrdonnancesIntelligent } from "../ordonnance/OngletOrdonnancesIntelligent";
 
 type PatientData = {
   id: string;
@@ -36,7 +37,7 @@ type PatientData = {
   ordonnances: any[];
 };
 
-type Tab = "apercu" | "identite" | "analyses" | "consultations" | "ordonnances";
+type Tab = "apercu" | "identite" | "interrogatoire" | "analyses" | "consultations" | "ordonnances";
 
 export function PatientDetailClient({ patient }: { patient: PatientData }) {
   const [activeTab, setActiveTab] = useState<Tab>("apercu");
@@ -148,6 +149,23 @@ export function PatientDetailClient({ patient }: { patient: PatientData }) {
             👤 Identité & ATCD
           </button>
           <button
+            onClick={() => setActiveTab("interrogatoire")}
+            style={{
+              flex: 1,
+              padding: "16px 24px",
+              background: activeTab === "interrogatoire" ? "white" : "transparent",
+              border: "none",
+              borderBottom: activeTab === "interrogatoire" ? "3px solid #2563eb" : "3px solid transparent",
+              fontSize: "0.95rem",
+              fontWeight: activeTab === "interrogatoire" ? "600" : "500",
+              color: activeTab === "interrogatoire" ? "#2563eb" : "#6b7280",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            🩺 Interrogatoire
+          </button>
+          <button
             onClick={() => setActiveTab("analyses")}
             style={{
               flex: 1,
@@ -206,9 +224,10 @@ export function PatientDetailClient({ patient }: { patient: PatientData }) {
         <div style={{ padding: "32px" }}>
           {activeTab === "apercu" && <OngletApercu patient={patient} />}
           {activeTab === "identite" && <OngletIdentite patient={patient} />}
+          {activeTab === "interrogatoire" && <OngletInterrogatoire patient={patient} />}
           {activeTab === "analyses" && <OngletAnalyses patient={patient} />}
           {activeTab === "consultations" && <OngletConsultations patient={patient} />}
-          {activeTab === "ordonnances" && <OngletOrdonnances patient={patient} />}
+          {activeTab === "ordonnances" && <OngletOrdonnancesIntelligent patient={patient} />}
         </div>
       </div>
     </div>

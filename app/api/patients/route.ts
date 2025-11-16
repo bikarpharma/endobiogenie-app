@@ -141,6 +141,10 @@ export async function POST(req: NextRequest) {
       notes: body.notes?.trim() || null,
       consentementRGPD: body.consentementRGPD || false,
       dateConsentement: body.consentementRGPD ? new Date() : null,
+      // Nouveaux champs pour contexte enrichi ordonnance
+      pathologiesAssociees: body.pathologiesAssociees || [],
+      symptomesActuels: body.symptomesActuels || [],
+      autresBilans: body.autresBilans || {},
     };
 
     // Si une analyse BdF est fournie, l'ajouter

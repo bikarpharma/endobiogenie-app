@@ -33,7 +33,7 @@ export default async function PatientDetailPage({
         take: 10,
       },
       ordonnances: {
-        orderBy: { dateOrdonnance: "desc" },
+        orderBy: { createdAt: "desc" },
         take: 20,
       },
     },
@@ -70,9 +70,9 @@ export default async function PatientDetailPage({
     })),
     ordonnances: patient.ordonnances.map((o) => ({
       ...o,
-      dateOrdonnance: o.dateOrdonnance.toISOString(),
       createdAt: o.createdAt.toISOString(),
       updatedAt: o.updatedAt.toISOString(),
+      dateRevaluation: o.dateRevaluation?.toISOString() || null,
     })),
   };
 

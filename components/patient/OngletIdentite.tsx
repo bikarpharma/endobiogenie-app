@@ -339,6 +339,131 @@ export function OngletIdentite({ patient }: { patient: any }) {
         )}
       </div>
 
+      {/* Section Contexte clinique enrichi (pour ordonnances IA) */}
+      <div style={{ marginBottom: "32px" }}>
+        <h3
+          style={{
+            fontSize: "1.1rem",
+            fontWeight: "600",
+            color: "#1f2937",
+            marginBottom: "16px",
+            borderBottom: "2px solid #e5e7eb",
+            paddingBottom: "8px",
+          }}
+        >
+          🧬 Contexte clinique enrichi (Ordonnances IA)
+        </h3>
+
+        {/* Pathologies associées */}
+        <div style={{ marginBottom: "20px" }}>
+          <div
+            style={{
+              fontSize: "0.85rem",
+              fontWeight: "600",
+              color: "#374151",
+              marginBottom: "8px",
+            }}
+          >
+            🏥 Pathologies associées
+          </div>
+          {patient.pathologiesAssociees && Array.isArray(patient.pathologiesAssociees) && patient.pathologiesAssociees.length > 0 ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {patient.pathologiesAssociees.map((pathologie: string, idx: number) => (
+                <span
+                  key={idx}
+                  style={{
+                    padding: "6px 12px",
+                    background: "#fef3c7",
+                    border: "1px solid #fbbf24",
+                    borderRadius: "6px",
+                    fontSize: "0.85rem",
+                    color: "#78350f",
+                  }}
+                >
+                  {pathologie}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: "#9ca3af", fontStyle: "italic" }}>Aucune pathologie renseignée</div>
+          )}
+        </div>
+
+        {/* Symptômes actuels */}
+        <div style={{ marginBottom: "20px" }}>
+          <div
+            style={{
+              fontSize: "0.85rem",
+              fontWeight: "600",
+              color: "#374151",
+              marginBottom: "8px",
+            }}
+          >
+            🔍 Symptômes actuels
+          </div>
+          {patient.symptomesActuels && Array.isArray(patient.symptomesActuels) && patient.symptomesActuels.length > 0 ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {patient.symptomesActuels.map((symptome: string, idx: number) => (
+                <span
+                  key={idx}
+                  style={{
+                    padding: "6px 12px",
+                    background: "#dbeafe",
+                    border: "1px solid #3b82f6",
+                    borderRadius: "6px",
+                    fontSize: "0.85rem",
+                    color: "#1e40af",
+                  }}
+                >
+                  {symptome}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: "#9ca3af", fontStyle: "italic" }}>Aucun symptôme renseigné</div>
+          )}
+        </div>
+
+        {/* Autres bilans biologiques */}
+        <div style={{ marginBottom: "20px" }}>
+          <div
+            style={{
+              fontSize: "0.85rem",
+              fontWeight: "600",
+              color: "#374151",
+              marginBottom: "8px",
+            }}
+          >
+            🔬 Autres bilans biologiques
+          </div>
+          {patient.autresBilans && typeof patient.autresBilans === "object" && Object.keys(patient.autresBilans).length > 0 ? (
+            <div
+              style={{
+                background: "#f0fdf4",
+                padding: "16px",
+                borderRadius: "8px",
+                border: "1px solid #10b981",
+              }}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+                {Object.entries(patient.autresBilans).map(([key, value]: [string, any]) => (
+                  <div key={key}>
+                    <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "2px" }}>
+                      {key}
+                    </div>
+                    <div style={{ fontWeight: "600", color: "#065f46" }}>
+                      {value} {["alat", "asat"].includes(key.toLowerCase()) ? "UI/L" : ""}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div style={{ color: "#9ca3af", fontStyle: "italic" }}>Aucun bilan complémentaire renseigné</div>
+          )}
+        </div>
+      </div>
+
       {/* Section Notes */}
       {patient.notes && (
         <div style={{ marginBottom: "32px" }}>

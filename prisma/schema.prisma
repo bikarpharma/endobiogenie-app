@@ -118,164 +118,199 @@ model Message {
   @@map("messages")
 }
 
-
-
 // ===== MODULE PATIENTS & BDF =====
 
 // Table "patients" : dossiers patients
 model Patient {
-  id              String          @id @default(cuid())
-  userId          String          // Praticien propriétaire
+  id     String @id @default(cuid())
+  userId String // Praticien propriétaire
 
   // Informations patient
-  numeroPatient   String          @unique  // PAT-001, PAT-002, etc.
-  nom             String
-  prenom          String
-  dateNaissance   DateTime?
-  sexe            String?         // "H" | "F" | "Autre"
-  telephone       String?
-  email           String?
-  notes           String?         @db.Text
+  numeroPatient String    @unique // PAT-001, PAT-002, etc.
+  nom           String
+  prenom        String
+  dateNaissance DateTime?
+  sexe          String? // "H" | "F" | "Autre"
+  telephone     String?
+  email         String?
+  notes         String?   @db.Text
 
   // ATCD & Allergies (champs texte libres)
-  allergies            String?   @db.Text
-  atcdMedicaux         String?   @db.Text
-  atcdChirurgicaux     String?   @db.Text
-  traitements          String?   @db.Text  // Traitements en cours
+  allergies        String? @db.Text
+  atcdMedicaux     String? @db.Text
+  atcdChirurgicaux String? @db.Text
+  traitements      String? @db.Text // Traitements en cours (legacy)
+
+  // Champs pour système d'ordonnance IA
+  traitementActuel          String? @db.Text // Traitements actuels détaillés
+  contreindicationsMajeures Json? // string[] - CI majeures (grossesse, HTA, etc.)
 
   // Tags prédéfinis (stockés en JSON array)
-  tags                 Json?     // ["Diabète", "Thyroïde", "HTA", ...]
+  tags Json? // ["Diabète", "Thyroïde", "HTA", ...]
+
+  // === NOUVEAUX CHAMPS POUR CONTEXTE ENRICHI ORDONNANCE ===
+  pathologiesAssociees Json? // string[] - Pathologies diagnostiquées (ex: ["Diabète Type 2", "Hypothyroïdie", "Syndrome métabolique"])
+  symptomesActuels     Json? // string[] - Symptômes rapportés par le patient
+  autresBilans         Json? // { alat?: number, asat?: number, vitamineD?: number, ... } - Autres résultats biologiques
+
+  // === INTERROGATOIRE ENDOBIOGÉNIQUE COMPLET ===
+  interrogatoire Json? // InterrogatoireEndobiogenique - 8 axes cliniques
 
   // RGPD (optionnel)
-  consentementRGPD Boolean       @default(false)
+  consentementRGPD Boolean   @default(false)
   dateConsentement DateTime?
 
   // Archivage (soft delete - suppression interdite)
-  isArchived      Boolean         @default(false)
-  archivedAt      DateTime?
+  isArchived Boolean   @default(false)
+  archivedAt DateTime?
 
   // Relations
-  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  consultations      Consultation[]
-  bdfAnalyses        BdfAnalysis[]
-  anthropometries    Anthropometrie[]
-  ordonnances        Ordonnance[]
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultations   Consultation[]
+  bdfAnalyses     BdfAnalysis[]
+  anthropometries Anthropometrie[]
+  ordonnances     Ordonnance[]
+  ordonnanceChats OrdonnanceChat[]
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("patients")
   @@index([userId, nom, prenom])
   @@index([numeroPatient])
+  @@map("patients")
 }
 
 // Table "anthropometries" : mesures anthropométriques
 model Anthropometrie {
-  id          String    @id @default(cuid())
-  patientId   String
-  date        DateTime  @default(now())
+  id        String   @id @default(cuid())
+  patientId String
+  date      DateTime @default(now())
 
-  poids       Float?    // kg
-  taille      Float?    // cm
-  imc         Float?    // calculé
-  paSys       Int?      // mmHg (systolique)
-  paDia       Int?      // mmHg (diastolique)
-  pouls       Int?      // bpm
+  poids  Float? // kg
+  taille Float? // cm
+  imc    Float? // calculé
+  paSys  Int? // mmHg (systolique)
+  paDia  Int? // mmHg (diastolique)
+  pouls  Int? // bpm
 
   // Relations
-  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime  @default(now())
+  createdAt DateTime @default(now())
 
-  @@map("anthropometries")
   @@index([patientId, date])
+  @@map("anthropometries")
 }
 
 // Table "bdf_analyses" : analyses Biologie des Fonctions
 model BdfAnalysis {
-  id                String    @id @default(cuid())
-  patientId         String
-  date              DateTime  @default(now())
+  id        String   @id @default(cuid())
+  patientId String
+  date      DateTime @default(now())
 
   // Données BdF (JSON pour flexibilité)
-  inputs            Json      // { GR, GB, LDH, CPK, TSH, etc. }
-  indexes           Json      // BdfIndex[] (8 cartes min)
-  summary           String    @db.Text  // Résumé fonctionnel
-  axes              Json      // string[] des axes sollicités
-  ragText           String?   @db.Text  // Lecture endobiogénique du terrain
+  inputs  Json // { GR, GB, LDH, CPK, TSH, etc. }
+  indexes Json // BdfIndex[] (8 cartes min)
+  summary String  @db.Text // Résumé fonctionnel
+  axes    Json // string[] des axes sollicités
+  ragText String? @db.Text // Lecture endobiogénique du terrain
 
   // Relations
-  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("bdf_analyses")
   @@index([patientId, date])
+  @@map("bdf_analyses")
 }
 
 // Table "consultations" : consultations praticien
 model Consultation {
-  id                String    @id @default(cuid())
-  patientId         String
-  dateConsultation  DateTime  @default(now())
+  id               String   @id @default(cuid())
+  patientId        String
+  dateConsultation DateTime @default(now())
 
   // Type et contexte
-  type              String?   // "initiale" | "suivi" | "urgence"
-  motifConsultation String?   @db.Text
+  type              String? // "initiale" | "suivi" | "urgence"
+  motifConsultation String? @db.Text
 
   // Données BdF (copie locale depuis l'analyse)
-  inputs            Json?     // BdfInputs: valeurs biologiques saisies
-  indexes           Json?     // BdfIndex[]: indexes calculés
-  summary           String?   @db.Text // Résumé de l'analyse
-  axes              Json?     // string[]: axes thérapeutiques
-  ragText           String?   @db.Text // Texte enrichi par RAG
+  inputs  Json? // BdfInputs: valeurs biologiques saisies
+  indexes Json? // BdfIndex[]: indexes calculés
+  summary String? @db.Text // Résumé de l'analyse
+  axes    Json? // string[]: axes thérapeutiques
+  ragText String? @db.Text // Texte enrichi par RAG
 
   // Notes praticien
-  commentaire       String?   @db.Text
-  prescriptions     String?   @db.Text
+  commentaire   String? @db.Text
+  prescriptions String? @db.Text
 
   // Lien optionnel vers analyse BdF (si consultation suite à BdF)
-  bdfAnalysisId     String?
+  bdfAnalysisId String?
 
   // Relations
-  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("consultations")
   @@index([patientId, dateConsultation])
+  @@map("consultations")
 }
 
-// Table "ordonnances" : ordonnances phyto générées par IA
+// Table "ordonnances" : ordonnances intelligentes en 3 volets générées par IA
 model Ordonnance {
-  id                String    @id @default(cuid())
-  patientId         String
-  bdfAnalysisId     String?   // Lien optionnel vers l'analyse BdF source
+  id            String  @id @default(cuid())
+  patientId     String
+  bdfAnalysisId String? // Lien optionnel vers l'analyse BdF source
 
-  // Métadonnées
-  dateOrdonnance    DateTime  @default(now())
-  titre             String    // Ex: "Traitement terrain HypoAlpha"
+  // === STRUCTURE EN 3 VOLETS ===
+  voletEndobiogenique Json @default("[]") // RecommandationTherapeutique[] - Canon Lapraz/Hedayat
+  voletPhytoElargi    Json @default("[]") // RecommandationTherapeutique[] - Phyto/Gemmo/Aroma élargi
+  voletComplements    Json @default("[]") // RecommandationTherapeutique[] - Micro-nutrition ciblée
 
-  // Contenu généré par IA
-  interpretation    String    @db.Text  // Lecture endobiogénique du terrain
-  recommandations   Json      // Array de { plante, posologie, duree, remarques }
-  conseils          String?   @db.Text  // Conseils hygiéno-diététiques
+  // Scope thérapeutique utilisé (pour affichage dynamique)
+  scope Json? // TherapeuticScope { planteMedicinale, gemmotherapie, aromatherapie, micronutrition }
 
-  // Statut
-  statut            String    @default("brouillon") // "brouillon" | "validee" | "imprimee"
+  // === MÉTADONNÉES ===
+  syntheseClinique       String    @default("") @db.Text // Raisonnement détaillé (étape 1: axes perturbés, hypothèses)
+  conseilsAssocies       Json      @default("[]") // string[] - Conseils hygiéno-diététiques
+  surveillanceBiologique Json      @default("[]") // string[] - Paramètres à surveiller
+  dateRevaluation        DateTime? // Quand revoir le patient
 
-  // Édition manuelle
-  isModified        Boolean   @default(false)  // true si le praticien a modifié l'IA
-  notesPraticien    String?   @db.Text
+  // === STATUT ===
+  statut String @default("brouillon") // "brouillon" | "validee" | "archivee"
+
+  // === CONVERSATION IA ===
+  chatMessagesJson Json? // ChatMessage[] - Historique conversation avec l'IA (optionnel, legacy)
 
   // Relations
-  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  chatHistory OrdonnanceChat[]
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  @@index([patientId, createdAt])
   @@map("ordonnances")
-  @@index([patientId, dateOrdonnance])
+}
+
+// Table "ordonnance_chats" : historique chat pour ajustement ordonnances
+model OrdonnanceChat {
+  id           String @id @default(cuid())
+  ordonnanceId String
+  patientId    String
+  role         String // "user" | "assistant"
+  message      String @db.Text
+
+  // Relations
+  ordonnance Ordonnance @relation(fields: [ordonnanceId], references: [id], onDelete: Cascade)
+  patient    Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([ordonnanceId, createdAt])
+  @@index([patientId])
+  @@map("ordonnance_chats")
 }

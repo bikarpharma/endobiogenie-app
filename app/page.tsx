@@ -9,6 +9,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export default async function HomePage() {
   // Récupérer la session
@@ -22,9 +23,9 @@ export default async function HomePage() {
   // Si non connecté, afficher la landing page
   return (
     <div style={{ padding: "60px 0", textAlign: "center" }}>
-      <span style={{ fontSize: "64px" }}>🌿</span>
+      <Image src="/integria-logo.jpg" alt="IntergIA" width={200} height={200} style={{ borderRadius: "24px", margin: "0 auto" }} />
       <h1 style={{ fontSize: "48px", margin: "16px 0" }}>
-        Agent Endobiogénie
+        IntergIA
       </h1>
       <p style={{ fontSize: "18px", color: "var(--muted)", marginBottom: "32px" }}>
         Assistant RAG intelligent pour la phytothérapie endobiogénique

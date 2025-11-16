@@ -14,6 +14,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,9 +56,9 @@ export default function LoginPage() {
       <div className="auth-card">
         {/* En-tête */}
         <div className="auth-header">
-          <span className="logo">🌿</span>
+          <Image src="/integria-logo.jpg" alt="IntergIA" width={80} height={80} style={{ borderRadius: "12px", marginBottom: "16px" }} />
           <h1>Connexion</h1>
-          <p>Agent Endobiogénie</p>
+          <p>IntergIA</p>
         </div>
 
         {/* Formulaire */}

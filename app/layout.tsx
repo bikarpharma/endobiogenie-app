@@ -13,11 +13,12 @@
 
 import { auth } from "@/lib/auth";
 import Link from "next/link";
+import Image from "next/image";
 import { SignOutButton } from "@/components/SignOutButton";
 import "./globals.css";
 
 export const metadata = {
-  title: "Endobiogénie SaaS",
+  title: "IntergIA",
   description: "Assistant RAG avec auth, historique et fiches plantes.",
 };
 
@@ -37,9 +38,12 @@ export default async function RootLayout({
           <div className="container header-inner">
             {/* Logo */}
             <div className="brand">
-              <span className="logo">🌿</span>
+              <Image src="/integria-logo.jpg" alt="IntergIA" width={50} height={50} style={{ borderRadius: "8px" }} />
               <Link href={session ? "/dashboard" : "/"}>
-                <strong>Agent Endobiogénie</strong>
+                <div style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}>
+                  <strong>IntergIA</strong>
+                  <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>by Bikarpharma</span>
+                </div>
               </Link>
             </div>
 
@@ -99,7 +103,7 @@ export default async function RootLayout({
         {/* ===== FOOTER ===== */}
         <footer className="site-footer">
           <div className="container footer-inner">
-            <span>© {new Date().getFullYear()} Endobiogénie SaaS</span>
+            <span>© {new Date().getFullYear()} IntergIA</span>
           </div>
         </footer>
       </body>

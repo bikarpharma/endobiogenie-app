@@ -119,7 +119,7 @@ export function ChatInterface() {
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <h1>💬 Chat RAG - Endobiogénie</h1>
+        <h1>💬 Chat Endobiogénie</h1>
         <p className="muted">
           Posez vos questions. Les réponses s'appuient sur vos volumes indexés.
         </p>
