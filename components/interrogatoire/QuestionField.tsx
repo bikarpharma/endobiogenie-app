@@ -3,7 +3,6 @@
 import type { QuestionConfig } from "@/lib/interrogatoire/types";
 import type { GonadoQuestion } from "@/lib/interrogatoire/config/axe-gonado";
 import { Controller, Control } from "react-hook-form";
-import { TooltipInfo } from "./TooltipInfo";
 
 type AnyQuestion = QuestionConfig | GonadoQuestion;
 
@@ -17,10 +16,14 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
 
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="font-medium text-sm text-gray-700 flex items-center gap-1">
+      <label htmlFor={id} className="font-medium text-sm text-gray-700">
         {label}
-        {tooltip && <TooltipInfo text={tooltip} />}
       </label>
+      {tooltip && (
+        <p className="text-xs text-gray-500 italic leading-relaxed -mt-1">
+          {tooltip}
+        </p>
+      )}
 
       <Controller
         name={id}
