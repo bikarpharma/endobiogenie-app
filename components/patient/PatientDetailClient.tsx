@@ -35,6 +35,7 @@ type PatientData = {
   consultations: any[];
   anthropometries: any[];
   ordonnances: any[];
+  interrogatoire: any;
 };
 
 type Tab = "apercu" | "identite" | "interrogatoire" | "analyses" | "consultations" | "ordonnances";
@@ -163,7 +164,7 @@ export function PatientDetailClient({ patient }: { patient: PatientData }) {
               transition: "all 0.2s",
             }}
           >
-            🩺 Interrogatoire
+            🩺 Interrogatoire {patient.interrogatoire ? '(1)' : '(0)'}
           </button>
           <button
             onClick={() => setActiveTab("analyses")}

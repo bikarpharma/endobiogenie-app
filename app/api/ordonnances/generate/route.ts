@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
           orderBy: { date: "desc" },
           take: 1, // Plus récente par défaut
         },
+        axeInterpretations: true, // Charger les interprétations IA des axes
       },
     });
 
@@ -112,9 +113,14 @@ export async function POST(req: NextRequest) {
       // Pas de BdF, mais inputs fournis directement (cas rare)
       inputs = body.inputs;
       // TODO: Calculer indexes à la volée si nécessaire
-    } else {
+    }
+
+    // Note: BdF n'est plus obligatoire - on peut générer avec interrogatoire seul
+    // Vérifier qu'on a au moins une source (BdF OU interrogatoire)
+    const interrogatoireExists = patient.interrogatoire !== null;
+    if (!bdfAnalysis && !interrogatoireExists) {
       return NextResponse.json(
-        { error: "Aucune analyse BdF disponible pour ce patient" },
+        { error: "Aucune donnée clinique disponible - Le patient doit avoir au minimum un interrogatoire ou une analyse BdF" },
         { status: 400 }
       );
     }
@@ -196,19 +202,37 @@ export async function POST(req: NextRequest) {
 
     console.log(`📊 RAG Enrichment: ${ragAxes.length} axes identifiés: ${ragAxes.join(", ")}`);
 
-    // 4. FUSION : Interrogatoire + BdF + RAG
+    // 3.5. Charger les interprétations IA stockées (Niveau 1)
+    const storedInterpretations = patient.axeInterpretations || [];
+    console.log(`🤖 Interprétations IA stockées: ${storedInterpretations.length} axes interprétés`);
+
+    // Convertir au format attendu par la fusion
+    const interpretationsMap: Record<string, any> = {};
+    storedInterpretations.forEach((interp: any) => {
+      interpretationsMap[interp.axe] = {
+        orientation: interp.orientation,
+        mecanismes: interp.mecanismes as string[],
+        prudences: interp.prudences as string[],
+        modulateurs: interp.modulateurs as string[],
+        resumeClinique: interp.resumeClinique,
+        confiance: interp.confiance,
+      };
+    });
+
+    // 4. FUSION : Interrogatoire + BdF + RAG + Interprétations IA (Niveau 2)
     if (interrogatoire && clinicalScores) {
       axesFusionnes = fuseClinicalBdfRag(
         interrogatoire,
         clinicalScores,
         bdfIndexes,
-        ragContext
+        ragContext,
+        interpretationsMap // Passer les interprétations IA stockées
       );
 
       console.log(`🔀 Fusion complète : ${axesFusionnes.length} axes perturbés fusionnés`);
       axesFusionnes.forEach(axe => {
         console.log(`  - ${axe.axe} (${axe.niveau}) : score ${axe.score}/10 | confiance: ${axe.confiance}`);
-        console.log(`    Sources: Clinique=${axe.sources.clinique}, BdF=${axe.sources.bdf}, RAG=${axe.sources.rag}`);
+        console.log(`    Sources: Clinique=${axe.sources.clinique}, BdF=${axe.sources.bdf}, RAG=${axe.sources.rag}, IA=${axe.sources.ia || false}`);
       });
     } else {
       console.log("⚠️ Pas de fusion possible, fallback vers BdF seule");
@@ -219,12 +243,32 @@ export async function POST(req: NextRequest) {
     // ==========================================
 
     const engine = new TherapeuticReasoningEngine();
+
+    // Si pas de BdF, créer des indexes vides pour le moteur
+    // Le moteur utilisera les axes fusionnés dans tous les cas
+    const finalIndexes = indexes || {
+      indexGenital: { value: null, comment: "" },
+      indexThyroidien: { value: null, comment: "" },
+      gT: { value: null, comment: "" },
+      indexAdaptation: { value: null, comment: "" },
+      indexOestrogenique: { value: null, comment: "" },
+      turnover: { value: null, comment: "" },
+      rendementThyroidien: { value: null, comment: "" },
+      remodelageOsseux: { value: null, comment: "" },
+    };
+
+    const finalInputs = inputs || {} as LabValues;
+
+    if (!indexes || !inputs) {
+      console.log("⚠️ Génération sans BdF - utilisation des axes fusionnés et interprétations IA uniquement");
+    }
+
     const raisonnement = await engine.executeFullReasoning(
-      indexes!,
-      inputs!,
+      finalIndexes,
+      finalInputs,
       body.scope,
       patientContext,
-      { ragAxes, ragSummary } // Passer le contexte RAG (à améliorer avec axes fusionnés)
+      { ragAxes, ragSummary, axesFusionnes } // Passer axes fusionnés
     );
 
     console.log(`✅ Raisonnement terminé : ${raisonnement.axesPerturbés.length} axes perturbés, ${raisonnement.recommandationsEndobiogenie.length} recommandations endobiogénie`);
@@ -355,6 +399,12 @@ export async function POST(req: NextRequest) {
         ordonnance,
         alertes: raisonnement.alertes,
         coutEstime: raisonnement.coutEstime,
+        sourcesUtilisees: {
+          interrogatoire: !!interrogatoire,
+          bdf: !!bdfAnalysis,
+          interpretationsIA: storedInterpretations.length,
+          rag: ragAxes.length > 0,
+        },
       },
       { status: 201 }
     );

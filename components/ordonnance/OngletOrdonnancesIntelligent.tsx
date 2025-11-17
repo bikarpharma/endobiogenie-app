@@ -21,6 +21,7 @@ export function OngletOrdonnancesIntelligent({ patient }: OngletOrdonnancesIntel
   const ordonnances: OrdonnanceItem[] = patient.ordonnances || [];
   const hasOrdonnances = ordonnances.length > 0;
   const hasBdfAnalysis = patient.bdfAnalyses && patient.bdfAnalyses.length > 0;
+  const hasInterrogatoire = patient.interrogatoire !== null && patient.interrogatoire !== undefined;
 
   // Afficher le statut avec une couleur
   const getStatutBadge = (statut: string) => {
@@ -71,28 +72,32 @@ export function OngletOrdonnancesIntelligent({ patient }: OngletOrdonnancesIntel
           </p>
         </div>
 
-        <GenerateOrdonnanceButton patientId={patient.id} hasBdfAnalysis={hasBdfAnalysis} />
+        <GenerateOrdonnanceButton
+          patientId={patient.id}
+          hasBdfAnalysis={hasBdfAnalysis}
+          hasInterrogatoire={hasInterrogatoire}
+        />
       </div>
 
-      {/* Alerte si pas de BdF */}
-      {!hasBdfAnalysis && (
+      {/* Alerte si aucune source de données */}
+      {!hasBdfAnalysis && !hasInterrogatoire && (
         <div
           style={{
-            background: "#fef3c7",
-            border: "2px solid #f59e0b",
+            background: "#fee2e2",
+            border: "2px solid #ef4444",
             borderRadius: "12px",
             padding: "16px",
             marginBottom: "24px",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "1.5rem" }}>⚠️</span>
+            <span style={{ fontSize: "1.5rem" }}>🚫</span>
             <div>
-              <div style={{ fontWeight: "600", color: "#92400e", marginBottom: "4px" }}>
-                Aucune analyse BdF disponible
+              <div style={{ fontWeight: "600", color: "#991b1b", marginBottom: "4px" }}>
+                Aucune donnée clinique disponible
               </div>
-              <div style={{ fontSize: "0.9rem", color: "#92400e" }}>
-                Une analyse BdF est nécessaire pour générer une ordonnance personnalisée avec le système intelligent.
+              <div style={{ fontSize: "0.9rem", color: "#991b1b" }}>
+                Remplissez au minimum un interrogatoire ou une analyse BdF pour générer une ordonnance.
               </div>
             </div>
           </div>
@@ -116,15 +121,15 @@ export function OngletOrdonnancesIntelligent({ patient }: OngletOrdonnancesIntel
               Système d'ordonnances intelligent
             </div>
             <div style={{ fontSize: "0.85rem", color: "#1e40af", lineHeight: "1.6" }}>
-              <strong>4 étapes de raisonnement:</strong>
+              <strong>Architecture à 2 niveaux:</strong>
               <br />
-              1️⃣ Analyse du terrain BdF (8 index fonctionnels)
+              1️⃣ Analyse clinique du terrain (interrogatoire endobiogénique par axes)
               <br />
-              2️⃣ Recherche dans le canon Endobiogénie
+              2️⃣ Analyse biologique fonctionnelle (index BdF, si disponibles)
               <br />
-              3️⃣ Extension thérapeutique (Phyto/Gemmo/Aroma selon scope)
+              3️⃣ Fusion multi-sources (Clinique + BdF + RAG + IA)
               <br />
-              4️⃣ Micro-nutrition ciblée sur les axes perturbés
+              4️⃣ Proposition phyto/gemmo/aroma + micro-nutrition avec contrôles de sécurité
             </div>
           </div>
         </div>

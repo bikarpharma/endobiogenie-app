@@ -7,9 +7,10 @@ import type { TherapeuticScope } from "@/lib/ordonnance/types";
 type GenerateOrdonnanceButtonProps = {
   patientId: string;
   hasBdfAnalysis: boolean;
+  hasInterrogatoire: boolean;
 };
 
-export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis }: GenerateOrdonnanceButtonProps) {
+export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis, hasInterrogatoire }: GenerateOrdonnanceButtonProps) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -52,7 +53,20 @@ export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis }: Generate
     }
   };
 
-  if (!hasBdfAnalysis) {
+  // Déterminer si la génération est possible
+  const canGenerate = hasBdfAnalysis || hasInterrogatoire;
+
+  // Déterminer le message d'avertissement
+  let warningBadge: string | null = null;
+  if (!canGenerate) {
+    warningBadge = null; // Bouton désactivé
+  } else if (!hasBdfAnalysis && hasInterrogatoire) {
+    warningBadge = "⚠️ Sans données BdF";
+  } else if (hasBdfAnalysis && !hasInterrogatoire) {
+    warningBadge = "⚠️ Sans interprétation clinique";
+  }
+
+  if (!canGenerate) {
     return (
       <button
         disabled
@@ -67,32 +81,49 @@ export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis }: Generate
           cursor: "not-allowed",
         }}
       >
-        🚫 Nécessite une analyse BdF
+        🚫 Nécessite au minimum un interrogatoire ou une analyse BdF
       </button>
     );
   }
 
   return (
     <>
-      <button
-        onClick={() => setShowModal(true)}
-        disabled={generating}
-        style={{
-          padding: "12px 20px",
-          background: generating
-            ? "#9ca3af"
-            : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          fontSize: "0.9rem",
-          fontWeight: "600",
-          cursor: generating ? "not-allowed" : "pointer",
-          boxShadow: generating ? "none" : "0 4px 12px rgba(16, 185, 129, 0.3)",
-        }}
-      >
-        {generating ? "⏳ Génération en cours..." : "🧬 Générer ordonnance intelligente"}
-      </button>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
+        <button
+          onClick={() => setShowModal(true)}
+          disabled={generating}
+          style={{
+            padding: "12px 20px",
+            background: generating
+              ? "#9ca3af"
+              : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "0.9rem",
+            fontWeight: "600",
+            cursor: generating ? "not-allowed" : "pointer",
+            boxShadow: generating ? "none" : "0 4px 12px rgba(16, 185, 129, 0.3)",
+          }}
+        >
+          {generating ? "⏳ Génération en cours..." : "🧬 Générer ordonnance intelligente"}
+        </button>
+        {warningBadge && (
+          <div
+            style={{
+              padding: "6px 12px",
+              background: "#fef3c7",
+              color: "#92400e",
+              borderRadius: "6px",
+              fontSize: "0.75rem",
+              fontWeight: "600",
+              border: "1px solid #fbbf24",
+            }}
+          >
+            {warningBadge}
+          </div>
+        )}
+      </div>
 
       {/* Modal Configuration Scope */}
       {showModal && (
@@ -188,15 +219,15 @@ export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis }: Generate
                 marginBottom: "24px",
               }}
             >
-              💡 Le système exécutera un raisonnement en 4 étapes:
+              💡 Le système utilise une architecture à 2 niveaux:
               <br />
-              1️⃣ Analyse du terrain BdF
+              1️⃣ Analyse clinique (interrogatoire) + BdF (si disponible)
               <br />
-              2️⃣ Recherche Endobiogénie (Canon Lapraz/Hedayat)
+              2️⃣ Fusion multi-sources (Clinique + BdF + RAG + IA)
               <br />
-              3️⃣ Extension thérapeutique selon scope
+              3️⃣ Proposition thérapeutique selon scope sélectionné
               <br />
-              4️⃣ Micro-nutrition ciblée
+              4️⃣ Contrôles de sécurité et cohérence
             </div>
 
             {/* Boutons */}

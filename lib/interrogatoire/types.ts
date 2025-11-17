@@ -1,6 +1,24 @@
 // lib/interrogatoire/types.ts
 
+// ---------------------------------------------------------------------------
+// CONFIGURATION DES QUESTIONS
+// ---------------------------------------------------------------------------
+
+export interface QuestionConfig {
+  id: string;
+  question: string;
+  type: "boolean" | "text" | "select" | "number" | "multiselect" | "date";
+  tooltip?: string;
+  section?: string;
+  axis?: string;
+  options?: string[];
+  mapping?: Record<string, number>;
+}
+
+// ---------------------------------------------------------------------------
 // Échelles génériques réutilisables
+// ---------------------------------------------------------------------------
+
 export type FrequenceSymptome = "jamais" | "rarement" | "parfois" | "souvent" | "toujours";
 
 export type IntensiteSymptome = "faible" | "moderee" | "importante";

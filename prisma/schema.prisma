@@ -167,10 +167,11 @@ model Patient {
   // Relations
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   consultations   Consultation[]
-  bdfAnalyses     BdfAnalysis[]
-  anthropometries Anthropometrie[]
-  ordonnances     Ordonnance[]
-  ordonnanceChats OrdonnanceChat[]
+  bdfAnalyses        BdfAnalysis[]
+  anthropometries    Anthropometrie[]
+  ordonnances        Ordonnance[]
+  ordonnanceChats    OrdonnanceChat[]
+  axeInterpretations AxeInterpretation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -313,4 +314,29 @@ model OrdonnanceChat {
   @@index([ordonnanceId, createdAt])
   @@index([patientId])
   @@map("ordonnance_chats")
+}
+
+// Table "axe_interpretations" : interprétations IA des axes cliniques
+model AxeInterpretation {
+  id        String @id @default(cuid())
+  patientId String
+  axe       String // "neurovegetatif" | "adaptatif" | "thyroidien" | "gonadique" | "digestif" | "immuno" | "rythmes" | "axesdevie"
+
+  // === RÉSULTAT DE L'INTERPRÉTATION IA ===
+  orientation      String @db.Text // Ex: "Profil hypersympathicotonique avec tendance hypercortisolique"
+  mecanismes       Json // string[] - Mécanismes fisiopatologiques identifiés
+  prudences        Json // string[] - Points de vigilance clinique
+  modulateurs      Json // string[] - Modulateurs génériques (ex: "Plantes régulatrices axe HHS")
+  resumeClinique   String @db.Text // Synthèse narrative pour le praticien
+  confiance        Float  @default(0.8) // Score de confiance de l'IA (0-1)
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([patientId, axe]) // Un seul enregistrement par axe par patient
+  @@index([patientId])
+  @@map("axe_interpretations")
 }

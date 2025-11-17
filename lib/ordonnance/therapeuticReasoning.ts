@@ -1094,20 +1094,31 @@ FORMAT: JSON array uniquement
     ragContext?: {
       ragAxes: string[];
       ragSummary: string;
+      axesFusionnes?: any[]; // Axes fusionnés depuis Niveau 2
     }
   ): Promise<RaisonnementTherapeutique> {
-    // ÉTAPE 1 - Utiliser le RAG enrichment si disponible
+    // ÉTAPE 1 - Utiliser les axes fusionnés en priorité (Niveau 2)
     let axes: AxePerturbation[];
     let hypotheses: string[];
 
-    if (ragContext && ragContext.ragAxes.length > 0) {
-      // Utiliser l'interprétation RAG du vectorstore endobiogénie
+    if (ragContext?.axesFusionnes && ragContext.axesFusionnes.length > 0) {
+      // PRIORITÉ 1: Utiliser les axes fusionnés (Clinique + BdF + IA + RAG)
+      console.log(`🔀 Utilisation des axes fusionnés (Niveau 2) : ${ragContext.axesFusionnes.length} axes`);
+      axes = ragContext.axesFusionnes.map((axe: any) => ({
+        axe: axe.axe,
+        niveau: axe.niveau,
+        score: axe.score,
+        justification: axe.justification || `Fusion: ${axe.sources.clinique ? 'Clinique ' : ''}${axe.sources.bdf ? 'BdF ' : ''}${axe.sources.ia ? 'IA ' : ''}${axe.sources.rag ? 'RAG' : ''}`,
+      }));
+      hypotheses = ["Raisonnement basé sur la fusion multi-sources (Clinique + BdF + RAG + IA)"];
+    } else if (ragContext && ragContext.ragAxes.length > 0) {
+      // PRIORITÉ 2: Utiliser l'interprétation RAG du vectorstore endobiogénie
       console.log("🔄 Utilisation du RAG enrichment pour l'analyse des axes");
       axes = this.convertRagAxesToPerturbations(ragContext.ragAxes, indexes);
       hypotheses = [ragContext.ragSummary];
     } else {
-      // Fallback: analyse codée en dur
-      console.log("⚠️ Pas de RAG disponible, fallback vers analyse codée");
+      // PRIORITÉ 3 (Fallback): analyse codée en dur à partir de la BdF
+      console.log("⚠️ Pas de fusion ni RAG disponible, fallback vers analyse BdF codée");
       const analysis = this.analyzeAxesPerturbations(indexes, inputs);
       axes = analysis.axes;
       hypotheses = analysis.hypotheses;

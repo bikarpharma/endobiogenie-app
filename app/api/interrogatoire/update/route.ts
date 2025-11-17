@@ -156,15 +156,12 @@ export async function GET(req: NextRequest) {
     // 3. Vérifier que le patient existe et appartient à l'utilisateur
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
-      include: { user: true },
       select: {
         id: true,
         nom: true,
         prenom: true,
         interrogatoire: true,
-        user: {
-          select: { email: true },
-        },
+        userId: true,
       },
     });
 
@@ -175,7 +172,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (patient.user.id !== session.user.id) {
+    if (patient.userId !== session.user.id) {
       return NextResponse.json(
         { error: "Accès non autorisé à ce patient" },
         { status: 403 }
