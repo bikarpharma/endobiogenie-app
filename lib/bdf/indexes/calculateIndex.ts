@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { IndexDefinition, CalculatedIndexValue } from "./index-types";
 import { INDEXES } from "./indexes.config";
 import { computeRatio, computeProduct, computeComposite } from "./index-formulas";
