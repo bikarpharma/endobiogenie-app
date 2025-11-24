@@ -122,8 +122,7 @@ IMPORTANT :
 - Ne modifie pas l'ordonnance sauf si le médecin le demande explicitement
 - Base-toi TOUJOURS sur le contexte BdF fourni
 - Cite tes sources quand tu proposes des alternatives`,
-      tools: [{ type: "file_search" }],
-      tool_resources: {
+        tools: [{ type: "file_search" } as any],      tool_resources: {
         file_search: {
           vector_store_ids: [VS_ENDO, VS_GEMMO, VS_AROMA, VS_PHYTO],
         },
