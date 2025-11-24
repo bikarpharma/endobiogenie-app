@@ -9,8 +9,7 @@
 // - Retourne le chatId pour les messages suivants
 
 import { NextRequest, NextResponse } from "next/server";
-import { fileSearchTool, Agent, Runner } from "@openai/agents";
-import type { AgentInputItem } from "@openai/agents";
+import { fileSearchTool, Agent, type AgentInputItem, Runner } from "@openai/agents";import type { AgentInputItem } from "@openai/agents";
 import { prisma } from "@/lib/prisma";
 import { removeAnnotations } from "@/lib/utils/removeAnnotations";
 import { auth } from "@/lib/auth";
