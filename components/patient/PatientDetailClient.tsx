@@ -9,6 +9,7 @@ import { OngletInterrogatoire } from "./OngletInterrogatoire";
 import { OngletAnalyses } from "./OngletAnalyses";
 import { OngletConsultations } from "./OngletConsultations";
 import { OngletOrdonnancesIntelligent } from "../ordonnance/OngletOrdonnancesIntelligent";
+import { OngletSynthese } from "./OngletSynthese";
 
 type PatientData = {
   id: string;
@@ -38,7 +39,7 @@ type PatientData = {
   interrogatoire: any;
 };
 
-type Tab = "apercu" | "identite" | "interrogatoire" | "analyses" | "consultations" | "ordonnances";
+type Tab = "apercu" | "identite" | "interrogatoire" | "analyses" | "consultations" | "synthese" | "ordonnances";
 
 export function PatientDetailClient({ patient }: { patient: PatientData }) {
   const [activeTab, setActiveTab] = useState<Tab>("apercu");
@@ -202,6 +203,23 @@ export function PatientDetailClient({ patient }: { patient: PatientData }) {
             📋 Consultations ({patient.consultations.length})
           </button>
           <button
+            onClick={() => setActiveTab("synthese")}
+            style={{
+              flex: 1,
+              padding: "16px 24px",
+              background: activeTab === "synthese" ? "white" : "transparent",
+              border: "none",
+              borderBottom: activeTab === "synthese" ? "3px solid #2563eb" : "3px solid transparent",
+              fontSize: "0.95rem",
+              fontWeight: activeTab === "synthese" ? "600" : "500",
+              color: activeTab === "synthese" ? "#2563eb" : "#6b7280",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            ⚖️ Synthèse
+          </button>
+          <button
             onClick={() => setActiveTab("ordonnances")}
             style={{
               flex: 1,
@@ -228,6 +246,7 @@ export function PatientDetailClient({ patient }: { patient: PatientData }) {
           {activeTab === "interrogatoire" && <OngletInterrogatoire patient={patient} />}
           {activeTab === "analyses" && <OngletAnalyses patient={patient} />}
           {activeTab === "consultations" && <OngletConsultations patient={patient} />}
+          {activeTab === "synthese" && <OngletSynthese patient={patient} />}
           {activeTab === "ordonnances" && <OngletOrdonnancesIntelligent patient={patient} />}
         </div>
       </div>

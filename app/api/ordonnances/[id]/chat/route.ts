@@ -69,7 +69,7 @@ export async function GET(
     }
 
     return NextResponse.json({
-      messages: ordonnance.chatMessages || [],
+      messages: ordonnance.chatMessagesJson || [],
     });
   } catch (e: any) {
     console.error("❌ Erreur récupération chat:", e);
@@ -297,11 +297,11 @@ export async function POST(
       name: "ordonnance-chat-agent",
       model: "gpt-4o-mini",
       instructions: `Tu es un ASSISTANT EXPERT EN ENDOBIOGÉNIE ET PHYTOTHÉRAPIE CLINIQUE.
-Tu aides un praticien à comprendre, ajuster et optimiser une ordonnance thérapeutique selon la méthode Lapraz/Hedayat.
+Tu aides un praticien à comprendre, ajuster et optimiser une ordonnance thérapeutique.
 
 HIÉRARCHIE THÉRAPEUTIQUE À RESPECTER :
 NIVEAU 1 — ENDOBIOGÉNIE (PRIORITÉ ABSOLUE)
-- Pivots du canon Lapraz/Hedayat (vectorstore endobiogénie)
+- Pivots endobiogéniques (vectorstore endobiogénie)
 - 3-4 substances maximum
 - Justification neuroendocrinienne obligatoire
 
@@ -450,13 +450,13 @@ STYLE :
     // ==========================================
     // SAUVEGARDER HISTORIQUE CHAT
     // ==========================================
-    const existingMessages = (ordonnance.chatMessages as any as ChatMessage[]) || [];
+    const existingMessages = (ordonnance.chatMessagesJson as any as ChatMessage[]) || [];
     const updatedMessages = [...existingMessages, userMessage, assistantMessage];
 
     await prisma.ordonnance.update({
       where: { id: ordonnanceId },
       data: {
-        chatMessages: updatedMessages as any,
+        chatMessagesJson: updatedMessages as any,
         updatedAt: new Date(),
       },
     });

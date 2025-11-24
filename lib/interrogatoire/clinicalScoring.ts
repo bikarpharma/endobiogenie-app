@@ -1,6 +1,17 @@
+// ========================================
+// ⚠️ DEPRECATED - Ancien format V1
+// ========================================
+// Ce fichier est conservé pour compatibilité avec fusionClinique.ts
+// NOUVEAU CODE: Utiliser clinicalScoringV2.ts à la place
+// MIGRATION: scoringAdapter.ts convertit V2 → V1 si nécessaire
+//
 // lib/interrogatoire/clinicalScoring.ts
 
-import { InterrogatoireEndobiogenique, OuiNon } from "./types";
+// @ts-nocheck - Fichier deprecated utilisant l'ancien format
+import type { InterrogatoireEndobiogenique } from "./types";
+
+// Type OuiNon restauré pour compatibilité
+type OuiNon = "oui" | "non";
 
 // Type de sortie : scores cliniques par axe
 export interface ClinicalAxeScores {
@@ -60,18 +71,18 @@ export function scoreInterrogatoire(inter: InterrogatoireEndobiogenique): Clinic
   // ---------------------------------------------------------------------------
 
   const nvSymp =
-    yn(inter.axeNeuroVegetatif.sommeil_endormissement_difficile) +
-    yn(inter.axeNeuroVegetatif.sommeil_reveils_nocturnes) +
-    yn(inter.axeNeuroVegetatif.transpiration_abondante) +
-    yn(inter.axeNeuroVegetatif.intolerance_chaleur) +
-    yn(inter.axeNeuroVegetatif.palpitations) +
-    yn(inter.axeNeuroVegetatif.tension_interne);
+    yn(inter.axeNeuroVegetatif?.sommeil_endormissement_difficile) +
+    yn(inter.axeNeuroVegetatif?.sommeil_reveils_nocturnes) +
+    yn(inter.axeNeuroVegetatif?.transpiration_abondante) +
+    yn(inter.axeNeuroVegetatif?.intolerance_chaleur) +
+    yn(inter.axeNeuroVegetatif?.palpitations) +
+    yn(inter.axeNeuroVegetatif?.tension_interne);
 
   const nvPara =
-    yn(inter.axeNeuroVegetatif.frilosite) +
-    (inter.axeNeuroVegetatif.transit_type === "lent" ? 1 : 0) +
-    yn(inter.axeNeuroVegetatif.transpiration_absente) +
-    (inter.axeNeuroVegetatif.energie_soir === "bonne" ? 1 : 0);
+    yn(inter.axeNeuroVegetatif?.frilosite) +
+    (inter.axeNeuroVegetatif?.transit_type === "lent" ? 1 : 0) +
+    yn(inter.axeNeuroVegetatif?.transpiration_absente) +
+    (inter.axeNeuroVegetatif?.energie_soir === "bonne" ? 1 : 0);
 
   let nvOrientation: ClinicalAxeScores["neuroVegetatif"]["orientation"] = "equilibre";
   if (nvSymp - nvPara >= 2) nvOrientation = "sympathicotonique";
@@ -82,15 +93,15 @@ export function scoreInterrogatoire(inter: InterrogatoireEndobiogenique): Clinic
   // ---------------------------------------------------------------------------
 
   const adaptHyper =
-    yn(inter.axeAdaptatif.stress_actuel) +
-    yn(inter.axeAdaptatif.besoin_stimulants) +
-    yn(inter.axeAdaptatif.endormissement_difficile_pensees) +
-    (inter.axeAdaptatif.irritabilite === "souvent" ? 2 : 0);
+    yn(inter.axeAdaptatif?.stress_actuel) +
+    yn(inter.axeAdaptatif?.besoin_stimulants) +
+    yn(inter.axeAdaptatif?.endormissement_difficile_pensees) +
+    (inter.axeAdaptatif?.irritabilite === "souvent" ? 2 : 0);
 
   const adaptHypo =
-    yn(inter.axeAdaptatif.sensation_epuisement) +
-    (inter.axeAdaptatif.fatigue_matin === "importante" ? 1 : 0) +
-    (inter.axeAdaptatif.fatigue_apresmidi === "importante" ? 1 : 0);
+    yn(inter.axeAdaptatif?.sensation_epuisement) +
+    (inter.axeAdaptatif?.fatigue_matin === "importante" ? 1 : 0) +
+    (inter.axeAdaptatif?.fatigue_apresmidi === "importante" ? 1 : 0);
 
   let adaptOrientation: ClinicalAxeScores["adaptatif"]["orientation"] = "equilibre";
   if (adaptHyper - adaptHypo >= 2) adaptOrientation = "hyperadaptatif";
@@ -101,15 +112,15 @@ export function scoreInterrogatoire(inter: InterrogatoireEndobiogenique): Clinic
   // ---------------------------------------------------------------------------
 
   const thyHypo =
-    yn(inter.axeThyroidien.sensibilite_froid) +
-    yn(inter.axeThyroidien.transit_lent) +
-    yn(inter.axeThyroidien.peau_seche) +
-    yn(inter.axeThyroidien.lenteur_mentale);
+    yn(inter.axeThyroidien?.sensibilite_froid) +
+    yn(inter.axeThyroidien?.transit_lent) +
+    yn(inter.axeThyroidien?.peau_seche) +
+    yn(inter.axeThyroidien?.lenteur_mentale);
 
   const thyHyper =
-    yn(inter.axeThyroidien.sensibilite_chaleur) +
-    yn(inter.axeThyroidien.transpiration_excessive) +
-    yn(inter.axeThyroidien.palpitations);
+    yn(inter.axeThyroidien?.sensibilite_chaleur) +
+    yn(inter.axeThyroidien?.transpiration_excessive) +
+    yn(inter.axeThyroidien?.palpitations);
 
   let thyOrientation: ClinicalAxeScores["thyroidien"]["orientation"] = "normal";
   if (thyHypo - thyHyper >= 2) thyOrientation = "hypometabolisme";
@@ -143,42 +154,42 @@ export function scoreInterrogatoire(inter: InterrogatoireEndobiogenique): Clinic
   // ---------------------------------------------------------------------------
 
   const digestDysbiose =
-    yn(inter.axeDigestifMetabolique.ballonnements) +
-    yn(inter.axeDigestifMetabolique.intolerances_connues ? "oui" : "non");
+    yn(inter.axeDigestifMetabolique?.ballonnements) +
+    yn(inter.axeDigestifMetabolique?.intolerances_connues ? "oui" : "non");
 
   const digestLenteur =
-    yn(inter.axeDigestifMetabolique.digestion_lente) +
-    (inter.axeDigestifMetabolique.transit === "constipation" ? 1 : 0);
+    yn(inter.axeDigestifMetabolique?.digestion_lente) +
+    (inter.axeDigestifMetabolique?.transit === "constipation" ? 1 : 0);
 
   const digestInflamm =
-    yn(inter.axeDigestifMetabolique.intolerance_alcool);
+    yn(inter.axeDigestifMetabolique?.intolerance_alcool);
 
   // ---------------------------------------------------------------------------
   // AXE IMMUNO-INFLAMMATOIRE
   // ---------------------------------------------------------------------------
 
   const immunoHyper =
-    yn(inter.axeImmunoInflammatoire.allergies_saisonnieres) +
-    yn(inter.axeImmunoInflammatoire.douleurs_articulaires);
+    yn(inter.axeImmunoInflammatoire?.allergies_saisonnieres) +
+    yn(inter.axeImmunoInflammatoire?.douleurs_articulaires);
 
   const immunoHypo =
-    yn(inter.axeImmunoInflammatoire.infections_recidivantes);
+    yn(inter.axeImmunoInflammatoire?.infections_recidivantes);
 
   // ---------------------------------------------------------------------------
   // RYTHMES
   // ---------------------------------------------------------------------------
 
   const rythmeDesynch =
-    yn(inter.rythmes.travail_nuit) +
-    yn(inter.rythmes.decalage_horaire_frequent);
+    yn(inter.rythmes?.travail_nuit) +
+    yn(inter.rythmes?.decalage_horaire_frequent);
 
   // ---------------------------------------------------------------------------
   // AXES DE VIE
   // ---------------------------------------------------------------------------
 
-  const stressChronique = yn(inter.axesDeVie.traumatisme_majeur_historique);
-  const traumatismes = yn(inter.axesDeVie.burnout_passe);
-  const sommeil = inter.axesDeVie.qualite_sommeil_ressentie === "mauvaise" ? 1 : 0;
+  const stressChronique = yn(inter.axesDeVie?.traumatisme_majeur_historique);
+  const traumatismes = yn(inter.axesDeVie?.burnout_passe);
+  const sommeil = inter.axesDeVie?.qualite_sommeil_ressentie === "mauvaise" ? 1 : 0;
 
   // ---------------------------------------------------------------------------
 

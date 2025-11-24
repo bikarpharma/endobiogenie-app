@@ -1,200 +1,131 @@
 import type { QuestionConfig } from "../types";
 
 /**
- * Axe Gonadique
- * -----------------------------------------------------
- * Regroupe femmes + hommes, avec filtrage dynamique via
- * la propriété "gender" : "female" | "male" | "both".
+ * AXE GONADOTROPE (FILTRAGE SEXUÉ)
+ * -------------------------------------------------
+ * Évalue l'axe hypothalamo-hypophyso-gonadique (HHG)
+ * - Équilibre oestro-progestatif (femme)
+ * - Androgènes et prostate (homme)
+ * - Expression tissulaire (commun)
  *
- * Structure :
- * - Cycles et symptômes féminins
- * - Sexualité féminine
- * - Grossesse / post-partum / ménopause
- * - Sexualité masculine
- * - Expression androgénique (homme)
- * - Signes généraux gonadiques (both)
+ * SPÉCIFICITÉ : Questions filtrées par sexe via la propriété "gender"
  */
 
 export type GonadoQuestion = QuestionConfig & {
   gender: "female" | "male" | "both";
+  tags?: string[];
 };
 
-export const AxeGonadoConfig: GonadoQuestion[] = [
-
-  // ---------------------------------------------------
-  // 1. CYCLES MENSTRUELS (FEMME)
-  // ---------------------------------------------------
+const AxeGonadoConfig: GonadoQuestion[] = [
+  // ==========================================
+  // 👩 FEMME : CYCLES & ÉQUILIBRE OESTRO-PROGESTATIF
+  // ==========================================
   {
-    id: "gonado_cycles_reguliers",
-    section: "Cycles menstruels",
-    question: "[Femme] Vos cycles sont-ils réguliers ?",
-    type: "select",
-    options: ["Réguliers", "Irréguliers", "Absents"],
-    gender: "female",
-    tooltip:
-      "Évalue la stabilité de l'axe gonadotrope et le rapport estrogènes/progestérone."
+    id: "gona_f_regles_douloureuses",
+    question: "Vos règles sont-elles douloureuses (nécessitant des antalgiques) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "La dysménorrhée signe souvent une congestion pelvienne ou une hyper-oestrogénie relative (prostaglandines).",
+    weight: 2,
+    scoreDirection: "hyper",
+    tags: ["hyper_oestrogene", "congestion_pelvienne"],
+    gender: "female"
   },
   {
-    id: "gonado_regles_douloureuses",
-    section: "Cycles menstruels",
-    question: "[Femme] Avez-vous des règles douloureuses (dysménorrhées) ?",
-    type: "select",
-    options: ["Non", "Oui légères", "Oui modérées", "Oui intenses"],
-    gender: "female",
-    tooltip:
-      "Indique une tension estrogénique, une hyperprostaglandinémie ou une dominance relative des estrogènes."
+    id: "gona_f_flux_abondant",
+    question: "Vos règles sont-elles très abondantes ou avec des caillots ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Signe d'hyperplasie de l'endomètre par dominance oestrogénique (effet prolifératif).",
+    weight: 3,
+    scoreDirection: "hyper",
+    tags: ["hyper_oestrogene"],
+    gender: "female"
   },
   {
-    id: "gonado_flux",
-    section: "Cycles menstruels",
-    question: "[Femme] Comment décririez-vous votre flux menstruel ?",
-    type: "select",
-    options: ["Faible", "Normal", "Abondant", "Très abondant"],
-    gender: "female",
-    tooltip:
-      "Le flux reflète l'équilibre estrogénique, la tonicité utérine et la dominance relative d'hormones sexuelles."
+    id: "gona_f_pms_seins",
+    question: "Avez-vous les seins gonflés ou douloureux avant les règles ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Signe de rétention hydrosodée locale par excès d'aldostérone/oestrogènes ou manque de progestérone.",
+    weight: 2,
+    scoreDirection: "hyper",
+    tags: ["hypo_progesterone", "hyper_oestrogene"],
+    gender: "female"
   },
   {
-    id: "gonado_syndrome_pre_menstruel",
-    section: "Cycles menstruels",
-    question: "[Femme] Présentez-vous un syndrome prémenstruel (PMS) ?",
-    type: "select",
-    options: ["Non", "Léger", "Modéré", "Sévère"],
-    gender: "female",
-    tooltip:
-      "Le PMS est un signe classique d'insuffisance progestative relative ou d'hypersensibilité oestrogénique."
+    id: "gona_f_cycles_courts",
+    question: "Vos cycles sont-ils courts (moins de 25 jours) ou en avance ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Indique souvent une phase lutéale raccourcie par insuffisance de progestérone.",
+    weight: 2,
+    scoreDirection: "hypo",
+    tags: ["hypo_progesterone"],
+    gender: "female"
   },
   {
-    id: "gonado_mucus_variations",
-    section: "Cycles menstruels",
-    question: "[Femme] Avez-vous remarqué des variations de mucus cervical ?",
-    type: "select",
-    options: ["Oui", "Non", "Inconnu"],
-    gender: "female",
-    tooltip:
-      "Élément utile pour comprendre la fertilité, l'ovulation et la balance estro-progestative."
-  },
-
-  // ---------------------------------------------------
-  // 2. SEXUALITÉ FÉMININE
-  // ---------------------------------------------------
-  {
-    id: "gonado_secheresse_vaginale",
-    section: "Sexualité féminine",
-    question: "[Femme] Avez-vous une sécheresse vaginale ?",
-    type: "boolean",
-    gender: "female",
-    tooltip:
-      "La sécheresse traduit un manque d'estrogènes ou une dysrégulation du terrain muqueux."
-  },
-  {
-    id: "gonado_libido_femme",
-    section: "Sexualité féminine",
-    question: "[Femme] Comment évaluez-vous votre libido ?",
-    type: "select",
-    options: ["Normale", "Basse", "Très basse"],
-    gender: "female",
-    tooltip:
-      "La libido féminine dépend des estrogènes, de la progestérone et des androgènes surrénaliens."
+    id: "gona_f_menopause_bouffees",
+    question: "(Si Ménopause) Avez-vous des bouffées de chaleur ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Signe de désadaptation neurovégétative à la chute brutale des oestrogènes.",
+    weight: 3,
+    scoreDirection: "hypo",
+    tags: ["insuffisance_gonadique", "dysregulation_neuro"],
+    gender: "female"
   },
 
-  // ---------------------------------------------------
-  // 3. GROSSESSES / POST-PARTUM / MÉNOPAUSE (FEMME)
-  // ---------------------------------------------------
+  // ==========================================
+  // 👨 HOMME : ANDROGÈNES & PROSTATE
+  // ==========================================
   {
-    id: "gonado_grossesses_nb",
-    section: "Grossesse & Ménopause",
-    question: "[Femme] Combien de grossesses avez-vous eues ?",
-    type: "select",
-    options: ["Aucune", "1", "2+", "Complications"],
-    gender: "female",
-    tooltip:
-      "Les grossesses modifient durablement l'équilibre gonadique, thyroïdien et adaptatif."
+    id: "gona_h_libido",
+    question: "Ressentez-vous une baisse globale de votre élan vital et de votre libido ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "La testostérone soutient le dynamisme psychique. Sa baisse entraîne passivité et fatigue.",
+    weight: 3,
+    scoreDirection: "hypo",
+    tags: ["hypo_androgene"],
+    gender: "male"
   },
   {
-    id: "gonado_postpartum",
-    section: "Grossesse & Ménopause",
-    question: "[Femme] Avez-vous eu des troubles après un accouchement (post-partum) ?",
-    type: "select",
-    options: ["Non", "Oui légers", "Oui modérés", "Oui importants"],
-    gender: "female",
-    tooltip:
-      "Le post-partum est un moment de grande vulnérabilité endocrine (thyroïde, cortisol, estrogènes)."
+    id: "gona_h_musculaire",
+    question: "Avez-vous noté une fonte musculaire ou une prise de gras abdominale ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Signe métabolique d'une insuffisance androgénique (déficit anabolique).",
+    weight: 2,
+    scoreDirection: "hypo",
+    tags: ["hypo_androgene"],
+    gender: "male"
   },
   {
-    id: "gonado_menopause",
-    section: "Grossesse & Ménopause",
-    question: "[Femme] Êtes-vous ménopausée ?",
-    type: "select",
-    options: ["Non", "Oui récente", "Oui installée"],
-    gender: "female",
-    tooltip:
-      "La ménopause modifie profondément la physiologie estrogénique, les muqueuses et le sommeil."
-  },
-
-  // ---------------------------------------------------
-  // 4. SEXUALITÉ MASCULINE
-  // ---------------------------------------------------
-  {
-    id: "gonado_libido_homme",
-    section: "Sexualité masculine",
-    question: "[Homme] Comment évaluez-vous votre libido ?",
-    type: "select",
-    options: ["Normale", "Basse", "Très basse"],
-    gender: "male",
-    tooltip:
-      "La libido masculine reflète l'équilibre androgénique et la dynamique cortisol/testostérone."
-  },
-  {
-    id: "gonado_erections_qualite",
-    section: "Sexualité masculine",
-    question: "[Homme] La qualité de vos érections a-t-elle changé ?",
-    type: "select",
-    options: ["Non", "Oui légère baisse", "Oui baisse importante"],
-    gender: "male",
-    tooltip:
-      "L'érection dépend du tonus parasympathique et du niveau d'androgènes circulants."
-  },
-  {
-    id: "gonado_pilosite",
-    section: "Sexualité masculine",
-    question: "[Homme] Avez-vous noté des changements de pilosité ?",
-    type: "select",
-    options: ["Non", "Augmentation", "Diminution"],
-    gender: "male",
-    tooltip:
-      "La pilosité est un reflet direct de l'activité androgénique périphérique."
+    id: "gona_h_urinaire",
+    question: "Avez-vous des difficultés à uriner (jet faible, gouttes retardataires, levers nocturnes) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Signe fonctionnel d'hypertrophie ou de congestion prostatique (déséquilibre hormonal local).",
+    weight: 3,
+    scoreDirection: "hyper",
+    tags: ["congestion_pelvienne", "hyper_oestrogene_relatif"],
+    gender: "male"
   },
 
-  // ---------------------------------------------------
-  // 5. SIGNES GÉNÉRAUX GONADIQUES (BOTH)
-  // ---------------------------------------------------
+  // ==========================================
+  // 🚻 COMMUN : EXPRESSION TISSULAIRE
+  // ==========================================
   {
-    id: "gonado_humeur",
-    section: "Signes généraux",
-    question: "Avez-vous des variations d'humeur liées au cycle ou au stress ?",
-    type: "boolean",
-    gender: "both",
-    tooltip:
-      "Les hormones sexuelles modulent la sérotonine, la sensibilité au stress et l'anxiété."
-  },
-  {
-    id: "gonado_peau_modifications",
-    section: "Signes généraux",
-    question: "Avez-vous des variations de peau (acné, sébum, sécheresse) ?",
-    type: "boolean",
-    gender: "both",
-    tooltip:
-      "La peau reflète la balance estrogènes/androgènes et l'activité surrénalienne."
-  },
-  {
-    id: "gonado_sommeil_variations",
-    section: "Signes généraux",
-    question: "Votre sommeil varie-t-il en fonction de votre cycle ou du stress ?",
-    type: "boolean",
-    gender: "both",
-    tooltip:
-      "Le sommeil dépend fortement des hormones sexuelles (progestérone apaisante, estrogènes stimulants, androgènes stabilisants)."
+    id: "gona_acne",
+    question: "Avez-vous de l'acné (visage, dos) ou une peau très grasse ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Marqueur d'une activité androgénique périphérique élevée (ou sensibilité des récepteurs).",
+    weight: 2,
+    scoreDirection: "hyper",
+    tags: ["hyper_androgene"],
+    gender: "both"
   }
 ];
 

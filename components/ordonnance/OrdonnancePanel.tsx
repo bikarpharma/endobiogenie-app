@@ -1,164 +1,91 @@
 "use client";
 
 import { useState } from "react";
-import type { OrdonnanceStructuree, RecommandationTherapeutique, TherapeuticScope } from "@/lib/ordonnance/types";
+import type { OrdonnanceStructuree, RecommandationTherapeutique, TherapeuticScope, NiveauSecurite } from "@/lib/ordonnance/types";
+
+// ========================================
+// TYPES & UTILITAIRES UI
+// ========================================
 
 type OrdonnancePanelProps = {
   ordonnance: OrdonnanceStructuree | null;
   loading?: boolean;
 };
 
-// Helper pour générer le titre dynamique du volet 2
-function getVolet2Title(scope?: TherapeuticScope): { title: string; description: string; emoji: string } {
-  if (!scope) {
-    return {
-      title: "VOLET 2 - PHYTOTHÉRAPIE ÉLARGIE",
-      description: "Phytothérapie clinique, Gemmothérapie, Aromathérapie",
-      emoji: "🌱",
-    };
+// Code couleur pédagogique pour la sécurité
+const getSecurityStyles = (niveau?: NiveauSecurite) => {
+  switch (niveau) {
+    case 'interdit': return { borderLeft: "4px solid #ef4444", bg: "#fef2f2" };
+    case 'precaution': return { borderLeft: "4px solid #f59e0b", bg: "#fffbeb" };
+    default: return { borderLeft: "4px solid transparent", bg: "white" };
   }
+};
+
+// Titre dynamique selon scope
+function getVolet2Title(scope?: TherapeuticScope): { title: string; description: string; emoji: string } {
+  if (!scope) return { title: "VOLET 2 - PHYTOTHÉRAPIE ÉLARGIE", description: "Approche intégrative", emoji: "🌱" };
 
   const scopes = [];
   if (scope.planteMedicinale) scopes.push("Phytothérapie");
   if (scope.gemmotherapie) scopes.push("Gemmothérapie");
   if (scope.aromatherapie) scopes.push("Aromathérapie");
 
-  // Si un seul scope sélectionné, titre spécifique
   if (scopes.length === 1) {
-    if (scope.gemmotherapie) {
-      return {
-        title: "VOLET 2 - GEMMOTHÉRAPIE",
-        description: "Macérats de bourgeons",
-        emoji: "🌿",
-      };
-    }
-    if (scope.aromatherapie) {
-      return {
-        title: "VOLET 2 - AROMATHÉRAPIE",
-        description: "Huiles essentielles",
-        emoji: "💧",
-      };
-    }
-    if (scope.planteMedicinale) {
-      return {
-        title: "VOLET 2 - PHYTOTHÉRAPIE",
-        description: "Plantes médicinales",
-        emoji: "🌱",
-      };
-    }
+    if (scope.gemmotherapie) return { title: "VOLET 2 - GEMMOTHÉRAPIE", description: "Macérats de bourgeons", emoji: "🌿" };
+    if (scope.aromatherapie) return { title: "VOLET 2 - AROMATHÉRAPIE", description: "Huiles essentielles", emoji: "💧" };
   }
-
-  // Si plusieurs scopes, titre global
-  return {
-    title: "VOLET 2 - PHYTOTHÉRAPIE ÉLARGIE",
-    description: scopes.join(", "),
-    emoji: "🌱",
-  };
+  return { title: "VOLET 2 - PHYTOTHÉRAPIE ÉLARGIE", description: scopes.join(", "), emoji: "🌱" };
 }
+
+// ========================================
+// COMPOSANT PRINCIPAL
+// ========================================
 
 export function OrdonnancePanel({ ordonnance, loading }: OrdonnancePanelProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    volet1: true,
-    volet2: true,
-    volet3: true,
+    volet1: true, volet2: true, volet3: true, volet4: true, volet5: true,
   });
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
+  // --- Loading State ---
   if (loading) {
     return (
-      <div
-        style={{
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#f9fafb",
-          borderRadius: "12px",
-        }}
-      >
+      <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb", borderRadius: "12px" }}>
         <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              fontSize: "3rem",
-              marginBottom: "16px",
-              animation: "pulse 2s infinite",
-            }}
-          >
-            ⏳
-          </div>
-          <p style={{ fontSize: "1.1rem", color: "#6b7280" }}>
-            Génération de l'ordonnance en cours...
-          </p>
-          <p style={{ fontSize: "0.9rem", color: "#9ca3af", marginTop: "8px" }}>
-            Analyse du terrain + Recherche vectorstores
-          </p>
+          <div style={{ fontSize: "3rem", marginBottom: "16px", animation: "pulse 2s infinite" }}>🧬</div>
+          <p style={{ fontSize: "1.1rem", color: "#6b7280", fontWeight: "500" }}>Raisonnement Endobiogénique en cours...</p>
+          <p style={{ fontSize: "0.9rem", color: "#9ca3af", marginTop: "8px" }}>Analyse des Axes → Fusion Clinique → Vérification Sécurité</p>
         </div>
       </div>
     );
   }
 
+  // --- Empty State ---
   if (!ordonnance) {
     return (
-      <div
-        style={{
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#f9fafb",
-          borderRadius: "12px",
-        }}
-      >
+      <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb", borderRadius: "12px" }}>
         <div style={{ textAlign: "center", padding: "48px" }}>
-          <div style={{ fontSize: "4rem", marginBottom: "16px" }}>💊</div>
-          <h3 style={{ fontSize: "1.3rem", fontWeight: "600", color: "#1f2937", marginBottom: "8px" }}>
-            Aucune ordonnance sélectionnée
-          </h3>
-          <p style={{ fontSize: "0.95rem", color: "#6b7280" }}>
-            Générez une ordonnance pour commencer
-          </p>
+          <div style={{ fontSize: "4rem", marginBottom: "16px" }}>🎓</div>
+          <h3 style={{ fontSize: "1.3rem", fontWeight: "600", color: "#1f2937" }}>Mode Apprentissage Actif</h3>
+          <p style={{ fontSize: "0.95rem", color: "#6b7280", marginTop: "8px" }}>Générez une ordonnance pour visualiser le lien<br/>entre la biologie et la thérapeutique.</p>
         </div>
       </div>
     );
   }
 
-  const getStatutColor = (statut: string) => {
-    const colors: Record<string, { bg: string; text: string }> = {
-      brouillon: { bg: "#fef3c7", text: "#92400e" },
-      validee: { bg: "#d1fae5", text: "#065f46" },
-      archivee: { bg: "#e5e7eb", text: "#374151" },
-    };
-    return colors[statut] || colors.brouillon;
-  };
-
-  const statutColor = getStatutColor(ordonnance.statut);
+  const statutColor = ordonnance.statut === 'validee' ? { bg: "#d1fae5", text: "#065f46" } : { bg: "#fef3c7", text: "#92400e" };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        background: "white",
-        borderRadius: "12px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-      }}
-    >
-      {/* En-tête ordonnance */}
-      <div
-        style={{
-          padding: "24px",
-          background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-          color: "white",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
+    <div style={{ display: "flex", flexDirection: "column", background: "white", borderRadius: "12px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+
+      {/* Header Pédagogique */}
+      <div style={{ padding: "24px", background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)", color: "white" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "16px" }}>
           <div>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: "600", marginBottom: "4px" }}>
-              💊 Ordonnance Endobiogénique
-            </h2>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: "700", letterSpacing: "-0.5px" }}>Ordonnance Endobiogénique</h2>
             <p style={{ fontSize: "0.9rem", opacity: 0.9 }}>
               {new Date(ordonnance.createdAt).toLocaleDateString("fr-FR", {
                 day: "2-digit",
@@ -167,178 +94,125 @@ export function OrdonnancePanel({ ordonnance, loading }: OrdonnancePanelProps) {
               })}
             </p>
           </div>
-          <span
-            style={{
-              padding: "6px 12px",
-              background: statutColor.bg,
-              color: statutColor.text,
-              borderRadius: "6px",
-              fontSize: "0.75rem",
-              fontWeight: "600",
-              textTransform: "uppercase",
-            }}
-          >
+          <span style={{ padding: "6px 12px", background: statutColor.bg, color: statutColor.text, borderRadius: "6px", fontSize: "0.75rem", fontWeight: "700", textTransform: "uppercase" }}>
             {ordonnance.statut}
           </span>
         </div>
 
         {ordonnance.syntheseClinique && (
-          <p
-            style={{
-              fontSize: "0.9rem",
-              lineHeight: "1.5",
-              opacity: 0.95,
-              background: "rgba(255, 255, 255, 0.1)",
-              padding: "12px",
-              borderRadius: "8px",
-            }}
-          >
-            {ordonnance.syntheseClinique}
-          </p>
+          <div style={{ background: "rgba(255, 255, 255, 0.1)", padding: "16px", borderRadius: "8px", borderLeft: "4px solid rgba(255,255,255,0.5)" }}>
+            <h4 style={{ fontSize: "0.85rem", textTransform: "uppercase", opacity: 0.8, marginBottom: "8px", fontWeight: "600" }}>Synthèse du Terrain</h4>
+            <p style={{ fontSize: "0.95rem", lineHeight: "1.6" }}>{ordonnance.syntheseClinique}</p>
+          </div>
         )}
       </div>
 
-      {/* Contenu */}
-      <div
-        style={{
-          padding: "24px",
-        }}
-      >
-        {/* VOLET 1 - ENDOBIOGÉNIE (Canon) */}
+      {/* Contenu des Volets */}
+      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+
         <VoletSection
-          title="VOLET 1 - ENDOBIOGÉNIE (Canon Lapraz/Hedayat)"
-          emoji="🌿"
-          color="#10b981"
+          title="VOLET 1 - ENDOBIOGÉNIE (Canon)"
+          emoji="🛡️"
+          color="#059669"
           recommendations={ordonnance.voletEndobiogenique}
           expanded={expandedSections.volet1}
           onToggle={() => toggleSection("volet1")}
-          description="Recommandations issues du vectorstore canon Endobiogénie"
-          badge="Niveau 1"
+          description="Traitement de fond des déséquilibres neuro-endocriniens majeurs"
+          badge="Priorité Absolue"
         />
 
-        {/* VOLET 2 - PHYTO ÉLARGI (titre dynamique selon scope) */}
+        {/* VOLET 2 - PHYTOTHÉRAPIE: Filtrer par type 'plante' */}
         {(() => {
-          const volet2Info = getVolet2Title(ordonnance.scope);
-          return (
+          const phytoRecommendations = ordonnance.voletPhytoElargi?.filter(rec => rec.type === 'plante') || [];
+          return phytoRecommendations.length > 0 && (
             <VoletSection
-              title={volet2Info.title}
-              emoji={volet2Info.emoji}
-              color="#3b82f6"
-              recommendations={ordonnance.voletPhytoElargi}
+              title="VOLET 2 - PHYTOTHÉRAPIE ÉLARGIE"
+              emoji="🌿"
+              color="#059669"
+              recommendations={phytoRecommendations}
               expanded={expandedSections.volet2}
               onToggle={() => toggleSection("volet2")}
-              description={volet2Info.description}
-              badge="Niveau 2"
+              description="Extension symptomatique et fonctionnelle"
+              badge="Soutien"
             />
           );
         })()}
 
-        {/* VOLET 3 - COMPLÉMENTS */}
-        <VoletSection
-          title="VOLET 3 - MICRO-NUTRITION"
-          emoji="💊"
-          color="#8b5cf6"
-          recommendations={ordonnance.voletComplements}
-          expanded={expandedSections.volet3}
-          onToggle={() => toggleSection("volet3")}
-          description="Compléments nutritionnels ciblés sur les axes perturbés"
-          badge="Niveau 3"
-        />
+        {/* VOLET 3 - GEMMOTHÉRAPIE: Filtrer par type 'gemmo' */}
+        {(() => {
+          const gemmoRecommendations = ordonnance.voletPhytoElargi?.filter(rec => rec.type === 'gemmo') || [];
+          return gemmoRecommendations.length > 0 && (
+            <VoletSection
+              title="VOLET 3 - GEMMOTHÉRAPIE"
+              emoji="🌱"
+              color="#10b981"
+              recommendations={gemmoRecommendations}
+              expanded={expandedSections.volet3}
+              onToggle={() => toggleSection("volet3")}
+              description="Macérats de bourgeons"
+              badge="Drainage"
+            />
+          );
+        })()}
 
-        {/* Conseils associés */}
-        {ordonnance.conseilsAssocies && ordonnance.conseilsAssocies.length > 0 && (
-          <div
-            style={{
-              marginTop: "24px",
-              padding: "16px",
-              background: "#fef3c7",
-              border: "2px solid #f59e0b",
-              borderRadius: "12px",
-            }}
-          >
-            <h4 style={{ fontSize: "1rem", fontWeight: "600", color: "#92400e", marginBottom: "12px" }}>
-              💡 Conseils hygiéno-diététiques
-            </h4>
-            <ul style={{ margin: 0, paddingLeft: "20px", color: "#92400e" }}>
-              {ordonnance.conseilsAssocies.map((conseil, idx) => (
-                <li key={idx} style={{ marginBottom: "8px", fontSize: "0.9rem", lineHeight: "1.5" }}>
-                  {conseil}
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* VOLET 4 - AROMATHÉRAPIE: Filtrer par type 'HE' */}
+        {(() => {
+          const aromaRecommendations = ordonnance.voletPhytoElargi?.filter(rec => rec.type === 'HE') || [];
+          return aromaRecommendations.length > 0 && (
+            <VoletSection
+              title="VOLET 4 - AROMATHÉRAPIE"
+              emoji="💧"
+              color="#3b82f6"
+              recommendations={aromaRecommendations}
+              expanded={expandedSections.volet4}
+              onToggle={() => toggleSection("volet4")}
+              description="Huiles essentielles"
+              badge="Ciblé"
+            />
+          );
+        })()}
+
+        {/* VOLET 5 - MICRO-NUTRITION: N'afficher QUE si micro-nutrition est sélectionnée ET des recommandations existent */}
+        {ordonnance.scope?.micronutrition && ordonnance.voletComplements && ordonnance.voletComplements.length > 0 && (
+          <VoletSection
+            title="VOLET 5 - MICRO-NUTRITION"
+            emoji="💊"
+            color="#7c3aed"
+            recommendations={ordonnance.voletComplements}
+            expanded={expandedSections.volet5}
+            onToggle={() => toggleSection("volet5")}
+            description="Correction des carences et cofacteurs enzymatiques"
+            badge="Terrain"
+          />
         )}
 
-        {/* Surveillance biologique */}
-        {ordonnance.surveillanceBiologique && ordonnance.surveillanceBiologique.length > 0 && (
-          <div
-            style={{
-              marginTop: "16px",
-              padding: "16px",
-              background: "#dbeafe",
-              border: "2px solid #3b82f6",
-              borderRadius: "12px",
-            }}
-          >
-            <h4 style={{ fontSize: "1rem", fontWeight: "600", color: "#1e40af", marginBottom: "12px" }}>
-              🔬 Surveillance biologique recommandée
-            </h4>
-            <ul style={{ margin: 0, paddingLeft: "20px", color: "#1e40af" }}>
-              {ordonnance.surveillanceBiologique.map((item, idx) => (
-                <li key={idx} style={{ marginBottom: "8px", fontSize: "0.9rem", lineHeight: "1.5" }}>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {/* Blocs Conseils & Surveillance */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          {ordonnance.conseilsAssocies && ordonnance.conseilsAssocies.length > 0 && (
+            <div style={{ padding: "16px", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: "8px" }}>
+              <h4 style={{ color: "#92400e", fontWeight: "600", marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px" }}>💡 Hygiène de vie</h4>
+              <ul style={{ paddingLeft: "20px", margin: 0, fontSize: "0.85rem", color: "#78350f" }}>
+                {ordonnance.conseilsAssocies.map((c, i) => <li key={i}>{c}</li>)}
+              </ul>
+            </div>
+          )}
+          {ordonnance.surveillanceBiologique && ordonnance.surveillanceBiologique.length > 0 && (
+            <div style={{ padding: "16px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px" }}>
+              <h4 style={{ color: "#1e40af", fontWeight: "600", marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px" }}>🔬 Surveillance</h4>
+              <ul style={{ paddingLeft: "20px", margin: 0, fontSize: "0.85rem", color: "#1e3a8a" }}>
+                {ordonnance.surveillanceBiologique.map((c, i) => <li key={i}>{c}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Footer avec actions */}
-      <div
-        style={{
-          padding: "16px 24px",
-          borderTop: "1px solid #e5e7eb",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          background: "#f9fafb",
-        }}
-      >
-        <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
-          {ordonnance.voletEndobiogenique.length + ordonnance.voletPhytoElargi.length + ordonnance.voletComplements.length}{" "}
-          recommandation(s)
-        </div>
+      {/* Footer Actions */}
+      <div style={{ padding: "16px 24px", background: "#f9fafb", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>Made with Endobiogeny AI • v2.1</span>
         <div style={{ display: "flex", gap: "12px" }}>
-          <button
-            style={{
-              padding: "10px 20px",
-              background: "white",
-              color: "#6b7280",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              fontSize: "0.9rem",
-              fontWeight: "600",
-              cursor: "pointer",
-            }}
-          >
-            📋 Copier
-          </button>
-          <button
-            style={{
-              padding: "10px 20px",
-              background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "0.9rem",
-              fontWeight: "600",
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
-            }}
-          >
-            🖨️ Imprimer
-          </button>
+          <button style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #d1d5db", background: "white", color: "#374151", fontWeight: "600", cursor: "pointer" }}>📋 Copier</button>
+          <button style={{ padding: "8px 16px", borderRadius: "6px", background: "#2563eb", color: "white", border: "none", fontWeight: "600", cursor: "pointer", boxShadow: "0 2px 4px rgba(37,99,235,0.3)" }}>🖨️ Imprimer</button>
         </div>
       </div>
     </div>
@@ -346,101 +220,35 @@ export function OrdonnancePanel({ ordonnance, loading }: OrdonnancePanelProps) {
 }
 
 // ========================================
-// Composant Volet Section
+// SOUS-COMPOSANTS
 // ========================================
-type VoletSectionProps = {
-  title: string;
-  emoji: string;
-  color: string;
-  recommendations: RecommandationTherapeutique[];
-  expanded: boolean;
-  onToggle: () => void;
-  description?: string;
-  badge?: string;
-};
 
-function VoletSection({ title, emoji, color, recommendations, expanded, onToggle, description, badge }: VoletSectionProps) {
+function VoletSection({ title, emoji, color, recommendations, expanded, onToggle, description, badge }: any) {
   const isEmpty = recommendations.length === 0;
 
   return (
-    <div
-      style={{
-        marginBottom: "24px",
-        border: `2px solid ${isEmpty ? "#e5e7eb" : color}`,
-        borderRadius: "12px",
-        overflow: "hidden",
-      }}
-    >
-      {/* En-tête du volet */}
-      <div
-        onClick={onToggle}
-        style={{
-          padding: "16px 20px",
-          background: isEmpty ? "#f9fafb" : color,
-          color: isEmpty ? "#6b7280" : "white",
-          cursor: "pointer",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          transition: "all 0.2s",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <span style={{ fontSize: "1.5rem" }}>{emoji}</span>
+    <div style={{ border: `1px solid ${isEmpty ? "#e5e7eb" : color}`, borderRadius: "12px", overflow: "hidden", transition: "all 0.2s" }}>
+      <div onClick={onToggle} style={{ padding: "16px 20px", background: isEmpty ? "#f9fafb" : `${color}10`, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: color, color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>{emoji}</div>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <h3 style={{ fontSize: "1rem", fontWeight: "600", margin: 0 }}>{title}</h3>
-              {badge && (
-                <span
-                  style={{
-                    padding: "2px 8px",
-                    background: isEmpty ? "#e5e7eb" : "rgba(255, 255, 255, 0.3)",
-                    borderRadius: "4px",
-                    fontSize: "0.7rem",
-                    fontWeight: "600",
-                  }}
-                >
-                  {badge}
-                </span>
-              )}
+              <h3 style={{ fontSize: "1rem", fontWeight: "700", color: "#111827", margin: 0 }}>{title}</h3>
+              <span style={{ fontSize: "0.7rem", fontWeight: "700", color: color, background: "white", padding: "2px 6px", borderRadius: "4px", border: `1px solid ${color}` }}>{badge}</span>
             </div>
-            {description && (
-              <p style={{ fontSize: "0.8rem", margin: "4px 0 0 0", opacity: 0.9 }}>
-                {description}
-              </p>
-            )}
+            <p style={{ fontSize: "0.85rem", color: "#6b7280", margin: "2px 0 0 0" }}>{description}</p>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <span
-            style={{
-              padding: "4px 10px",
-              background: isEmpty ? "#d1d5db" : "rgba(255, 255, 255, 0.3)",
-              borderRadius: "6px",
-              fontSize: "0.85rem",
-              fontWeight: "600",
-            }}
-          >
-            {recommendations.length}
-          </span>
-          <span style={{ fontSize: "1.2rem" }}>{expanded ? "▼" : "▶"}</span>
+        <div style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "white", border: "1px solid #e5e7eb", fontSize: "0.8rem", fontWeight: "600" }}>
+          {recommendations.length}
         </div>
       </div>
 
-      {/* Contenu du volet */}
-      {expanded && (
-        <div style={{ padding: isEmpty ? "24px" : "0" }}>
-          {isEmpty ? (
-            <div style={{ textAlign: "center", color: "#9ca3af", fontSize: "0.9rem" }}>
-              Aucune recommandation dans ce volet
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: "1px", background: "#e5e7eb" }}>
-              {recommendations.map((rec, idx) => (
-                <RecommandationCard key={rec.id} recommendation={rec} index={idx} color={color} />
-              ))}
-            </div>
-          )}
+      {expanded && !isEmpty && (
+        <div style={{ padding: "0", background: "#f3f4f6", display: "grid", gap: "1px" }}>
+          {recommendations.map((rec: RecommandationTherapeutique, idx: number) => (
+            <RecommandationCard key={rec.id} recommendation={rec} index={idx} color={color} />
+          ))}
         </div>
       )}
     </div>
@@ -448,126 +256,115 @@ function VoletSection({ title, emoji, color, recommendations, expanded, onToggle
 }
 
 // ========================================
-// Composant Carte Recommandation
+// CARTE D'APPRENTISSAGE (LEARNING CARD)
 // ========================================
-type RecommandationCardProps = {
-  recommendation: RecommandationTherapeutique;
-  index: number;
-  color: string;
-};
 
-function RecommandationCard({ recommendation, index, color }: RecommandationCardProps) {
+function RecommandationCard({ recommendation, index, color }: { recommendation: RecommandationTherapeutique, index: number, color: string }) {
   const [showDetails, setShowDetails] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const securityStyle = getSecurityStyles(recommendation.niveauSecurite);
+  const pedago = recommendation.pedagogie;
 
   return (
-    <div style={{ background: "white", padding: "16px 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+    <div style={{ background: securityStyle.bg, padding: "16px 20px", borderLeft: securityStyle.borderLeft }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+
         <div style={{ flex: 1 }}>
-          {/* Titre */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "24px",
-                height: "24px",
-                background: color,
-                color: "white",
-                borderRadius: "50%",
-                fontSize: "0.75rem",
-                fontWeight: "600",
-              }}
-            >
-              {index + 1}
-            </span>
-            <h4 style={{ fontSize: "1.05rem", fontWeight: "600", color: "#1f2937", margin: 0 }}>
-              {recommendation.substance}
-            </h4>
-            <span
-              style={{
-                padding: "2px 8px",
-                background: "#f3f4f6",
-                color: "#6b7280",
-                borderRadius: "4px",
-                fontSize: "0.75rem",
-                fontWeight: "600",
-              }}
-            >
-              {recommendation.forme}
-            </span>
+          {/* Ligne Supérieure : Substance + Badge Intention */}
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "10px", marginBottom: "8px" }}>
+            {/* Numéro */}
+            <span style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#e5e7eb", color: "#6b7280", fontSize: "0.7rem", fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "center" }}>{index + 1}</span>
+
+            {/* Nom Substance */}
+            <h4 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#1f2937", margin: 0 }}>{recommendation.substance}</h4>
+
+            {/* Forme Galénique */}
+            <span style={{ fontSize: "0.75rem", padding: "2px 8px", background: "#f3f4f6", borderRadius: "4px", color: "#4b5563", fontWeight: "500" }}>{recommendation.forme}</span>
+
+            {/* --- LEARNING COMPONENT : BADGE PÉDAGOGIQUE --- */}
+            {pedago && (
+              <div
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+              >
+                <span style={{
+                  display: "flex", alignItems: "center", gap: "6px",
+                  padding: "4px 10px", background: `${color}15`, color: color,
+                  borderRadius: "20px", fontSize: "0.75rem", fontWeight: "700", cursor: "help", border: `1px solid ${color}30`
+                }}>
+                  🎯 {pedago.actionSurAxe}
+                </span>
+
+                {/* TOOLTIP EXPLIQUE LE "POURQUOI" */}
+                {hovered && (
+                  <div style={{
+                    position: "absolute", bottom: "130%", left: "0", width: "280px",
+                    background: "#1f2937", color: "white", padding: "12px", borderRadius: "8px",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.2)", zIndex: 50, fontSize: "0.8rem", lineHeight: "1.4"
+                  }}>
+                    <div style={{ marginBottom: "6px", fontWeight: "700", color: "#60a5fa" }}>Pourquoi cette plante ?</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <span>Index déclencheur :</span>
+                      <span style={{ fontWeight: "600" }}>{pedago.indexDeclencheur || "Analyse globale"}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <span>Score perturbation :</span>
+                      <span style={{ fontWeight: "600", color: pedago.scorePerturbation > 7 ? "#f87171" : "#fbbf24" }}>
+                        {pedago.scorePerturbation}/10
+                      </span>
+                    </div>
+                    <div style={{ borderTop: "1px solid #374151", paddingTop: "6px", fontStyle: "italic", color: "#9ca3af" }}>
+                      "{pedago.actionSurAxe}"
+                    </div>
+                    <div style={{ position: "absolute", top: "100%", left: "20px", borderWidth: "6px", borderStyle: "solid", borderColor: "#1f2937 transparent transparent transparent" }}></div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Posologie + Durée */}
-          <div style={{ display: "grid", gap: "6px", marginBottom: "8px" }}>
-            <div style={{ fontSize: "0.9rem", color: "#4b5563" }}>
-              <strong>Posologie:</strong> {recommendation.posologie}
-            </div>
-            <div style={{ fontSize: "0.9rem", color: "#4b5563" }}>
-              <strong>Durée:</strong> {recommendation.duree}
-            </div>
+          {/* Ligne Posologie */}
+          <div style={{ display: "flex", gap: "16px", fontSize: "0.9rem", color: "#374151", marginBottom: "10px" }}>
+            <div><strong>📅 {recommendation.posologie}</strong></div>
+            <div style={{ color: "#6b7280" }}>Durée : {recommendation.duree}</div>
           </div>
 
-          {/* Détails expandable */}
+          {/* Zone Détails (Expandable) */}
           {showDetails && (
-            <div
-              style={{
-                marginTop: "12px",
-                padding: "12px",
-                background: "#f9fafb",
-                borderRadius: "8px",
-                fontSize: "0.85rem",
-                color: "#6b7280",
-              }}
-            >
-              <div style={{ marginBottom: "8px" }}>
-                <strong style={{ color: "#374151" }}>Axe cible:</strong> {recommendation.axeCible}
+            <div style={{ marginTop: "12px", padding: "12px", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "0.85rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "8px", marginBottom: "8px" }}>
+                <span style={{ color: "#6b7280" }}>Mécanisme :</span>
+                <span style={{ fontWeight: "500", color: "#111827" }}>{recommendation.mecanisme}</span>
+
+                {pedago?.constituantsClefs && pedago.constituantsClefs.length > 0 && (
+                  <>
+                    <span style={{ color: "#6b7280" }}>Chimie :</span>
+                    <span style={{ color: "#059669" }}>{pedago.constituantsClefs.join(", ")}</span>
+                  </>
+                )}
               </div>
-              <div style={{ marginBottom: "8px" }}>
-                <strong style={{ color: "#374151" }}>Mécanisme:</strong> {recommendation.mecanisme}
-              </div>
-              <div style={{ marginBottom: "8px" }}>
-                <strong style={{ color: "#374151" }}>Source:</strong> {recommendation.sourceVectorstore} (niveau {recommendation.niveauPreuve})
-              </div>
+
               {recommendation.CI && recommendation.CI.length > 0 && (
-                <div style={{ marginTop: "8px", color: "#ef4444" }}>
-                  <strong>⚠️ CI:</strong> {recommendation.CI.join(", ")}
+                <div style={{ marginTop: "8px", padding: "8px", background: "#fef2f2", borderRadius: "6px", color: "#ef4444", fontSize: "0.8rem", display: "flex", gap: "8px" }}>
+                  <strong>⚠️ Contre-indications gérées :</strong> {recommendation.CI.join(", ")}
                 </div>
               )}
             </div>
           )}
 
-          {/* Bouton détails */}
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            style={{
-              marginTop: "8px",
-              padding: "4px 12px",
-              background: "#f3f4f6",
-              color: "#6b7280",
-              border: "none",
-              borderRadius: "6px",
-              fontSize: "0.8rem",
-              fontWeight: "600",
-              cursor: "pointer",
-            }}
-          >
-            {showDetails ? "▲ Masquer" : "▼ Détails"}
+          <button onClick={() => setShowDetails(!showDetails)} style={{ background: "none", border: "none", color: "#6b7280", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+            {showDetails ? "Masquer l'analyse détaillée" : "Voir le raisonnement clinique"}
           </button>
         </div>
 
-        {/* Priorité */}
-        <div
-          style={{
-            padding: "4px 8px",
-            background: recommendation.priorite === 1 ? "#fee2e2" : recommendation.priorite === 2 ? "#fef3c7" : "#e0e7ff",
-            color: recommendation.priorite === 1 ? "#dc2626" : recommendation.priorite === 2 ? "#f59e0b" : "#6366f1",
-            borderRadius: "6px",
-            fontSize: "0.75rem",
-            fontWeight: "600",
-          }}
-        >
-          P{recommendation.priorite}
+        {/* Priorité Badge */}
+        <div style={{ marginLeft: "12px", textAlign: "center" }}>
+          <div style={{ fontSize: "0.7rem", fontWeight: "700", color: "#9ca3af", marginBottom: "2px" }}>PRIORITÉ</div>
+          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: recommendation.priorite === 1 ? "#ef4444" : recommendation.priorite === 2 ? "#f59e0b" : "#6366f1", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700" }}>
+            {recommendation.priorite}
+          </div>
         </div>
       </div>
     </div>

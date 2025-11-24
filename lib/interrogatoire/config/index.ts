@@ -1,5 +1,6 @@
 import type { QuestionConfig } from "../types";
-import HistoriquePatientConfig from "./historique";
+import HistoriqueConfig from "./historique";
+import ModeVieConfig from "./mode-de-vie";
 import AxeNeuroConfig from "./axe-neuro";
 import AxeAdaptatifConfig from "./axe-adaptatif";
 import AxeThyroConfig from "./axe-thyro";
@@ -12,6 +13,7 @@ import AxeDermatoConfig from "./axe-dermato";
 
 export type AxisKey =
   | "historique"
+  | "modeVie"
   | "neuro"
   | "adaptatif"
   | "thyro"
@@ -22,78 +24,156 @@ export type AxisKey =
   | "cardioMetabo"
   | "dermato";
 
+export type BlocKey = "terrain" | "gestionnaires" | "emonctoires";
+
 export interface AxisDefinition {
   key: AxisKey;
   label: string;
   description: string;
   questions: QuestionConfig[] | GonadoQuestion[];
+  bloc?: BlocKey; // Pour le groupement visuel
+  icon?: string; // Emoji pour la navigation
 }
 
-export const AXES_DEFINITION: AxisDefinition[] = [
+export interface BlocDefinition {
+  key: BlocKey;
+  label: string;
+  description: string;
+  color: string; // Couleur du bloc (bg-blue-50, bg-purple-50, bg-green-50)
+  icon: string;
+  axes: AxisKey[];
+}
+
+// 🟦 BLOC 1 : TERRAIN & HISTOIRE
+// 🟪 BLOC 2 : LES GESTIONNAIRES (Système Neuro-Endocrinien)
+// 🟩 BLOC 3 : ÉMONCTOIRES & ORGANES
+
+export const BLOCS_DEFINITION: BlocDefinition[] = [
   {
-    key: "historique",
-    label: "Historique",
-    description: "Contexte de vie, naissance, développement, antécédents et mode de vie.",
-    questions: HistoriquePatientConfig
+    key: "terrain",
+    label: "Terrain & Histoire",
+    description: "Les fondations : antécédents, mode de vie, contexte",
+    color: "bg-blue-50 border-blue-200",
+    icon: "🟦",
+    axes: ["historique", "modeVie"]
   },
   {
+    key: "gestionnaires",
+    label: "Les Gestionnaires",
+    description: "Le système neuro-endocrinien",
+    color: "bg-purple-50 border-purple-200",
+    icon: "🟪",
+    axes: ["neuro", "adaptatif", "thyro", "gonado", "somato"]
+  },
+  {
+    key: "emonctoires",
+    label: "Émonctoires & Organes",
+    description: "Les conséquences symptomatiques",
+    color: "bg-green-50 border-green-200",
+    icon: "🟩",
+    axes: ["digestif", "immuno", "cardioMetabo", "dermato"]
+  }
+];
+
+export const AXES_DEFINITION: AxisDefinition[] = [
+  // 🟦 BLOC 1 : TERRAIN & HISTOIRE
+  {
+    key: "historique",
+    label: "Antécédents & Ligne de Vie",
+    description: "Chronologie, chocs, chirurgies, développement",
+    questions: HistoriqueConfig,
+    bloc: "terrain",
+    icon: "📜"
+  },
+  {
+    key: "modeVie",
+    label: "Mode de Vie",
+    description: "Alimentation, sommeil global, toxiques (alcool, tabac)",
+    questions: ModeVieConfig,
+    bloc: "terrain",
+    icon: "🏃"
+  },
+
+  // 🟪 BLOC 2 : LES GESTIONNAIRES
+  {
     key: "neuro",
-    label: "Neurovégétatif",
-    description: "Sommeil, rythmes, faim, thermorégulation, palpitations et énergie.",
-    questions: AxeNeuroConfig
+    label: "Axe Neurovégétatif",
+    description: "Sympathique (Alpha/Bêta), Parasympathique, Sommeil, Rythmes",
+    questions: AxeNeuroConfig,
+    bloc: "gestionnaires",
+    icon: "🧠"
   },
   {
     key: "adaptatif",
-    label: "Adaptatif (Corticotrope)",
-    description: "Stress aigu/chronique, charge mentale, hypoglycémies fonctionnelles.",
-    questions: AxeAdaptatifConfig
+    label: "Axe Corticotrope",
+    description: "Stress, Adaptation, Inflammation, Psychisme Anxieux",
+    questions: AxeAdaptatifConfig,
+    bloc: "gestionnaires",
+    icon: "😰"
   },
   {
     key: "thyro",
-    label: "Thyroïdien",
-    description: "Thermorégulation, peau, transit lié à la thyroïde, énergie et rythme.",
-    questions: AxeThyroConfig
+    label: "Axe Thyréotrope",
+    description: "Métabolisme, Énergie, Psychisme Dépressif",
+    questions: AxeThyroConfig,
+    bloc: "gestionnaires",
+    icon: "🦋"
   },
   {
     key: "gonado",
-    label: "Gonado (H/F)",
-    description: "Cycles, sexualité, ménopause, androgènes, humeur et muqueuses.",
-    questions: AxeGonadoConfig
+    label: "Axe Gonadotrope",
+    description: "Reproduction, Cycles, Sexualité",
+    questions: AxeGonadoConfig,
+    bloc: "gestionnaires",
+    icon: "🌸"
   },
   {
     key: "somato",
-    label: "Somatotrope",
-    description: "GH/IGF1 : énergie matinale, récupération, croissance, masse musculaire.",
-    questions: AxeSomatoConfig
+    label: "Axe Somatotrope",
+    description: "Croissance, Réparation, Récupération",
+    questions: AxeSomatoConfig,
+    bloc: "gestionnaires",
+    icon: "💪"
   },
+
+  // 🟩 BLOC 3 : ÉMONCTOIRES & ORGANES
   {
     key: "digestif",
-    label: "Digestif",
-    description: "Estomac, foie/VB, intestin grêle, côlon et intolérances.",
-    questions: AxeDigestifConfig
+    label: "Sphère Digestive & Hépatique",
+    description: "Estomac, Foie/VB, Intestins, Intolérances",
+    questions: AxeDigestifConfig,
+    bloc: "emonctoires",
+    icon: "🍽️"
   },
   {
     key: "immuno",
-    label: "Immuno-inflammatoire",
-    description: "Allergies, infections répétées, inflammations cutanées et douleurs.",
-    questions: AxeImmunoConfig
+    label: "Sphère Immuno-Inflammatoire",
+    description: "ORL, Poumons, Auto-immunité, Allergies",
+    questions: AxeImmunoConfig,
+    bloc: "emonctoires",
+    icon: "🛡️"
   },
   {
     key: "cardioMetabo",
-    label: "Cardio-métabolique",
-    description: "Tension, circulation veineuse, œdèmes, lipides et poids.",
-    questions: AxeCardioMetaboConfig
+    label: "Sphère Cardio-Métabolique",
+    description: "Tension, Circulation, Lipides, Poids",
+    questions: AxeCardioMetaboConfig,
+    bloc: "emonctoires",
+    icon: "❤️"
   },
   {
     key: "dermato",
-    label: "Dermato & Muqueux",
-    description: "Peau, cheveux, ongles, muqueuses et hypersensibilités cutanées.",
-    questions: AxeDermatoConfig
+    label: "Sphère Dermato & Muqueuses",
+    description: "Peau, Cheveux, Ongles, Muqueuses",
+    questions: AxeDermatoConfig,
+    bloc: "emonctoires",
+    icon: "🧴"
   }
 ];
 
 export {
-  HistoriquePatientConfig,
+  HistoriqueConfig,
+  ModeVieConfig,
   AxeNeuroConfig,
   AxeAdaptatifConfig,
   AxeThyroConfig,

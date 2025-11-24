@@ -10,10 +10,11 @@ export type AxeType =
   | "adaptatif"
   | "thyroidien"
   | "gonadique"
+  | "somatotrope"
   | "digestif"
-  | "immuno"
-  | "rythmes"
-  | "axesdevie";
+  | "cardiometabolique"
+  | "dermato"
+  | "immuno";
 
 /**
  * Labels français pour chaque axe
@@ -23,10 +24,11 @@ export const AXE_LABELS: Record<AxeType, string> = {
   adaptatif: "Axe Adaptatif (Stress)",
   thyroidien: "Axe Thyroïdien",
   gonadique: "Axe Gonadique",
+  somatotrope: "Axe Somatotrope",
   digestif: "Axe Digestif & Métabolique",
+  cardiometabolique: "Axe Cardio-métabolique",
+  dermato: "Axe Dermato & Muqueux",
   immuno: "Axe Immuno-inflammatoire",
-  rythmes: "Rythmes biologiques",
-  axesdevie: "Axes de vie",
 };
 
 /**
@@ -37,10 +39,11 @@ export const AXE_EMOJIS: Record<AxeType, string> = {
   adaptatif: "😰",
   thyroidien: "🦋",
   gonadique: "🌸",
+  somatotrope: "💪",
   digestif: "🍽️",
+  cardiometabolique: "❤️",
+  dermato: "🧴",
   immuno: "🛡️",
-  rythmes: "⏰",
-  axesdevie: "🌱",
 };
 
 /**
@@ -89,18 +92,3 @@ export interface InterpretationRequest {
   traitements?: string;
   contreindicationsMajeures?: string[];
 }
-
-/**
- * Mapping des clés d'interrogatoire vers les types d'axes
- */
-export const INTERROGATOIRE_AXE_MAPPING: Record<string, AxeType> = {
-  axeNeuroVegetatif: "neurovegetatif",
-  axeAdaptatif: "adaptatif",
-  axeThyroidien: "thyroidien",
-  axeGonadiqueFemme: "gonadique",
-  axeGonadiqueHomme: "gonadique",
-  axeDigestifMetabolique: "digestif",
-  axeImmunoInflammatoire: "immuno",
-  rythmes: "rythmes",
-  axesDeVie: "axesdevie",
-};

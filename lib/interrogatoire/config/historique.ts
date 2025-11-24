@@ -1,256 +1,137 @@
 import type { QuestionConfig } from "../types";
 
 /**
- * Module Historique du Patient
- * -----------------------------------------------------
+ * HISTORIQUE & LIGNE DE VIE - BLOC TERRAIN
+ * -------------------------------------------------
  * Ce module est transversal et non axial.
- * Il sert à contextualiser la lecture fonctionnelle
- * et à réduire les risques d'hallucination IA.
+ * Il contextualise la lecture fonctionnelle et permet à l'IA
+ * de distinguer un terrain constitutionnel (génétique)
+ * d'un terrain acquis (chocs, mode de vie).
+ *
+ * SPÉCIFICITÉ : Ces données ne scorent pas, mais ORIENTENT l'interprétation
+ * des autres axes via les TAGS.
  *
  * Sections :
- * - Périnatal
- * - Petite enfance
- * - Enfance / adolescence
- * - Vie hormonale (homme / femme)
- * - Antécédents médicaux
- * - Antécédents psychiques
- * - Mode de vie actuel
- * - Expositions environnementales
+ * - Périnatal (Le Terrain Constitutionnel)
+ * - Enfance & Puberté (La Construction)
+ * - Chocs & Traumas (Les Fractures)
+ * - Mode de Vie (Les Facteurs Aggravants)
  */
 
-export const HistoriquePatientConfig: QuestionConfig[] = [
+export type HistoriqueQuestion = QuestionConfig & {
+  tags?: string[];
+};
 
-  // ---------------------------------------------------
-  // 1. PÉRINATAL / NAISSANCE
-  // ---------------------------------------------------
+const HistoriqueConfig: HistoriqueQuestion[] = [
+  // ==========================================
+  // 1. PÉRINATAL (Le Terrain Constitutionnel)
+  // ==========================================
   {
-    id: "perinatal_grossesse_mere",
-    section: "Périnatal",
-    question: "La grossesse de votre mère a-t-elle été compliquée ?",
-    type: "select",
-    options: ["Non", "Oui légère", "Oui importante", "Inconnu"],
-    tooltip: "Les complications périnatales influencent la structure initiale et la vulnérabilité endocrine."
+    id: "histo_naissance",
+    question: "Votre naissance a-t-elle été difficile (Césarienne, Forceps, Prématurité) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Pas du tout", "Un peu", "Modérément", "Assez", "Très difficile"],
+    tooltip: "Un stress à la naissance marque l'axe corticotrope (hyper-réactivité) à vie.",
+    weight: 3,
+    tags: ["stress_perinatal", "hyper_cortico_constitutionnel"],
+    section: "Périnatal"
   },
   {
-    id: "perinatal_accouchement",
-    section: "Périnatal",
-    question: "Quel type d'accouchement avez-vous eu ?",
-    type: "select",
-    options: ["Voie basse", "Césarienne", "Instrumental", "Inconnu"],
-    tooltip: "Évalue les facteurs précoces pouvant influencer la régulation ultérieure du système nerveux autonome."
-  },
-  {
-    id: "perinatal_prematurite",
-    section: "Périnatal",
-    question: "Êtes-vous né(e) prématuré(e) ?",
-    type: "select",
-    options: ["Non", "Oui", "Inconnu"],
-    tooltip: "La prématurité est associée à une fragilité endocrine et immunitaire au long cours."
-  },
-  {
-    id: "perinatal_allaitement",
-    section: "Périnatal",
-    question: "Avez-vous été allaité(e) ?",
-    type: "select",
-    options: ["Non", "Oui", "Partiellement", "Inconnu"],
-    tooltip: "L'allaitement influence le développement immunitaire et le terrain digestif."
+    id: "histo_allaitement",
+    question: "Avez-vous été allaité maternellement ?",
+    type: "boolean",
+    tooltip: "L'allaitement protège le microbiote et l'immunité muqueuse (IgA).",
+    weight: 2,
+    tags: ["protection_immunitaire_initiale"],
+    section: "Périnatal"
   },
 
-  // ---------------------------------------------------
-  // 2. PETITE ENFANCE
-  // ---------------------------------------------------
+  // ==========================================
+  // 2. ENFANCE & PUBERTÉ (La Construction)
+  // ==========================================
   {
-    id: "enfance_infections_repetitions",
-    section: "Petite enfance",
-    question: "Avez-vous eu des infections répétées durant l'enfance ?",
-    type: "select",
-    options: ["Non", "Oui ORL", "Oui pulmonaires", "Oui digestives", "Oui variées"],
-    tooltip: "Indicateur du terrain immunitaire initial et du couplage gonado-immun."
+    id: "histo_croissance",
+    question: "Avez-vous eu une croissance très rapide (poussées) ou des douleurs de croissance ?",
+    type: "boolean",
+    tooltip: "Signe d'une activité Somatotrope/Thyroïdienne intense et parfois déséquilibrée.",
+    weight: 2,
+    tags: ["hyper_somato_constitutionnel"],
+    section: "Enfance & Puberté"
   },
   {
-    id: "enfance_allergies",
-    section: "Petite enfance",
-    question: "Avez-vous présenté un terrain allergique (eczéma, asthme, rhinite) ?",
-    type: "select",
-    options: ["Non", "Oui", "Inconnu"],
-    tooltip: "Important pour comprendre l'activité alpha-sympathique et les dérégulations inflammatoires."
+    id: "histo_puberte_difficile",
+    question: "Votre puberté a-t-elle été difficile (Acné sévère, cycles anarchiques, retard) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Pas du tout", "Un peu", "Modérément", "Assez", "Très difficile"],
+    tooltip: "Révèle la fragilité de l'axe Gonadotrope lors de son activation.",
+    weight: 2,
+    tags: ["fragilite_gonadique"],
+    section: "Enfance & Puberté"
   },
   {
-    id: "enfance_developpement",
-    section: "Petite enfance",
-    question: "Le développement psychomoteur a-t-il été normal ?",
-    type: "select",
-    options: ["Normal", "Léger retard", "Retard significatif", "Inconnu"],
-    tooltip: "Pertinent pour l'évaluation de la maturité somatotrope et du terrain neurologique."
-  },
-
-  // ---------------------------------------------------
-  // 3. ENFANCE / ADOLESCENCE
-  // ---------------------------------------------------
-  {
-    id: "ado_croissance",
-    section: "Enfance / Adolescence",
-    question: "Comment s'est déroulée votre croissance ?",
-    type: "select",
-    options: ["Normale", "Accélérée", "Lente", "Inégale"],
-    tooltip: "La croissance dépend de l'axe somatotrope et permet d'estimer les équilibres GH/IGF-1."
-  },
-  {
-    id: "ado_puberte",
-    section: "Enfance / Adolescence",
-    question: "Votre puberté a-t-elle été dans les temps ?",
-    type: "select",
-    options: ["Précoce", "Normale", "Retardée"],
-    tooltip: "Indicateur majeur de l'axe gonadotrope et de sa maturité."
-  },
-  {
-    id: "ado_troubles_humeur",
-    section: "Enfance / Adolescence",
-    question: "Avez-vous eu des troubles émotionnels marqués durant l'adolescence ?",
-    type: "select",
-    options: ["Non", "Oui", "Léger", "Important"],
-    tooltip: "Permet de comprendre la structuration neurovégétative et corticotrope."
+    id: "histo_infections_enfance",
+    question: "Enfant, étiez-vous tout le temps malade (ORL, Bronchites) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Signe d'un déficit immunitaire Th1 constitutionnel ou d'une immaturité adaptative.",
+    weight: 2,
+    tags: ["deficit_immunitaire_constitutionnel"],
+    section: "Enfance & Puberté"
   },
 
-  // ---------------------------------------------------
-  // 4. VIE HORMONALE
-  // ---------------------------------------------------
-
-  // Femmes
+  // ==========================================
+  // 3. CHOCS & TRAUMAS (Les Fractures)
+  // ==========================================
   {
-    id: "femme_cycles",
-    section: "Vie hormonale",
-    question: "[Femme] Vos cycles ont-ils été réguliers ?",
-    type: "select",
-    options: ["Réguliers", "Irréguliers", "Douloureux", "Abondants", "Aménorrhée"],
-    tooltip: "Évalue la stabilité gonadotrope, l'équilibre estro-progestatif et le terrain muqueux."
+    id: "histo_choc_emotionnel",
+    question: "Avez-vous vécu un choc émotionnel majeur qui a marqué un 'avant/après' dans votre santé ?",
+    type: "boolean",
+    tooltip: "Le 'Facteur Déclencheur' en Endobiogénie. Il décompense le terrain.",
+    weight: 3,
+    tags: ["facteur_declencheur", "rupture_adaptation"],
+    section: "Chocs & Traumas"
   },
   {
-    id: "femme_grossesses",
-    section: "Vie hormonale",
-    question: "[Femme] Avez-vous eu des grossesses ?",
-    type: "select",
-    options: ["Aucune", "1", "2+", "Complications"],
-    tooltip: "La grossesse modifie durablement les axes gonadotrope, thyroïdien et corticotrope."
-  },
-  {
-    id: "femme_menopause",
-    section: "Vie hormonale",
-    question: "[Femme] Êtes-vous ménopausée ?",
-    type: "select",
-    options: ["Non", "Oui récente", "Oui installée"],
-    tooltip: "La ménopause modifie profondément la physiologie œstrogénique et corticotrope."
-
+    id: "histo_surmenage",
+    question: "Avez-vous vécu une période d'épuisement (Burn-out) ou de surmenage intense ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Actuellement"],
+    tooltip: "Effondrement de la réserve surrénalienne. Le patient ne revient jamais à 100% sans aide.",
+    weight: 3,
+    tags: ["epuisement_surrenalien_historique"],
+    section: "Chocs & Traumas"
   },
 
-  // Hommes
+  // ==========================================
+  // 4. MODE DE VIE (Les Facteurs Aggravants)
+  // ==========================================
   {
-    id: "homme_fonction_sexuelle",
-    section: "Vie hormonale",
-    question: "[Homme] Avez-vous constaté des variations de libido ou de performance sexuelle ?",
-    type: "select",
-    options: ["Non", "Oui légère", "Oui importante"],
-    tooltip: "Indicateur clé de l'axe gonadotrope et de son interaction avec le cortisol."
-  },
-
-  // ---------------------------------------------------
-  // 5. ANTÉCÉDENTS MÉDICAUX
-  // ---------------------------------------------------
-  {
-    id: "antecedents_medicaux",
-    section: "Antécédents médicaux",
-    question: "Avez-vous des antécédents médicaux notables ?",
-    type: "text",
-    tooltip: "Contribue à comprendre les fragilités structurelles ou organiques."
+    id: "histo_sport",
+    question: "Faites-vous du sport de manière intensive (> 3x/semaine) ?",
+    type: "boolean",
+    tooltip: "Le sport intensif augmente le besoin en Cortisol et GH. Attention à l'épuisement.",
+    weight: 2,
+    tags: ["hyper_sollicitation_somato"],
+    section: "Mode de Vie"
   },
   {
-    id: "antecedents_chirurgicaux",
-    section: "Antécédents médicaux",
-    question: "Avez-vous eu des interventions chirurgicales ?",
-    type: "text",
-    tooltip: "Les chirurgies modifient souvent la physiologie locale et les capacités adaptatives."
+    id: "histo_toxiques",
+    question: "Fumez-vous ou êtes-vous exposé à des toxiques réguliers ?",
+    type: "boolean",
+    tooltip: "Bloque les cytochromes hépatiques et augmente le stress oxydatif.",
+    weight: 2,
+    tags: ["surcharge_hepatique_toxique"],
+    section: "Mode de Vie"
   },
   {
-    id: "traitements_longs",
-    section: "Antécédents médicaux",
-    question: "Avez-vous pris des traitements prolongés ?",
-    type: "text",
-    tooltip: "Pertinent pour comprendre les impacts hormonaux, digestifs ou immunitaires."
-  },
-
-  // ---------------------------------------------------
-  // 6. HISTORIQUE PSYCHOLOGIQUE
-  // ---------------------------------------------------
-  {
-    id: "psyclin_traumas",
-    section: "Antécédents psychiques",
-    question: "Avez-vous vécu des traumas psychologiques importants ?",
-    type: "select",
-    options: ["Non", "Oui", "Oui avec séquelles"],
-    tooltip: "Impact majeur sur l'axe corticotrope et le SNA central."
-  },
-  {
-    id: "psyclin_stress_majeur",
-    section: "Antécédents psychiques",
-    question: "Avez-vous vécu des périodes prolongées de stress ou surcharge émotionnelle ?",
-    type: "select",
-    options: ["Non", "Oui", "Oui chronique"],
-    tooltip: "Permet d'estimer la charge corticotrope historique."
-  },
-
-  // ---------------------------------------------------
-  // 7. MODE DE VIE ACTUEL
-  // ---------------------------------------------------
-  {
-    id: "vie_sommeil",
-    section: "Mode de vie",
-    question: "Comment décririez-vous votre sommeil actuellement ?",
-    type: "select",
-    options: ["Bon", "Moyen", "Mauvais"],
-    tooltip: "Base de la chronobiologie et de la régulation neuroendocrinienne."
-  },
-  {
-    id: "vie_alimentation",
-    section: "Mode de vie",
-    question: "Avez-vous un mode alimentaire particulier ?",
-    type: "text",
-    tooltip: "Impact direct sur l'axe somatotrope, corticotrope et digestif."
-  },
-  {
-    id: "vie_sport",
-    section: "Mode de vie",
-    question: "Pratiquez-vous une activité physique régulière ?",
-    type: "select",
-    options: ["Non", "Oui légère", "Oui modérée", "Oui intensive"],
-    tooltip: "Indicateur du tonus somatotrope et de la résilience adaptative."
-  },
-
-  // ---------------------------------------------------
-  // 8. EXPOSITIONS / TOXIQUES
-  // ---------------------------------------------------
-  {
-    id: "toxique_tabac",
-    section: "Expositions toxiques",
-    question: "Fumez-vous ou avez-vous fumé ?",
-    type: "select",
-    options: ["Non", "Oui", "Ancien fumeur"],
-    tooltip: "Influence le terrain inflammatoire et la capacité oxydative."
-  },
-  {
-    id: "toxique_alcool",
-    section: "Expositions toxiques",
-    question: "Consommation d'alcool ?",
-    type: "select",
-    options: ["Faible", "Modérée", "Élevée"],
-    tooltip: "Pertinent pour comprendre la charge hépatique et les couplages digestifs."
-  },
-  {
-    id: "toxique_expositions",
-    section: "Expositions toxiques",
-    question: "Avez-vous une exposition connue à des toxiques (métaux lourds, solvants, pesticides) ?",
-    type: "text",
-    tooltip: "Impact direct sur les émonctoires et les boucles immuno-inflammatoires."
+    id: "histo_sommeil_decale",
+    question: "Travaillez-vous en horaires décalés (nuit, 3x8) ?",
+    type: "boolean",
+    tooltip: "Le pire perturbateur endocrinien. Dérègle le couple Cortisol/Mélatonine.",
+    weight: 3,
+    tags: ["dysregulation_chronobio_majeure"],
+    section: "Mode de Vie"
   }
 ];
 
-export default HistoriquePatientConfig;
+export default HistoriqueConfig;

@@ -46,16 +46,20 @@ export function AxisSummary({ axisKey, values }: AxisSummaryProps) {
 
   // Adaptatif
   if (axisKey === "adaptatif") {
-    if (values.adaptatif_stress_chronique)
+    if (values.adapt_charge_mentale === "Oui chronique")
       lines.push("Stress chronique installé → charge corticotrope élevée.");
-    if (values.adaptatif_hypoglycemies_fonctionnelles)
+    if (values.adapt_stress_aigu === "Oui fortement" || values.adapt_stress_aigu === "Oui modérément")
+      lines.push("Réactivité au stress augmentée → mobilisation corticosympathique fréquente.");
+    if (values.adapt_hypo_sensation)
       lines.push("Hypoglycémies fonctionnelles → épuisement cortico-surrénalien possible.");
-    if (values.adaptatif_irritabilite || values.adaptatif_anxiete)
-      lines.push("Irritabilité/anxiété → déséquilibre neurovégétatif et corticotrope.");
-    if (values.adaptatif_fatigue_permanente)
-      lines.push("Fatigue permanente → épuisement adaptatif probable.");
-    if (values.adaptatif_tensions_cervicales || values.adaptatif_tensions_dorsales)
-      lines.push("Tensions musculaires → somatisation du stress.");
+    if (values.adapt_irritabilite)
+      lines.push("Irritabilité → déséquilibre neurovégétatif et corticotrope.");
+    if (values.adapt_fatigue_apres_repas)
+      lines.push("Fatigue post-prandiale → dérégulation insulinique ou épuisement adaptatif.");
+    if (values.adapt_tension_musculaire || values.adapt_douleurs_musculaires)
+      lines.push("Tensions musculaires → somatisation du stress ou hypercatabolisme.");
+    if (values.adapt_reveils_precoces || values.adapt_reveil_angoisse)
+      lines.push("Réveils précoces/angoissés → instabilité corticotrope nocturne.");
   }
 
   // Thyroïdien

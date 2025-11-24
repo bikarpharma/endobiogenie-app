@@ -16,7 +16,9 @@ import type {
 import type { IndexResults, LabValues } from "@/lib/bdf/types";
 import { v4 as uuidv4 } from "uuid";
 import { InterrogatoireEndobiogenique } from "@/lib/interrogatoire/types";
-import { scoreInterrogatoire, ClinicalAxeScores } from "@/lib/interrogatoire/clinicalScoring";
+import { ClinicalAxeScores } from "@/lib/interrogatoire/clinicalScoring";
+import { calculateClinicalScoresV2 } from "@/lib/interrogatoire/clinicalScoringV2";
+import { adaptScoresV2ToV1 } from "@/lib/interrogatoire/scoringAdapter";
 import { fuseClinicalBdfRag, BdfIndexes, RagContext, FusedAxePerturbation } from "@/lib/ordonnance/fusionClinique";
 
 export const runtime = "nodejs";
@@ -97,17 +99,34 @@ export async function POST(req: NextRequest) {
 
     if (bdfAnalysis) {
       // Reconstituer indexes et inputs
-      const indexesArray = bdfAnalysis.indexes as any[];
-      indexes = {
-        indexGenital: indexesArray.find((i: any) => i.name === "indexGenital") || { value: null, comment: "" },
-        indexThyroidien: indexesArray.find((i: any) => i.name === "indexThyroidien") || { value: null, comment: "" },
-        gT: indexesArray.find((i: any) => i.name === "gT") || { value: null, comment: "" },
-        indexAdaptation: indexesArray.find((i: any) => i.name === "indexAdaptation") || { value: null, comment: "" },
-        indexOestrogenique: indexesArray.find((i: any) => i.name === "indexOestrogenique") || { value: null, comment: "" },
-        turnover: indexesArray.find((i: any) => i.name === "turnover") || { value: null, comment: "" },
-        rendementThyroidien: indexesArray.find((i: any) => i.name === "rendementThyroidien") || { value: null, comment: "" },
-        remodelageOsseux: indexesArray.find((i: any) => i.name === "remodelageOsseux") || { value: null, comment: "" },
-      };
+      const indexesData = bdfAnalysis.indexes as any;
+
+      // Gérer les deux formats possibles: objet ou tableau (pour compatibilité)
+      if (Array.isArray(indexesData)) {
+        // Format tableau (ancien format)
+        indexes = {
+          indexGenital: indexesData.find((i: any) => i.name === "indexGenital") || { value: null, comment: "" },
+          indexThyroidien: indexesData.find((i: any) => i.name === "indexThyroidien") || { value: null, comment: "" },
+          gT: indexesData.find((i: any) => i.name === "gT") || { value: null, comment: "" },
+          indexAdaptation: indexesData.find((i: any) => i.name === "indexAdaptation") || { value: null, comment: "" },
+          indexOestrogenique: indexesData.find((i: any) => i.name === "indexOestrogenique") || { value: null, comment: "" },
+          turnover: indexesData.find((i: any) => i.name === "turnover") || { value: null, comment: "" },
+          rendementThyroidien: indexesData.find((i: any) => i.name === "rendementThyroidien") || { value: null, comment: "" },
+          remodelageOsseux: indexesData.find((i: any) => i.name === "remodelageOsseux") || { value: null, comment: "" },
+        };
+      } else {
+        // Format objet (nouveau format depuis calculateAllIndexes)
+        indexes = {
+          indexGenital: indexesData.indexGenital || { value: null, comment: "" },
+          indexThyroidien: indexesData.indexThyroidien || { value: null, comment: "" },
+          gT: indexesData.gT || { value: null, comment: "" },
+          indexAdaptation: indexesData.indexAdaptation || { value: null, comment: "" },
+          indexOestrogenique: indexesData.indexOestrogenique || { value: null, comment: "" },
+          turnover: indexesData.turnover || { value: null, comment: "" },
+          rendementThyroidien: indexesData.rendementThyroidien || { value: null, comment: "" },
+          remodelageOsseux: indexesData.remodelageOsseux || { value: null, comment: "" },
+        };
+      }
       inputs = bdfAnalysis.inputs as LabValues;
     } else if (body.inputs) {
       // Pas de BdF, mais inputs fournis directement (cas rare)
@@ -155,6 +174,10 @@ export async function POST(req: NextRequest) {
       // Nouveaux champs pour contexte enrichi
       pathologies: Array.isArray(patient.pathologiesAssociees) ? patient.pathologiesAssociees as string[] : [],
       autresBilans: typeof patient.autresBilans === "object" ? patient.autresBilans as Record<string, number> : {},
+      // Allergies et antécédents (sécurité ++)
+      allergies: patient.allergies || "",
+      atcdMedicaux: patient.atcdMedicaux || "",
+      atcdChirurgicaux: patient.atcdChirurgicaux || "",
     };
 
     // ==========================================
@@ -168,16 +191,19 @@ export async function POST(req: NextRequest) {
     let clinicalScores: ClinicalAxeScores | null = null;
     let axesFusionnes: FusedAxePerturbation[] = [];
 
-    if (interrogatoire) {
-      console.log("📋 Interrogatoire endobiogénique trouvé, calcul des scores cliniques...");
-      clinicalScores = scoreInterrogatoire(interrogatoire);
-      console.log(`✅ Scores cliniques calculés:
+    if (interrogatoire?.v2?.answersByAxis) {
+      console.log("📋 Interrogatoire endobiogénique V2 trouvé, calcul des scores cliniques...");
+      // Utiliser le nouveau moteur de scoring V2
+      const scoresV2 = calculateClinicalScoresV2(interrogatoire.v2.answersByAxis, interrogatoire.sexe);
+      // Adapter vers l'ancien format pour compatibilité avec fuseClinicalBdfRag
+      clinicalScores = adaptScoresV2ToV1(scoresV2);
+      console.log(`✅ Scores cliniques calculés (V2):
   - Neurovégétatif: ${clinicalScores.neuroVegetatif.orientation}
   - Adaptatif: ${clinicalScores.adaptatif.orientation}
   - Thyroïdien: ${clinicalScores.thyroidien.orientation}
   - Gonadique: ${clinicalScores.gonadique.orientation}`);
     } else {
-      console.log("⚠️ Aucun interrogatoire trouvé, utilisation BdF seule");
+      console.log("⚠️ Aucun interrogatoire V2 trouvé, utilisation BdF seule");
     }
 
     // 2. Construire BdfIndexes pour la fusion
@@ -292,20 +318,27 @@ export async function POST(req: NextRequest) {
       // Utiliser les axes fusionnés si disponibles, sinon fallback vers axes BdF
       const axesForSynthesis = axesFusionnes.length > 0 ? axesFusionnes : raisonnement.axesPerturbés;
 
-      // Ajouter un préfixe explicatif si fusion utilisée
-      let contexteSynthese = "";
-      if (axesFusionnes.length > 0) {
-        contexteSynthese = `[ANALYSE INTÉGRÉE]\nCette ordonnance est basée sur une analyse fusionnée combinant :\n- Interrogatoire clinique endobiogénique (${interrogatoire ? '✓' : '✗'})\n- Biologie de fonction (BdF) (${bdfAnalysis ? '✓' : '✗'})\n- Enrichissement RAG endobiogénie (${ragAxes.length > 0 ? '✓' : '✗'})\n\n`;
+      // VALIDATION CRITIQUE: Ne générer de synthèse QUE s'il y a des axes perturbés
+      if (axesForSynthesis.length === 0) {
+        console.log("⚠️ Aucun axe perturbé détecté - synthèse vide");
+        syntheseClinique = "Aucune perturbation significative détectée. L'interrogatoire et/ou l'analyse biologique ne révèlent pas de déséquilibre nécessitant une intervention thérapeutique à ce stade.";
+      } else {
+        // Ajouter un préfixe explicatif si fusion utilisée
+        let contexteSynthese = "";
+        if (axesFusionnes.length > 0) {
+          const bdfDate = bdfAnalysis ? new Date(bdfAnalysis.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "";
+          contexteSynthese = `[ANALYSE INTÉGRÉE]\nCette ordonnance est basée sur une analyse fusionnée combinant :\n- Interrogatoire clinique endobiogénique (${interrogatoire ? '✓' : '✗'})\n- Biologie de fonction (BdF) ${bdfAnalysis ? `du ${bdfDate} ✓` : '✗'}\n- Enrichissement RAG endobiogénie (${ragAxes.length > 0 ? '✓' : '✗'})\n\n`;
+        }
+
+        const synthese = await generateClinicalSynthesis(
+          axesForSynthesis as any,
+          patientContext,
+          allRecommendations
+        );
+
+        syntheseClinique = contexteSynthese + synthese;
+        console.log("✅ Synthèse clinique fusionnée générée via API directe");
       }
-
-      const synthese = await generateClinicalSynthesis(
-        axesForSynthesis as any,
-        patientContext,
-        allRecommendations
-      );
-
-      syntheseClinique = contexteSynthese + synthese;
-      console.log("✅ Synthèse clinique fusionnée générée via API directe");
     } catch (error) {
       console.error("⚠️ Erreur synthèse clinique, fallback vers basique:", error);
       // Garder la synthèse de base si erreur
@@ -328,7 +361,23 @@ export async function POST(req: NextRequest) {
 
     if (hasExtendedScope) {
       // Utiliser les recommandations élargies obtenues depuis les vectorstores
-      voletPhytoElargi = raisonnement.recommandationsElargies;
+      // DÉDUPLICATION: Enlever du volet phyto élargi les plantes déjà présentes dans le volet endobiogénie
+      const substancesEndobiogenie = new Set(
+        voletEndobiogenique.map(r => r.substance.toLowerCase().trim())
+      );
+
+      voletPhytoElargi = raisonnement.recommandationsElargies.filter(rec => {
+        const substanceName = rec.substance.toLowerCase().trim();
+        const isDuplicate = substancesEndobiogenie.has(substanceName);
+
+        if (isDuplicate) {
+          console.log(`🔄 Déduplication: "${rec.substance}" déjà dans volet endobiogénie, retiré du volet phyto`);
+        }
+
+        return !isDuplicate;
+      });
+
+      console.log(`✅ Déduplication: ${raisonnement.recommandationsElargies.length - voletPhytoElargi.length} doublons retirés`);
     } else {
       // Pas de scope élargi → volet phyto vide
       voletPhytoElargi = [];
@@ -402,6 +451,8 @@ export async function POST(req: NextRequest) {
         sourcesUtilisees: {
           interrogatoire: !!interrogatoire,
           bdf: !!bdfAnalysis,
+          bdfDate: bdfAnalysis?.date || null,
+          bdfId: bdfAnalysis?.id || null,
           interpretationsIA: storedInterpretations.length,
           rag: ragAxes.length > 0,
         },

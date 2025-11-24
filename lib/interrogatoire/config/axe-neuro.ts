@@ -1,171 +1,171 @@
 import type { QuestionConfig } from "../types";
 
 /**
- * Axe Neurovégétatif
- * -----------------------------------------------------
- * Axe fondamental en endobiogénie.
- * Explore l'équilibre para / alpha / bêta, ainsi que
- * les rythmes, la régulation glucidique, la
- * thermorégulation et la réactivité périphérique.
+ * AXE NEUROVÉGÉTATIF (ANS - SYSTÈME NERVEUX AUTONOME) - NIVEAU EXPERT
+ * -------------------------------------------------
+ * Discrimine les 3 branches du système nerveux autonome :
+ * - PARASYMPATHIQUE (Anabolisme, Sécrétion, Congestion)
+ * - SYMPATHIQUE ALPHA (Vasoconstriction, Rétention, Vigilance)
+ * - SYMPATHIQUE BÊTA (Cardio, Spasme, Émotivité)
+ *
+ * SPÉCIFICITÉ : C'est l'axe central qui régule tous les autres axes
  */
 
-export const AxeNeuroConfig: QuestionConfig[] = [
+const AxeNeuroConfig: QuestionConfig[] = [
+  // ==========================================
+  // 1. PARASYMPATHIQUE (Anabolisme, Sécrétion, Congestion)
+  // ==========================================
+  {
+    id: "neuro_para_salivation",
+    question: "Avez-vous tendance à l'hypersalivation (bave sur l'oreiller, besoin d'avaler souvent) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Signe d'hypertonie vagale haute. Le parasympathique stimule les sécrétions digestives.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Parasympathique"
+  },
+  {
+    id: "neuro_para_nausee",
+    question: "Avez-vous le mal des transports ou des nausées faciles (odeurs fortes) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Hyper-réflexivité vagale. Indique un système parasympathique très réactif.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Parasympathique"
+  },
+  {
+    id: "neuro_para_nez_bouche",
+    question: "Avez-vous souvent le nez bouché (congestion) après les repas ou le soir, sans rhume ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Vasodilatation muqueuse passive sous l'effet du vague post-prandial.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Parasympathique"
+  },
+  {
+    id: "neuro_para_memoire",
+    question: "Avez-vous une excellente mémoire des faits anciens (nostalgie) mais tendance à ruminer ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Le parasympathique favorise l'intériorisation, la mémorisation et le repli sur soi.",
+    weight: 1,
+    scoreDirection: "hyper",
+    section: "Parasympathique"
+  },
 
-  // ---------------------------------------------------
-  // 1. SOMMEIL & RYTHMICITÉ (para / bêta central)
-  // ---------------------------------------------------
+  // ==========================================
+  // 2. SYMPATHIQUE ALPHA (Vasoconstriction, Rétention)
+  // ==========================================
+  {
+    id: "neuro_alpha_froid",
+    question: "Avez-vous souvent les mains et les pieds glacés (alors que le reste du corps est chaud) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Vasoconstriction périphérique excessive. Le sang est chassé vers les muscles profonds.",
+    weight: 3,
+    scoreDirection: "hyper",
+    section: "Sympathique Alpha"
+  },
+  {
+    id: "neuro_alpha_peau_seche",
+    question: "Votre peau est-elle sèche, ou vos yeux secs, malgré une bonne hydratation ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "L'Alpha ferme les capillaires et assèche les muqueuses (inhibition des sécrétions).",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Sympathique Alpha"
+  },
+  {
+    id: "neuro_alpha_constipation",
+    question: "Êtes-vous constipé avec des selles sèches (type crottes de bique) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Spasme tonique des sphincters et assèchement colique.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Sympathique Alpha"
+  },
+  {
+    id: "neuro_alpha_mental",
+    question: "Avez-vous du mal à 'débrancher' le soir (pensées qui tournent en boucle) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Hypervigilance cérébrale médiée par la noradrénaline.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Sympathique Alpha"
+  },
+
+  // ==========================================
+  // 3. SYMPATHIQUE BÊTA (Cardio, Spasme, Émotion)
+  // ==========================================
+  {
+    id: "neuro_beta_palpitations",
+    question: "Avez-vous des palpitations (cœur qui bat fort/vite) au repos ou au moindre stress ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Hypersensibilité des récepteurs Bêta-1 cardiaques à l'adrénaline.",
+    weight: 3,
+    scoreDirection: "hyper",
+    section: "Sympathique Bêta"
+  },
+  {
+    id: "neuro_beta_emotivite",
+    question: "Êtes-vous hyper-émotif (rougissement, larmes faciles, gorge serrée) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Réactivité vasomotrice de surface et spasme laryngé.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Sympathique Bêta"
+  },
+  {
+    id: "neuro_beta_tremblements",
+    question: "Avez-vous des tremblements fins des mains quand vous êtes énervé ou à jeun ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Excitation neuromusculaire périphérique.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Sympathique Bêta"
+  },
+  {
+    id: "neuro_beta_spasmes",
+    question: "Avez-vous des spasmes douloureux (ventre, règles) qui sont soulagés par la chaleur ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Le Bêta provoque des spasmes cinétiques (mouvements désordonnés des muscles lisses).",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Sympathique Bêta"
+  },
+
+  // ==========================================
+  // 4. ÉQUILIBRE & SOMMEIL (Synthèse)
+  // ==========================================
   {
     id: "neuro_sommeil_endormissement",
-    section: "Sommeil & Rythmes",
-    question: "Avez-vous des difficultés d'endormissement ?",
-    type: "boolean",
-    tooltip:
-      "Évalue le tonus parasympathique central et la charge bêta centrale (TRH, noradrénaline)."
+    question: "Mettez-vous plus de 30 minutes à vous endormir ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Indique souvent une dominance Sympathique Alpha au moment du coucher (incapacité à lâcher prise).",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Équilibre & Sommeil"
   },
   {
-    id: "neuro_sommeil_reveils_nocturnes",
-    section: "Sommeil & Rythmes",
-    question: "Avez-vous des réveils nocturnes ?",
-    type: "boolean",
-    tooltip:
-      "Indicateur de déséquilibre para/bêta, souvent lié à des pics cortisoliques nocturnes."
-  },
-  {
-    id: "neuro_sommeil_reveil_horaire",
-    section: "Sommeil & Rythmes",
-    question: "Si oui, à quelle heure vous réveillez-vous en général ?",
-    type: "text",
-    tooltip:
-      "L'horaire des réveils oriente vers une signature de dérégulation (cortisol 2–4h, glycémie 4–6h…)."
-  },
-  {
-    id: "neuro_sommeil_reveil_fatigue",
-    section: "Sommeil & Rythmes",
-    question: "Vous réveillez-vous fatigué(e) ?",
-    type: "boolean",
-    tooltip:
-      "Évalue la qualité réelle du sommeil et le fonctionnement GH/cortisol pendant la nuit."
-  },
-
-  // ---------------------------------------------------
-  // 2. RÉGULATION GLUCIDIQUE / FAIM (αΣ / GH / cortisol)
-  // ---------------------------------------------------
-  {
-    id: "neuro_faim_matinale",
-    section: "Régulation glucidique",
-    question: "Avez-vous faim le matin ?",
-    type: "boolean",
-    tooltip:
-      "La faim matinale reflète le tonus somatotrope et la stabilité glucidique nocturne."
-  },
-  {
-    id: "neuro_fringales",
-    section: "Régulation glucidique",
-    question: "Avez-vous des fringales dans la journée ?",
-    type: "boolean",
-    tooltip:
-      "Indicateur de variations glycémiques et d'activité alpha-sympathique."
-  },
-  {
-    id: "neuro_faim_sucre",
-    section: "Régulation glucidique",
-    question: "Avez-vous envie de sucre entre les repas ?",
-    type: "boolean",
-    tooltip:
-      "Évalue l'équilibre glucagon–insuline–cortisol et la régulation GH."
-  },
-
-  // ---------------------------------------------------
-  // 3. THERMORÉGULATION / SUDATION (thyroïde ↔ αΣ)
-  // ---------------------------------------------------
-  {
-    id: "neuro_thermo_transpiration",
-    section: "Thermorégulation",
-    question: "Avez-vous tendance à transpirer facilement ?",
-    type: "select",
-    options: ["Non", "Oui légère", "Oui abondamment"],
-    tooltip:
-      "Indicateur d'activité alpha-sympathique et du couplage thyroïdien périphérique."
-  },
-  {
-    id: "neuro_thermo_frilosite",
-    section: "Thermorégulation",
-    question: "Ressentez-vous souvent de la frilosité ?",
-    type: "boolean",
-    tooltip:
-      "Signale une possible hypofonction thyroïdienne fonctionnelle ou un déséquilibre αΣ."
-  },
-  {
-    id: "neuro_thermo_chaleur",
-    section: "Thermorégulation",
-    question: "Avez-vous du mal à supporter la chaleur ?",
-    type: "boolean",
-    tooltip:
-      "Indique une hyperréactivité alpha-sympathique et une instabilité thermorégulatrice."
-  },
-
-  // ---------------------------------------------------
-  // 4. TRANSIT (vagalité périphérique)
-  // ---------------------------------------------------
-  {
-    id: "neuro_transit",
-    section: "Transit",
-    question: "Quel est votre type de transit ?",
-    type: "select",
-    options: ["Lent", "Normal", "Rapide"],
-    tooltip:
-      "Le transit reflète la tonicité vagale, élément majeur du parasympathique périphérique."
-  },
-
-  // ---------------------------------------------------
-  // 5. ACTIVATION CARDIORESPIRATOIRE (βΣ périphérique)
-  // ---------------------------------------------------
-  {
-    id: "neuro_palpitations",
-    section: "Réactivité cardiovasculaire",
-    question: "Avez-vous des palpitations ?",
-    type: "boolean",
-    tooltip:
-      "Évalue l'activité bêta-sympathique périphérique et la sensibilité adrénergique."
-  },
-  {
-    id: "neuro_respiration_oppression",
-    section: "Réactivité cardiovasculaire",
-    question: "Avez-vous parfois une sensation d'oppression ou de souffle court lié au stress ?",
-    type: "boolean",
-    tooltip:
-      "Indicateur d'hyperactivation cortico-sympathique ou de déficit vagal."
-  },
-
-  // ---------------------------------------------------
-  // 6. ÉNERGIE JOURNALIÈRE (GH / cortisol)
-  // ---------------------------------------------------
-  {
-    id: "neuro_energie_matin",
-    section: "Rythme énergétique",
-    question: "Comment est votre énergie le matin ?",
-    type: "select",
-    options: ["Bonne", "Moyenne", "Mauvaise"],
-    tooltip:
-      "Reflète l'activité somatotrope nocturne et la synchronisation du cortisol."
-  },
-  {
-    id: "neuro_energie_apresmidi",
-    section: "Rythme énergétique",
-    question: "Comment est votre énergie en après-midi ?",
-    type: "select",
-    options: ["Bonne", "Moyenne", "Mauvaise"],
-    tooltip:
-      "Permet d'évaluer la régulation GH/cortisol et les chutes glycémiques."
-  },
-  {
-    id: "neuro_energie_soir",
-    section: "Rythme énergétique",
-    question: "Comment est votre énergie le soir ?",
-    type: "select",
-    options: ["Bonne", "Moyenne", "Mauvaise"],
-    tooltip:
-      "Indicateur de la dérégulation circadienne et de la fatigue de l'axe adaptatif."
+    id: "neuro_reveil_nocturne",
+    question: "Vous réveillez-vous vers 3h-4h du matin avec anxiété ou transpiration ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Décharge d'adrénaline nocturne (réactionnelle à une hypoglycémie ou stress).",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Équilibre & Sommeil"
   }
 ];
 

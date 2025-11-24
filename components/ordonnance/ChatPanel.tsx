@@ -171,7 +171,7 @@ export function ChatPanel({ ordonnanceId, initialMessages = [], onApplyAction }:
             </p>
             <div style={{ marginTop: "24px", display: "grid", gap: "8px" }}>
               <button
-                onClick={() => setInputMessage("Pourquoi as-tu choisi Avena sativa ?")}
+                onClick={() => setInputMessage("Explique-moi le raisonnement thérapeutique de cette ordonnance")}
                 style={{
                   padding: "12px 16px",
                   background: "white",
@@ -183,10 +183,10 @@ export function ChatPanel({ ordonnanceId, initialMessages = [], onApplyAction }:
                   textAlign: "left",
                 }}
               >
-                💡 Pourquoi as-tu choisi Avena sativa ?
+                💡 Explique le raisonnement thérapeutique
               </button>
               <button
-                onClick={() => setInputMessage("Peux-tu remplacer une plante par une autre ?")}
+                onClick={() => setInputMessage("Quels sont les axes perturbés identifiés chez ce patient ?")}
                 style={{
                   padding: "12px 16px",
                   background: "white",
@@ -198,10 +198,10 @@ export function ChatPanel({ ordonnanceId, initialMessages = [], onApplyAction }:
                   textAlign: "left",
                 }}
               >
-                🔄 Peux-tu remplacer une plante ?
+                📊 Axes perturbés du patient
               </button>
               <button
-                onClick={() => setInputMessage("Y a-t-il des interactions à surveiller ?")}
+                onClick={() => setInputMessage("Y a-t-il des contre-indications ou interactions à surveiller ?")}
                 style={{
                   padding: "12px 16px",
                   background: "white",
@@ -213,7 +213,22 @@ export function ChatPanel({ ordonnanceId, initialMessages = [], onApplyAction }:
                   textAlign: "left",
                 }}
               >
-                ⚠️ Y a-t-il des interactions ?
+                ⚠️ Contre-indications et interactions
+              </button>
+              <button
+                onClick={() => setInputMessage("Peux-tu optimiser cette ordonnance en tenant compte du contexte du patient ?")}
+                style={{
+                  padding: "12px 16px",
+                  background: "white",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "0.85rem",
+                  color: "#6b7280",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                🔄 Optimiser l'ordonnance
               </button>
             </div>
           </div>

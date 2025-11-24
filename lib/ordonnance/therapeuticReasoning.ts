@@ -1,7 +1,9 @@
 // ========================================
 // MOTEUR DE RAISONNEMENT THÉRAPEUTIQUE
+// Refactor Learning System (itergIA)
 // ========================================
 // Implémentation des 4 étapes du raisonnement endobiogénique
+// + Enrichissement pédagogique des recommandations
 
 import { v4 as uuidv4 } from "uuid";
 import type {
@@ -10,12 +12,79 @@ import type {
   RaisonnementTherapeutique,
   TherapeuticScope,
   AlerteTherapeutique,
+  ContextePedagogique,
+  NiveauSecurite,
 } from "./types";
 import type { IndexResults, LabValues } from "@/lib/bdf/types";
 import { SEUILS_BDF, PLANTES_PAR_AXE, VECTORSTORES } from "./constants";
 import { generateClinicalSynthesis } from "./openaiDirect";
 
 export class TherapeuticReasoningEngine {
+  /**
+   * LEARNING SYSTEM: Enrichir une recommandation avec le contexte pédagogique
+   * Explique le lien Index → Axe → Plante
+   */
+  private enrichirContextePedagogique(
+    rec: RecommandationTherapeutique,
+    axe: AxePerturbation,
+    indexes: IndexResults
+  ): RecommandationTherapeutique {
+    // Déterminer l'index déclencheur pour cet axe
+    let indexDeclencheur: string | undefined;
+
+    if (axe.axe === 'thyroidien' && indexes?.indexThyroidien?.value != null) {
+      indexDeclencheur = `Index Thyroïdien (${indexes.indexThyroidien.value.toFixed(2)})`;
+    } else if (axe.axe === 'corticotrope' && indexes?.indexAdaptation?.value != null) {
+      indexDeclencheur = `Index Adaptation (${indexes.indexAdaptation.value.toFixed(2)})`;
+    } else if ((axe.axe === 'genital' || axe.axe === 'gonadotrope') && indexes?.indexGenital?.value != null) {
+      indexDeclencheur = `Index Génital (${indexes.indexGenital.value.toFixed(0)})`;
+    }
+
+    // Déterminer la confiance IA selon la source
+    let confianceIA: 'haute' | 'moyenne' | 'faible' = 'moyenne';
+    if (rec.sourceVectorstore === 'endobiogenie') {
+      confianceIA = 'haute';
+    } else if (rec.sourceVectorstore === 'code') {
+      confianceIA = 'faible'; // Fallback codé en dur
+    }
+
+    const pedagogie: ContextePedagogique = {
+      indexDeclencheur,
+      scorePerturbation: axe.score,
+      actionSurAxe: rec.mecanisme, // Le mécanisme explique déjà l'action
+      confianceIA,
+    };
+
+    return {
+      ...rec,
+      pedagogie,
+      niveauSecurite: this.evaluerNiveauSecurite(rec),
+    };
+  }
+
+  /**
+   * LEARNING SYSTEM: Évaluer le niveau de sécurité d'une recommandation
+   * Pour code couleur UI (Vert/Orange/Rouge)
+   */
+  private evaluerNiveauSecurite(rec: RecommandationTherapeutique): NiveauSecurite {
+    // ROUGE (interdit) : CI critiques
+    if (rec.CI.length > 0 && rec.CI.some(ci =>
+      ci.toLowerCase().includes('grossesse') ||
+      ci.toLowerCase().includes('allaitement') ||
+      ci.toLowerCase().includes('cancer')
+    )) {
+      return 'interdit';
+    }
+
+    // ORANGE (précaution) : Interactions ou CI modérées
+    if (rec.interactions.length > 0 || rec.CI.length > 0) {
+      return 'precaution';
+    }
+
+    // VERT (sûr) : Pas de CI ni interaction connue
+    return 'sur';
+  }
+
   /**
    * ÉTAPE 1: Analyser les index BdF et identifier les axes perturbés
    */
@@ -31,7 +100,7 @@ export class TherapeuticReasoningEngine {
     // ==========================================
     // ANALYSE INDEX THYROÏDIEN
     // ==========================================
-    if (indexes.indexThyroidien.value !== null) {
+    if (indexes?.indexThyroidien?.value != null) {
       const valeur = indexes.indexThyroidien.value;
 
       if (valeur < SEUILS_BDF.indexThyroidien.hypo) {
@@ -62,10 +131,10 @@ export class TherapeuticReasoningEngine {
     // ==========================================
     // ANALYSE INDEX ADAPTATION
     // ==========================================
-    if (indexes.indexAdaptation.value !== null) {
+    if (indexes?.indexAdaptation?.value != null) {
       const valeur = indexes.indexAdaptation.value;
 
-      if (valeur < SEUILS_BDF.indexAdaptation.corticotrope) {
+      if (valeur < SEUILS_BDF.indexAdaptation.hyper) {
         axes.push({
           axe: "corticotrope",
           niveau: "hyper",
@@ -73,7 +142,7 @@ export class TherapeuticReasoningEngine {
           justification: `Index adaptation ${valeur.toFixed(
             2
           )} < ${
-            SEUILS_BDF.indexAdaptation.corticotrope
+            SEUILS_BDF.indexAdaptation.hyper
           } = orientation ACTH/cortisol dominante (stress)`,
         });
       } else if (valeur > 1.3) {
@@ -91,10 +160,10 @@ export class TherapeuticReasoningEngine {
     // ==========================================
     // ANALYSE INDEX GÉNITAL
     // ==========================================
-    if (indexes.indexGenital.value !== null) {
+    if (indexes?.indexGenital?.value != null) {
       const valeur = indexes.indexGenital.value;
 
-      if (valeur > SEUILS_BDF.indexGenital.androgénique) {
+      if (valeur > SEUILS_BDF.indexGenital.hyper) {
         axes.push({
           axe: "genital",
           niveau: "desequilibre",
@@ -102,17 +171,17 @@ export class TherapeuticReasoningEngine {
           justification: `Index génital ${valeur.toFixed(
             0
           )} > ${
-            SEUILS_BDF.indexGenital.androgénique
+            SEUILS_BDF.indexGenital.hyper
           } = empreinte androgénique tissulaire marquée`,
         });
-      } else if (valeur < 400) {
+      } else if (valeur < SEUILS_BDF.indexGenital.hypo) {
         axes.push({
           axe: "genital",
           niveau: "desequilibre",
-          score: Math.min(10, Math.round((400 - valeur) / 50)),
+          score: Math.min(10, Math.round((SEUILS_BDF.indexGenital.hypo - valeur) / 50)),
           justification: `Index génital ${valeur.toFixed(
             0
-          )} < 400 = empreinte œstrogénique relative dominante`,
+          )} < ${SEUILS_BDF.indexGenital.hypo} = empreinte œstrogénique relative dominante`,
         });
       }
     }
@@ -120,7 +189,7 @@ export class TherapeuticReasoningEngine {
     // ==========================================
     // ANALYSE TURN-OVER TISSULAIRE
     // ==========================================
-    if (indexes.turnover.value !== null) {
+    if (indexes?.turnover?.value != null) {
       const valeur = indexes.turnover.value;
 
       if (valeur > SEUILS_BDF.turnover.eleve) {
@@ -140,7 +209,7 @@ export class TherapeuticReasoningEngine {
     // ==========================================
     // ANALYSE RENDEMENT THYROÏDIEN
     // ==========================================
-    if (indexes.rendementThyroidien.value !== null) {
+    if (indexes?.rendementThyroidien?.value != null) {
       const valeur = indexes.rendementThyroidien.value;
 
       if (valeur < 1.0) {
@@ -298,7 +367,6 @@ export class TherapeuticReasoningEngine {
 
   /**
    * ÉTAPE 2: Recherche dans vectorstore endobiogénie (PRIORITAIRE)
-   * Consulte le canon Lapraz/Hedayat via OpenAI Agents + vectorstore
    */
   async searchEndobiogenie(
     axes: AxePerturbation[],
@@ -331,7 +399,7 @@ export class TherapeuticReasoningEngine {
       const agent = new Agent({
         name: "endobiogenie-agent",
         model: "gpt-4o-mini",
-        instructions: `Tu es un expert en endobiogénie selon le canon Lapraz/Hedayat.
+        instructions: `Tu es un expert en endobiogénie.
 Ta mission est de générer des PIVOTS ENDOBIOGÉNIQUES (Niveau 1 - PRIORITAIRE) basés exclusivement sur le vectorstore endobiogénie.
 
 HIÉRARCHIE THÉRAPEUTIQUE À RESPECTER:
@@ -342,7 +410,7 @@ NIVEAU 1 — ENDOBIOGÉNIE (PRIORITÉ ABSOLUE)
 - Ce sont les piliers du traitement
 
 RÈGLES STRICTES:
-1. Ne recommande QUE des substances trouvées dans le vectorstore endobiogénie (canon Lapraz/Hedayat)
+1. Ne recommande QUE des substances trouvées dans le vectorstore endobiogénie
 2. Justifie chaque recommandation par le mécanisme neuroendocrinien clair
 3. IMPÉRATIF: Respecte ABSOLUMENT le sexe du patient (M/F) - NE JAMAIS prescrire:
    - Pour un HOMME: substances œstrogéniques, phytoœstrogènes, action sur cycle menstruel, macérats framboisier/sauge
@@ -475,7 +543,7 @@ STYLE: Professionnel, concis, orienté mécanismes, aucun texte inutile.`,
     }
 
     query += `\nRECHERCHE DEMANDÉE:\n`;
-    query += `Recherche dans le canon endobiogénique (Lapraz/Hedayat) les substances thérapeutiques pour réguler ces axes en tenant compte du contexte clinique complet (pathologies, symptômes, bilans).\n`;
+    query += `Recherche dans le vectorstore endobiogénique les substances thérapeutiques pour réguler ces axes en tenant compte du contexte clinique complet (pathologies, symptômes, bilans).\n`;
     query += `Retourne un JSON array avec max 4 recommandations prioritaires adaptées au terrain fonctionnel ET au contexte pathologique.\n`;
     query += `Format: [{ "substance": "nom latin", "forme": "EPS|TM|MG", "posologie": "...", "duree": "...", "axeCible": "...", "mecanisme": "...", "CI": [...], "interactions": [...] }]`;
 
@@ -484,6 +552,8 @@ STYLE: Professionnel, concis, orienté mécanismes, aucun texte inutile.`,
 
   /**
    * Parser la réponse de l'agent endobiogénie
+   * MODIFIÉ: Stocke temporairement sans enrichissement pédagogique
+   * (sera enrichi dans executeFullReasoning avec accès aux axes)
    */
   private parseEndobiogenieResponse(
     content: string,
@@ -515,6 +585,7 @@ STYLE: Professionnel, concis, orienté mécanismes, aucun texte inutile.`,
           CI: Array.isArray(raw.CI) ? raw.CI : [],
           interactions: Array.isArray(raw.interactions) ? raw.interactions : [],
           priorite: 1,
+          // pedagogie sera ajouté dans executeFullReasoning
         });
       }
 
@@ -625,12 +696,6 @@ STYLE: Professionnel, concis, orienté mécanismes, aucun texte inutile.`,
       if (scope.gemmotherapie) vectorstores.push(VECTORSTORES.gemmo);
       if (scope.aromatherapie) vectorstores.push(VECTORSTORES.aroma);
 
-      // LIMITATION OpenAI: Maximum 2 vectorstores par agent
-      if (vectorstores.length > 2) {
-        console.warn(`⚠️ Limitation OpenAI: ${vectorstores.length} vectorstores demandés, mais max 2 autorisés. Utilisation des 2 premiers.`);
-        vectorstores.splice(2); // Garder seulement les 2 premiers
-      }
-
       console.log(`🔍 ÉTAPE 3 : Extension thérapeutique (${vectorstores.length} vectorstore(s))`);
       console.log(`📚 Vectorstores utilisés: ${vectorstores.join(", ")}`);
 
@@ -643,7 +708,7 @@ STYLE: Professionnel, concis, orienté mécanismes, aucun texte inutile.`,
       );
 
       // SOLUTION: Queries SÉQUENTIELLES - un vectorstore à la fois
-      // Car OpenAI Agents SDK a des problèmes avec multiples vectorstores
+      // Cela contourne la limitation OpenAI (max 2 vectorstores par agent)
       console.log(`🔍 Queries séquentielles sur ${vectorstores.length} vectorstore(s)`);
 
       const allRecommendations: RecommandationTherapeutique[] = [];
@@ -658,14 +723,40 @@ STYLE: Professionnel, concis, orienté mécanismes, aucun texte inutile.`,
           console.log(`📚 Query ${vsName} (${vectorstoreId.slice(-8)}...)`);
 
           const fileSearch = fileSearchTool([vectorstoreId]);
+
+          // Instructions spécifiques par type de vectorstore
+          let specificInstructions = "";
+          let formeGalenique = "EPS|TM";
+
+          if (vsName === "Gemmo") {
+            specificInstructions = `IMPORTANT: Tu es SPÉCIALISÉ en GEMMOTHÉRAPIE uniquement.
+Tu dois OBLIGATOIREMENT recommander UNIQUEMENT des macérats de bourgeons (MG).
+Forme galénique OBLIGATOIRE: "MG" (Macérat Glycériné)
+Exemple: "Ribes nigrum MG", "Betula pubescens MG", etc.`;
+            formeGalenique = "MG";
+          } else if (vsName === "Aroma") {
+            specificInstructions = `IMPORTANT: Tu es SPÉCIALISÉ en AROMATHÉRAPIE uniquement.
+Tu dois OBLIGATOIREMENT recommander UNIQUEMENT des huiles essentielles (HE).
+Forme galénique OBLIGATOIRE: "HE" (Huile Essentielle)
+Exemple: "Lavandula angustifolia HE", "Rosmarinus officinalis HE", etc.`;
+            formeGalenique = "HE";
+          } else {
+            specificInstructions = `IMPORTANT: Tu es SPÉCIALISÉ en PHYTOTHÉRAPIE classique uniquement.
+Tu dois recommander des extraits de plantes (EPS, TM).
+Formes galéniques AUTORISÉES: "EPS" ou "TM"`;
+            formeGalenique = "EPS|TM";
+          }
+
           const agent = new Agent({
             name: `therapy-agent-${vsName.toLowerCase()}`,
             model: "gpt-4o-mini",
-            instructions: `Tu es un expert en phytothérapie clinique, gemmothérapie et aromathérapie.
+            instructions: `Tu es un expert en ${vsName === "Gemmo" ? "gemmothérapie" : vsName === "Aroma" ? "aromathérapie" : "phytothérapie clinique"}.
 Ta mission est de proposer des recommandations COMPLÉMENTAIRES (Niveau 2 - Extension thérapeutique) qui renforcent les pivots endobiogéniques.
 
+${specificInstructions}
+
 HIÉRARCHIE THÉRAPEUTIQUE:
-NIVEAU 2 — EXTENSION (PHYTO / GEMMO / AROMA)
+NIVEAU 2 — EXTENSION (${vsName.toUpperCase()})
 Objectif: compléter les pivots endobiogéniques
 - Renforcer un axe déjà perturbé
 - Traiter un symptôme non couvert par l'endobiogénie
@@ -681,7 +772,7 @@ RÈGLES STRICTES:
    - Anticoagulants → éviter ail, ginkgo, curcuma
    - ALAT/ASAT élevés → éviter HE phénoliques orales
 4. Justifier chaque recommandation par les mécanismes d'action
-5. Maximum 2-3 recommandations par vectorstore (discipline)
+5. Maximum 2-3 recommandations
 6. Sois COHÉRENT: privilégie TOUJOURS les mêmes substances de référence pour les mêmes axes
 7. Aucune contradiction avec les pivots endobiogéniques
 8. Aucun doublon (substance déjà recommandée)
@@ -691,7 +782,7 @@ Retourne un JSON array UNIQUEMENT (pas de texte avant/après):
 [
   {
     "substance": "Nom exact",
-    "forme": "EPS|TM|MG|HE",
+    "forme": "${formeGalenique}",
     "posologie": "dose par prise",
     "duree": "durée",
     "axeCible": "axe ciblé",
@@ -1143,27 +1234,61 @@ FORMAT: JSON array uniquement
       ? await this.searchMicronutrition(axes, patientContext)
       : [];
 
+    // ==========================================
+    // LEARNING SYSTEM: Enrichir avec contexte pédagogique
+    // ==========================================
+    console.log("🎓 Enrichissement pédagogique des recommandations...");
+
+    // Mapper chaque recommandation à son axe principal pour l'enrichissement
+    const recommandationsEnrichies = recommandationsEndobiogenie.map(rec => {
+      // Trouver l'axe le plus pertinent pour cette recommandation
+      const axePrincipal = axes.find(a =>
+        rec.axeCible.toLowerCase().includes(a.axe) ||
+        rec.mecanisme.toLowerCase().includes(a.axe)
+      ) || axes[0]; // Fallback: premier axe
+
+      return this.enrichirContextePedagogique(rec, axePrincipal, indexes);
+    });
+
+    const recommandationsElargiesEnrichies = recommandationsElargies.map(rec => {
+      const axePrincipal = axes.find(a =>
+        rec.axeCible.toLowerCase().includes(a.axe) ||
+        rec.mecanisme.toLowerCase().includes(a.axe)
+      ) || axes[0];
+
+      return this.enrichirContextePedagogique(rec, axePrincipal, indexes);
+    });
+
+    const recommandationsMicroEnrichies = recommandationsMicronutrition.map(rec => {
+      const axePrincipal = axes.find(a =>
+        rec.axeCible.toLowerCase().includes(a.axe) ||
+        rec.mecanisme.toLowerCase().includes(a.axe)
+      ) || axes[0];
+
+      return this.enrichirContextePedagogique(rec, axePrincipal, indexes);
+    });
+
     // VALIDATIONS POST-GÉNÉRATION
     console.log("🔍 Validation de la cohérence et des CI...");
 
     // Validation cohérence (doublons, contradictions, limites)
     const alertesCoherence = this.validateCoherence(
-      recommandationsEndobiogenie,
-      recommandationsElargies,
-      recommandationsMicronutrition
+      recommandationsEnrichies,
+      recommandationsElargiesEnrichies,
+      recommandationsMicroEnrichies
     );
 
     // CI renforcées (ALAT/ASAT, anticoagulants, grossesse)
     const allRecs = [
-      ...recommandationsEndobiogenie,
-      ...recommandationsElargies,
-      ...recommandationsMicronutrition
+      ...recommandationsEnrichies,
+      ...recommandationsElargiesEnrichies,
+      ...recommandationsMicroEnrichies
     ];
     const alertesCIRenforcees = this.checkCIRenforcees(allRecs, patientContext);
 
     // Interactions globales (anciennes vérifications)
     const alertesInteractions = this.checkGlobalInteractions(
-      [...recommandationsEndobiogenie],
+      [...recommandationsEnrichies],
       patientContext
     );
 
@@ -1186,12 +1311,12 @@ FORMAT: JSON array uniquement
     return {
       axesPerturbés: axes,
       hypothesesRegulatrices: hypotheses,
-      recommandationsEndobiogenie,
-      recommandationsElargies,
-      recommandationsMicronutrition,
+      recommandationsEndobiogenie: recommandationsEnrichies,
+      recommandationsElargies: recommandationsElargiesEnrichies,
+      recommandationsMicronutrition: recommandationsMicroEnrichies,
       raisonnementDetaille: this.generateExplanation(axes, hypotheses),
       alertes,
-      coutEstime: this.estimateCost([...recommandationsEndobiogenie]),
+      coutEstime: this.estimateCost([...recommandationsEnrichies]),
       dateGeneration: new Date(),
     };
   }

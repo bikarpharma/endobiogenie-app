@@ -1,173 +1,161 @@
 import type { QuestionConfig } from "../types";
 
 /**
- * Axe Dermatologique & Muqueux
- * -----------------------------------------------------
- * Explore la peau, le sébum, la sécheresse, les cheveux,
- * les ongles, les muqueuses et les manifestations cutanées
- * inflammatoires ou allergiques.
+ * AXE DERMATOLOGIQUE (MIROIR MÉTABOLIQUE) - NIVEAU EXPERT
+ * -------------------------------------------------
+ * La peau comme révélateur des déséquilibres internes :
+ * - Texture & Hydratation (Thyroïde & Estrogènes)
+ * - Sébum & Acné (Androgènes & Foie)
+ * - Cheveux & Ongles (Phanères)
+ * - Vascularisation & Cicatrisation (Cortisol)
  *
- * Axe transversal lié au thyroïdien, gonadique, immunitaire,
- * digestif et adaptatif. Indispensable pour l'ordonnance.
+ * SPÉCIFICITÉ : Chaque signe cutané renvoie à un axe hormonal ou métabolique précis
  */
 
-export const AxeDermatoConfig: QuestionConfig[] = [
-
-  // ---------------------------------------------------
-  // 1. PEAU : SÉCHERESSE / HYDRATATION
-  // ---------------------------------------------------
+const AxeDermatoConfig: QuestionConfig[] = [
+  // ==========================================
+  // 1. TEXTURE & HYDRATATION (Thyroïde & Estrogènes)
+  // ==========================================
   {
-    id: "dermato_peau_seche",
-    section: "Peau sèche",
-    question: "Avez-vous la peau sèche de façon générale ?",
-    type: "boolean",
-    tooltip:
-      "Signe lié à la thyroïde, à l'hydratation systémique et à l'équilibre des muqueuses."
+    id: "derm_peau_seche_corps",
+    question: "Avez-vous la peau du corps très sèche, voire squameuse (peau de lézard) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Signe majeur d'hypothyroïdie tissulaire (baisse de l'activité des glandes sébacées).",
+    weight: 3,
+    scoreDirection: "hypo",
+    section: "Texture & Hydratation"
   },
   {
-    id: "dermato_peau_tiraillements",
-    section: "Peau sèche",
-    question: "Votre peau tiraille-t-elle facilement après la douche ?",
-    type: "boolean",
-    tooltip:
-      "Indique une altération du film hydrolipidique ou un déséquilibre thyro-immun."
-  },
-
-  // ---------------------------------------------------
-  // 2. PEAU : SÉBUM / ACNÉ / GRASSE
-  // ---------------------------------------------------
-  {
-    id: "dermato_peau_grasse",
-    section: "Peau grasse & Acné",
-    question: "Votre peau est-elle grasse ou brillante ?",
-    type: "boolean",
-    tooltip:
-      "Associé à une dominance androgénique ou à une fermentation digestive."
+    id: "derm_talons_fendilles",
+    question: "Avez-vous les talons fendillés ou la peau des coudes très épaisse ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Hyperkératose par ralentissement métabolique (Thyroïde) ou carence en Vitamine A.",
+    weight: 2,
+    scoreDirection: "hypo",
+    section: "Texture & Hydratation"
   },
   {
-    id: "dermato_acne_adulte",
-    section: "Peau grasse & Acné",
-    question: "Avez-vous de l'acné (même adulte) ?",
-    type: "boolean",
-    tooltip:
-      "L'acné est le reflet du terrain gonadique, immunitaire et digestif."
+    id: "derm_secheresse_muqueuses",
+    question: "Avez-vous les yeux secs ou la bouche sèche (besoin de boire pour parler) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Sécheresse des muqueuses : Signe de Sympathique Alpha (inhibition) ou Syndrome sec (auto-immun).",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Texture & Hydratation"
   },
 
-  // ---------------------------------------------------
-  // 3. CHEVEUX
-  // ---------------------------------------------------
+  // ==========================================
+  // 2. SÉBUM & ACNÉ (Androgènes & Foie)
+  // ==========================================
   {
-    id: "dermato_chute_cheveux",
-    section: "Cheveux",
-    question: "Avez-vous une chute de cheveux récente ou chronique ?",
-    type: "select",
-    options: ["Non", "Légère", "Modérée", "Importante"],
-    tooltip:
-      "Indicateur clé du terrain thyroïdien, du stress adaptatif et de la balance hormonale."
+    id: "derm_acne_visage",
+    question: "Avez-vous de l'acné sur le bas du visage (mâchoires/menton) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Zone de projection hormonale gonadique (souvent liée au cycle ou Ovaires Polykystiques).",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Sébum & Acné"
   },
   {
-    id: "dermato_cheveux_secs",
-    section: "Cheveux",
-    question: "Vos cheveux sont-ils secs ou cassants ?",
-    type: "boolean",
-    tooltip:
-      "Souvent lié à l'hypothyroïdie fonctionnelle ou à une sécheresse mucocutanée."
-  },
-
-  // ---------------------------------------------------
-  // 4. ONGLES
-  // ---------------------------------------------------
-  {
-    id: "dermato_ongles_fragiles",
-    section: "Ongles",
-    question: "Avez-vous les ongles fragiles ou cassants ?",
-    type: "boolean",
-    tooltip:
-      "Les ongles reflètent la microcirculation et la fonction thyro-somato."
+    id: "derm_acne_dos",
+    question: "Avez-vous de l'acné dans le dos ou sur le thorax ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Signe d'une forte imprégnation androgénique ou d'une surcharge hépatique d'élimination.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Sébum & Acné"
   },
   {
-    id: "dermato_ongles_stries",
-    section: "Ongles",
-    question: "Vos ongles présentent-ils des stries ou irrégularités ?",
-    type: "boolean",
-    tooltip:
-      "Indique des variations métaboliques ou un terrain inflammatoire discret."
+    id: "derm_cheveux_gras",
+    question: "Vos cheveux graissent-ils très vite (besoin de laver tous les jours) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "L'hyperséborrhée est un marqueur de sensibilité aux androgènes ou de résistance à l'insuline.",
+    weight: 1,
+    scoreDirection: "hyper",
+    section: "Sébum & Acné"
   },
 
-  // ---------------------------------------------------
-  // 5. MANIFESTATIONS CUTANÉES INFLAMMATOIRES
-  // ---------------------------------------------------
+  // ==========================================
+  // 3. CHEVEUX & ONGLES (Phanères)
+  // ==========================================
   {
-    id: "dermato_dermite",
-    section: "Inflammations cutanées",
-    question: "Avez-vous des dermites, rougeurs ou irritations de la peau ?",
-    type: "boolean",
-    tooltip:
-      "Signe d'inflammation cutanée liée au terrain immunitaire et digestif."
+    id: "derm_chute_diffuse",
+    question: "Perdez-vous vos cheveux par poignées (partout sur la tête) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Effluvium télogène : Souvent lié à un stress récent, une hypothyroïdie ou une carence en fer.",
+    weight: 2,
+    scoreDirection: "hypo",
+    section: "Cheveux & Ongles"
   },
   {
-    id: "dermato_psoriasis",
-    section: "Inflammations cutanées",
-    question: "Avez-vous du psoriasis ou des plaques épaissies ?",
-    type: "boolean",
-    tooltip:
-      "Lien direct avec le terrain inflammatoire systémique (Vol.4)."
+    id: "derm_chute_androgenique",
+    question: "Votre chevelure s'affine-t-elle sur le dessus ou les golfes (tempes) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Alopécie androgénétique : Sensibilité excessive des follicules à la DHT (Testostérone).",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Cheveux & Ongles"
   },
   {
-    id: "dermato_urticaire",
-    section: "Inflammations cutanées",
-    question: "Avez-vous déjà fait de l'urticaire ?",
+    id: "derm_ongles_taches",
+    question: "Avez-vous des taches blanches sur les ongles ?",
     type: "boolean",
-    tooltip:
-      "Manifestation d'hypersensibilité immunologique (mastocytes)."
-  },
-
-  // ---------------------------------------------------
-  // 6. MUQUEUSES
-  // ---------------------------------------------------
-  {
-    id: "dermato_secheresse_muqueuses",
-    section: "Muqueuses",
-    question: "Avez-vous une sécheresse des muqueuses (yeux, bouche, nez) ?",
-    type: "boolean",
-    tooltip:
-      "Indique une faiblesse hydrique ou thyro-gonadique, ou un terrain inflammatoire."
+    tooltip: "Leuconychie : Carence en Zinc relative (souvent liée à la croissance ou immunité).",
+    weight: 1,
+    scoreDirection: "hypo",
+    section: "Cheveux & Ongles"
   },
   {
-    id: "dermato_aphtes_recurrents",
-    section: "Muqueuses",
-    question: "Faites-vous des aphtes de manière répétée ?",
-    type: "boolean",
-    tooltip:
-      "Les aphtes récurrents sont liés à l'immunité muqueuse et parfois à des carences."
-  },
-  {
-    id: "dermato_mycoses",
-    section: "Muqueuses",
-    question: "Avez-vous des mycoses cutanées ou muqueuses fréquentes ?",
-    type: "boolean",
-    tooltip:
-      "Indique une fragilité immunitaire locale ou un déséquilibre du microbiote."
+    id: "derm_ongles_stries",
+    question: "Vos ongles sont-ils striés dans la longueur ou cassants ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Stries longitudinales = Épuisement surrénalien ou vieillissement métabolique.",
+    weight: 1,
+    scoreDirection: "hypo",
+    section: "Cheveux & Ongles"
   },
 
-  // ---------------------------------------------------
-  // 7. HYPERSENSIBILITÉS CUTANÉES
-  // ---------------------------------------------------
+  // ==========================================
+  // 4. VASCULARISATION & CICATRISATION (Cortisol)
+  // ==========================================
   {
-    id: "dermato_prurit",
-    section: "Hypersensibilités",
-    question: "Avez-vous des démangeaisons (prurit) sans cause apparente ?",
-    type: "boolean",
-    tooltip:
-      "Peut refléter une inflammation bas grade, un terrain allergique ou une sécheresse thyroïdienne."
+    id: "derm_bleus_faciles",
+    question: "Faites-vous des 'bleus' (ecchymoses) pour un moindre choc ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Fragilité capillaire. Signe d'excès de cortisol (peau fine) ou manque de Vitamine C.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Vascularisation & Cicatrisation"
   },
   {
-    id: "dermato_reaction_peau_produits",
-    section: "Hypersensibilités",
-    question: "Votre peau réagit-elle facilement aux produits cosmétiques ?",
-    type: "boolean",
-    tooltip:
-      "Évalue la sensibilité cutanée, liée à l'histamine et au terrain immunitaire."
+    id: "derm_cicatrisation_lente",
+    question: "Une petite plaie met-elle très longtemps à cicatriser ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Le cortisol en excès bloque la synthèse de collagène et ralentit la réparation.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Vascularisation & Cicatrisation"
+  },
+  {
+    id: "derm_demangeaisons",
+    question: "Avez-vous des démangeaisons (prurit) ou la peau qui marque quand on la gratte ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Dermographisme : Terrain histaminique (allergique) ou surcharge hépatique.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Vascularisation & Cicatrisation"
   }
 ];
 

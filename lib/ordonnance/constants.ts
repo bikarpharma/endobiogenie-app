@@ -6,9 +6,9 @@
  * IDs des vectorstores OpenAI
  */
 export const VECTORSTORES = {
-  endobiogenie: "vs_68e87a07ae6c81918d805c8251526bda", // 6 MB - Canon Lapraz/Hedayat (endobiogenie vol 1)
+  endobiogenie: "vs_68e87a07ae6c81918d805c8251526bda", // 6 MB - Endobiogénie vol 1
   phyto: "vs_68feb856fedc81919ef239741143871e",      // 25 MB - Phytothérapie clinique
-  gemmo: "vs_68fe63bee4bc8191b2ab5e6813d5bed2",     // 3 MB - Gemmothérapie (gemmobot)
+  gemmo: "vs_68fe63bee4bc8191b2ab5e6813d5bed2",     // 3 MB - Gemmothérapie
   aroma: "vs_68feabf4185c8191afbadcc2cfe972a7",     // 18 MB - Aromathérapie
 } as const;
 

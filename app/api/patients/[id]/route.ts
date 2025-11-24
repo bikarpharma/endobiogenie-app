@@ -2,10 +2,12 @@
 // API PATIENT [ID] - /api/patients/[id]
 // ========================================
 // GET    : Détail d'un patient + historique consultations
-// PUT    : Modifier un patient
+// PUT    : Modifier un patient (header auth)
+// PATCH  : Modifier un patient (session auth)
 // DELETE : Archiver un patient (soft delete)
 
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { Patient, PatientUpdateInput } from "@/types/patient";
 
@@ -205,6 +207,98 @@ export async function PUT(
     return NextResponse.json(response);
   } catch (error: any) {
     console.error("Erreur PUT /api/patients/[id]:", error);
+    return NextResponse.json(
+      { error: error.message || "Erreur serveur" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/patients/[id]
+ * Modifier un patient (avec authentification session)
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // 1. Authentification
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await req.json();
+
+    // 2. Vérifier que le patient existe et appartient au praticien
+    const existing = await prisma.patient.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Patient non trouvé" },
+        { status: 404 }
+      );
+    }
+
+    if (existing.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: "Non autorisé" },
+        { status: 403 }
+      );
+    }
+
+    // 3. Mettre à jour le patient
+    const updateData: any = {};
+
+    if (body.nom !== undefined) updateData.nom = body.nom.trim();
+    if (body.prenom !== undefined) updateData.prenom = body.prenom.trim();
+    if (body.dateNaissance !== undefined) {
+      updateData.dateNaissance = body.dateNaissance ? new Date(body.dateNaissance) : null;
+    }
+    if (body.sexe !== undefined) updateData.sexe = body.sexe;
+    if (body.telephone !== undefined) updateData.telephone = body.telephone?.trim() || null;
+    if (body.email !== undefined) updateData.email = body.email?.trim() || null;
+    if (body.allergies !== undefined) updateData.allergies = body.allergies?.trim() || null;
+    if (body.atcdMedicaux !== undefined) updateData.atcdMedicaux = body.atcdMedicaux?.trim() || null;
+    if (body.atcdChirurgicaux !== undefined) updateData.atcdChirurgicaux = body.atcdChirurgicaux?.trim() || null;
+    if (body.traitements !== undefined) updateData.traitements = body.traitements?.trim() || null;
+    if (body.notes !== undefined) updateData.notes = body.notes?.trim() || null;
+
+    const patient = await prisma.patient.update({
+      where: { id },
+      data: updateData,
+    });
+
+    console.log(`✅ Patient mis à jour : ${patient.nom} ${patient.prenom} (ID: ${id})`);
+
+    // 4. Formatter la réponse
+    const response: Patient = {
+      id: patient.id,
+      userId: patient.userId,
+      numeroPatient: patient.numeroPatient,
+      nom: patient.nom,
+      prenom: patient.prenom,
+      dateNaissance: patient.dateNaissance?.toISOString() || null,
+      sexe: patient.sexe as "H" | "F" | "Autre" | null,
+      telephone: patient.telephone,
+      email: patient.email,
+      notes: patient.notes,
+      consentementRGPD: patient.consentementRGPD,
+      dateConsentement: patient.dateConsentement?.toISOString() || null,
+      isArchived: patient.isArchived,
+      archivedAt: patient.archivedAt?.toISOString() || null,
+      createdAt: patient.createdAt.toISOString(),
+      updatedAt: patient.updatedAt.toISOString(),
+    };
+
+    return NextResponse.json(response);
+  } catch (error: any) {
+    console.error("Erreur PATCH /api/patients/[id]:", error);
     return NextResponse.json(
       { error: error.message || "Erreur serveur" },
       { status: 500 }

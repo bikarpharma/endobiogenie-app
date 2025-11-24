@@ -2,7 +2,10 @@
 
 import type { QuestionConfig } from "@/lib/interrogatoire/types";
 import type { GonadoQuestion } from "@/lib/interrogatoire/config/axe-gonado";
-import { Controller, Control } from "react-hook-form";
+import { Controller } from "react-hook-form";
+import type { Control } from "react-hook-form";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 type AnyQuestion = QuestionConfig | GonadoQuestion;
 
@@ -13,17 +16,31 @@ interface QuestionFieldProps {
 
 export function QuestionField({ question, control }: QuestionFieldProps) {
   const { id, question: label, type, options, tooltip } = question;
+  const scaleLabels = "scaleLabels" in question ? question.scaleLabels : undefined;
 
   return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="font-medium text-sm text-gray-700">
-        {label}
-      </label>
-      {tooltip && (
-        <p className="text-xs text-gray-500 italic leading-relaxed -mt-1">
-          {tooltip}
-        </p>
-      )}
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4 hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-2 mb-3">
+        <label htmlFor={id} className="font-medium text-lg text-slate-800 flex-1">
+          {label}
+        </label>
+        {tooltip && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors cursor-help flex-shrink-0"
+                onClick={(e) => e.preventDefault()}
+              >
+                <Info className="w-3 h-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="leading-relaxed">{tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
 
       <Controller
         name={id}
@@ -34,7 +51,7 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
               return (
                 <select
                   id={id}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border-2 border-gray-300 rounded-lg px-4 py-3 text-base font-medium w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-blue-400 transition-colors"
                   value={field.value === undefined ? "" : field.value ? "oui" : "non"}
                   onChange={(e) => field.onChange(e.target.value === "oui")}
                 >
@@ -47,7 +64,7 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
               return (
                 <select
                   id={id}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border-2 border-gray-300 rounded-lg px-4 py-3 text-base font-medium w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-blue-400 transition-colors"
                   value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value)}
                 >
@@ -100,6 +117,39 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
                   value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value)}
                 />
+              );
+            case "scale_1_5":
+              return (
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => field.onChange(value)}
+                        className={`
+                          flex-1 px-5 py-4 text-base font-semibold rounded-lg border-2 transition-all
+                          ${
+                            field.value === value
+                              ? "bg-blue-500 text-white border-blue-600 shadow-lg scale-105"
+                              : "bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50 hover:scale-102"
+                          }
+                        `}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+                  {scaleLabels && scaleLabels.length === 5 && (
+                    <div className="flex gap-3 text-sm text-gray-600 font-medium">
+                      {scaleLabels.map((label, idx) => (
+                        <div key={idx} className="flex-1 text-center">
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               );
             case "text":
             default:

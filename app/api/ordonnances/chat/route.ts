@@ -49,7 +49,7 @@ Règles strictes :
 1. Respecter TOUJOURS les contre-indications du patient
 2. Vérifier les interactions avec les traitements en cours
 3. Justifier par le mécanisme neuroendocrinien (axe → substance → mécanisme)
-4. Rester dans le champ de l'endobiogénie selon Lapraz/Hedayat
+4. Rester dans le champ de l'endobiogénie
 5. Ne jamais recommander de substances incompatibles avec le sexe/âge
 6. Être concis et précis dans les réponses
 7. Si une modification est demandée, proposer une alternative cohérente avec les axes perturbés
@@ -155,7 +155,7 @@ ${patient.pathologiesAssociees ? JSON.stringify(patient.pathologiesAssociees) : 
         role: "system",
         content: `ORDONNANCE ACTUELLE (3 volets):
 
-VOLET 1 - ENDOBIOGÉNIQUE (canon Lapraz/Hedayat):
+VOLET 1 - ENDOBIOGÉNIQUE:
 ${JSON.stringify(ordonnance.voletEndobiogenique, null, 2)}
 
 VOLET 2 - PHYTO/GEMMO/AROMA ÉLARGI:

@@ -216,7 +216,8 @@ export function OngletAnalyses({ patient }: { patient: any }) {
                 gap: "16px",
               }}
             >
-              {(selectedAnalysis.indexes as BdfIndex[]).map((index, idx) => {
+              {Object.entries(selectedAnalysis.indexes as Record<string, any>).map(([name, data], idx) => {
+                const index = { name, ...data };
                 const colors: Record<string, { bg: string; border: string; text: string }> = {
                   "Index génital": { bg: "#fef3c7", border: "#fbbf24", text: "#78350f" },
                   "Index thyroïdien": { bg: "#dbeafe", border: "#3b82f6", text: "#1e40af" },

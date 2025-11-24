@@ -58,10 +58,7 @@ export default async function RootLayout({
                   <Link href="/chat" className="nav-link">
                     Chat
                   </Link>
-                  <Link href="/bdf" className="nav-link">
-                    🧬 BdF
-                  </Link>
-                   <Link href="/patients" className="nav-link">
+                  <Link href="/patients" className="nav-link">
                     👤 Patients
                   </Link>
                   <Link href="/gemmo" className="nav-link">

@@ -7,9 +7,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import OpenAI from "openai";
-import {
+import type {
   AxeType,
-  InterpretationRequest,
   InterpretationResponse,
 } from "@/lib/interrogatoire/axeInterpretation";
 import {
@@ -30,10 +29,11 @@ const InterpretRequestSchema = z.object({
     "adaptatif",
     "thyroidien",
     "gonadique",
+    "somatotrope",
     "digestif",
+    "cardiometabolique",
+    "dermato",
     "immuno",
-    "rythmes",
-    "axesdevie",
   ]),
   reponsesAxe: z.record(z.any()),
   sexe: z.enum(["H", "F"]),

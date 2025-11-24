@@ -172,6 +172,7 @@ model Patient {
   ordonnances        Ordonnance[]
   ordonnanceChats    OrdonnanceChat[]
   axeInterpretations AxeInterpretation[]
+  syntheseGlobale    SyntheseGlobale[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -251,7 +252,9 @@ model Consultation {
   bdfAnalysisId String?
 
   // Relations
-  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient        Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bdfResults     BdfResult[]
+  bdfIndexResults BdfIndexResult[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -267,7 +270,7 @@ model Ordonnance {
   bdfAnalysisId String? // Lien optionnel vers l'analyse BdF source
 
   // === STRUCTURE EN 3 VOLETS ===
-  voletEndobiogenique Json @default("[]") // RecommandationTherapeutique[] - Canon Lapraz/Hedayat
+  voletEndobiogenique Json @default("[]") // RecommandationTherapeutique[] - Endobiogénie
   voletPhytoElargi    Json @default("[]") // RecommandationTherapeutique[] - Phyto/Gemmo/Aroma élargi
   voletComplements    Json @default("[]") // RecommandationTherapeutique[] - Micro-nutrition ciblée
 
@@ -339,4 +342,158 @@ model AxeInterpretation {
   @@unique([patientId, axe]) // Un seul enregistrement par axe par patient
   @@index([patientId])
   @@map("axe_interpretations")
+}
+
+// Table "synthese_globale" : synthèse transversale de tous les axes endobiogéniques
+model SyntheseGlobale {
+  id        String @id @default(cuid())
+  patientId String
+
+  // === SYNTHÈSE ENDOBIOGÉNIQUE GLOBALE ===
+  terrainDominant          String   @db.Text // Ex: "Terrain Alpha hyper-sympathique avec insuffisance corticotrope"
+  prioritesTherapeutiques  Json // string[] - Priorités thérapeutiques par ordre d'importance
+  axesPrincipaux           Json // string[] - Axes principaux perturbés
+  mecanismesCommuns        Json // string[] - Mécanismes transversaux identifiés
+  plantesMajeures          Json // string[] - Plantes majeures recommandées avec justification
+  hygieneDeVie             Json // string[] - Conseils hygiéno-diététiques transversaux
+  signesDAlarme            Json // string[] - Signes d'alarme à surveiller
+  pronostic                String   @db.Text // Pronostic et évolution attendue
+  resumeGlobal             String   @db.Text // Synthèse narrative globale (3-4 phrases)
+
+  // Métadonnées
+  nombreAxesAnalyses       Int      @default(0) // Nombre d'axes utilisés pour la synthèse
+  inclusBiologieFonction   Boolean  @default(false) // Inclut données BdF dans l'analyse
+  confiance                Float    @default(0.8) // Score de confiance global (0-1)
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId, createdAt])
+  @@map("synthese_globale")
+}
+
+// ===== MODULE BDF (BIOLOGIE DES FONCTIONS) =====
+
+// Enum : types d'index BdF
+enum BdfIndexType {
+  DIRECT    // Index calculé directement depuis biomarqueurs (ex: ratio, product)
+  INDIRECT  // Index dérivé d'autres index
+  COMPOSITE // Index avec formule complexe
+}
+
+// Table "biomarkers" : biomarqueurs biologiques
+model Biomarker {
+  id          String  @id @default(cuid())
+  code        String  @unique // ex: "TSH", "LDH", "GR"
+  name        String
+  unit        String?
+  description String?
+  referenceMin Decimal? @db.Decimal(10, 3)
+  referenceMax Decimal? @db.Decimal(10, 3)
+  category    String // ex: "thyroid", "adrenal", "ionogram", "enzyme", "tumor"
+
+  // Relations
+  panels BdfPanelBiomarker[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("biomarkers")
+}
+
+// Table "bdf_panels" : panels BdF (ex: Thyroïde Mini, BdF Standard)
+model BdfPanel {
+  id          String  @id @default(cuid())
+  code        String  @unique // ex: "thyroid_mini", "bdf_mini"
+  name        String
+  description String?
+
+  // Relations
+  biomarkers BdfPanelBiomarker[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("bdf_panels")
+}
+
+// Table pivot "bdf_panel_biomarkers" : Panel ↔ Biomarker
+model BdfPanelBiomarker {
+  panelId     String
+  biomarkerId String
+  order       Int // Ordre d'affichage clinique
+
+  // Relations
+  panel     BdfPanel  @relation(fields: [panelId], references: [id], onDelete: Cascade)
+  biomarker Biomarker @relation(fields: [biomarkerId], references: [id], onDelete: Cascade)
+
+  @@id([panelId, biomarkerId])
+  @@map("bdf_panel_biomarkers")
+}
+
+// Table "bdf_index_definitions" : définitions des index BdF
+model BdfIndexDefinition {
+  id              String       @id @default(cuid())
+  code            String       @unique // ex: "idx_genital"
+  name            String
+  description     String?
+  type            BdfIndexType
+  biomarkers      Json // string[] - codes des biomarqueurs utilisés
+  requiresIndexes Json? // string[] - codes des index requis
+  formula         Json? // expression symbolique ou arbre de calcul
+  category        String // ex: "thyroid", "gonadic", "corticotrope"
+  subCategory     String?
+  version         Int          @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("bdf_index_definitions")
+}
+
+// Table "bdf_results" : valeurs biologiques d'une consultation
+model BdfResult {
+  id             String  @id @default(cuid())
+  consultationId String
+  biomarkerCode  String // Code du biomarqueur
+  value          Decimal @db.Decimal(10, 3)
+  unit           String?
+  referenceMin   Decimal? @db.Decimal(10, 3)
+  referenceMax   Decimal? @db.Decimal(10, 3)
+
+  // Relations
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([consultationId, biomarkerCode])
+  @@index([consultationId])
+  @@index([biomarkerCode])
+  @@map("bdf_results")
+}
+
+// Table "bdf_index_results" : résultats des index BdF pour une consultation
+model BdfIndexResult {
+  id             String   @id @default(cuid())
+  consultationId String
+  indexCode      String // Code de l'index
+  value          Decimal? @db.Decimal(10, 3)
+  category       String?
+  subCategory    String?
+  details        Json? // Détails de calcul, valeurs intermédiaires
+
+  // Relations
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([consultationId, indexCode])
+  @@index([consultationId])
+  @@index([indexCode])
+  @@map("bdf_index_results")
 }

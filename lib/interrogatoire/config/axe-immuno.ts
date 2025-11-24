@@ -1,149 +1,151 @@
 import type { QuestionConfig } from "../types";
 
 /**
- * Axe Immuno-Inflammatoire
- * -----------------------------------------------------
- * Explore le terrain inflammatoire, les allergies,
- * les infections récidivantes, les réactions cutanées
- * et les hypersensibilités alimentaires.
+ * AXE IMMUNO-INFLAMMATOIRE (TH1/TH2) - NIVEAU EXPERT
+ * -------------------------------------------------
+ * Discrimine les 3 terrains immunitaires :
+ * - SUSCEPTIBILITÉ INFECTIEUSE (Déficit Th1 / Cortisol)
+ * - ATOPIE & ALLERGIES (Excès Th2 / Histamine)
+ * - INFLAMMATION & AUTO-IMMUNITÉ (Dérèglement)
+ * - ORL & BARRIÈRES (Le Terrain Muqueux)
+ *
+ * SPÉCIFICITÉ : L'immunité n'est pas binaire (Malade/Pas malade)
+ * mais se décline en terrains (Anergique vs Atopique vs Inflammatoire)
  */
 
-export const AxeImmunoConfig: QuestionConfig[] = [
-
-  // ---------------------------------------------------
-  // 1. TERRAIN INFLAMMATOIRE DE BAS GRADE
-  // ---------------------------------------------------
+const AxeImmunoConfig: QuestionConfig[] = [
+  // ==========================================
+  // 1. SUSCEPTIBILITÉ INFECTIEUSE (Déficit Th1 / Cortisol)
+  // ==========================================
   {
-    id: "immuno_fatigue_inflammatoire",
-    section: "Terrain inflammatoire",
-    question: "Avez-vous une fatigue persistante associée à un état inflammatoire léger (courbatures, lourdeur) ?",
-    type: "boolean",
-    tooltip:
-      "Indique une inflammation de bas grade liée au terrain immunitaire ou au déséquilibre alpha-sympathique."
+    id: "immu_infections_hiver",
+    question: "Attrapez-vous systématiquement tout ce qui traîne (rhumes, grippes) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Signe de faiblesse immunitaire muqueuse (IgA) ou de déficit corticotrope d'adaptation au froid.",
+    weight: 3,
+    scoreDirection: "hypo",
+    section: "Susceptibilité Infectieuse"
   },
   {
-    id: "immuno_sensibilite_froid",
-    section: "Terrain inflammatoire",
-    question: "Avez-vous tendance à 'tomber malade' plus facilement en période froide ?",
-    type: "boolean",
-    tooltip:
-      "Signe d'un terrain immunitaire fragile ou d'une stimulation cortico-immunitaire insuffisante."
-  },
-
-  // ---------------------------------------------------
-  // 2. ALLERGIES & ATOPIE
-  // ---------------------------------------------------
-  {
-    id: "immuno_rhinite_allergique",
-    section: "Allergies & Atopie",
-    question: "Souffrez-vous de rhinite allergique (saisonnière ou permanente) ?",
-    type: "boolean",
-    tooltip:
-      "La rhinite allergique reflète l'hyperréactivité IgE et l'activité alpha-sympathique muqueuse."
+    id: "immu_convalescence",
+    question: "Mettez-vous beaucoup de temps à vous remettre d'une infection simple ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Indique une mauvaise réponse inflammatoire aiguë (manque de fièvre efficace) ou une fatigue surrénalienne.",
+    weight: 2,
+    scoreDirection: "hypo",
+    section: "Susceptibilité Infectieuse"
   },
   {
-    id: "immuno_asthme",
-    section: "Allergies & Atopie",
-    question: "Avez-vous un asthme ou une tendance à l'hyperréactivité bronchique ?",
-    type: "boolean",
-    tooltip:
-      "L'asthme est un indicateur d'hypersensibilité inflammatoire et de dérégulation parasympathique."
-  },
-  {
-    id: "immuno_eczema_atopique",
-    section: "Allergies & Atopie",
-    question: "Avez-vous ou avez-vous eu de l'eczéma atopique ?",
-    type: "boolean",
-    tooltip:
-      "Signe d'un terrain atopique global, fortement utile pour la compréhension du terrain immunitaire."
+    id: "immu_viral_latent",
+    question: "Faites-vous des poussées d'Herpès (bouton de fièvre) ou Zona en cas de stress ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Marqueur clé : Le stress (Cortisol) effondre l'immunité cellulaire (Th1) et réveille les virus latents.",
+    weight: 3,
+    scoreDirection: "hypo",
+    section: "Susceptibilité Infectieuse"
   },
 
-  // ---------------------------------------------------
-  // 3. INFECTIONS RÉCIDIVANTES
-  // ---------------------------------------------------
+  // ==========================================
+  // 2. ATOPIE & ALLERGIES (Excès Th2 / Histamine)
+  // ==========================================
   {
-    id: "immuno_infections_orl",
-    section: "Infections récidivantes",
-    question: "Avez-vous des infections ORL répétées ?",
-    type: "boolean",
-    tooltip:
-      "Les infections ORL récurrentes traduisent un terrain immunitaire fragile au niveau muqueux."
+    id: "immu_rhinite_saison",
+    question: "Souffrez-vous de rhinite allergique saisonnière (foins) ou perannuelle (acariens) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Hyper-réactivité Th2. Souvent liée à une congestion hépatique (mauvaise dégradation histamine).",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Atopie & Allergies"
   },
   {
-    id: "immuno_infections_respiratoires",
-    section: "Infections récidivantes",
-    question: "Avez-vous des bronchites fréquentes ou récidivantes ?",
-    type: "boolean",
-    tooltip:
-      "Permet d'évaluer la fonction immunitaire respiratoire et le tonus adaptatif local."
+    id: "immu_eczema_atopique",
+    question: "Avez-vous de l'eczéma, de l'urticaire ou des démangeaisons cutanées sans cause claire ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Terrain atopique classique : Peau = miroir de l'équilibre immuno-hépatique.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Atopie & Allergies"
   },
   {
-    id: "immuno_cystites_repetition",
-    section: "Infections récidivantes",
-    question: "Avez-vous des cystites à répétition ?",
-    type: "boolean",
-    tooltip:
-      "Utile pour déterminer l'état inflammatoire muqueux uro-génital et la fragilité immunitaire."
-  },
-
-  // ---------------------------------------------------
-  // 4. MANIFESTATIONS CUTANÉES
-  // ---------------------------------------------------
-  {
-    id: "immuno_urticaire",
-    section: "Manifestations cutanées",
-    question: "Avez-vous déjà fait de l'urticaire, même épisodique ?",
-    type: "boolean",
-    tooltip:
-      "L'urticaire reflète une activation mastocytaire et une hypersensibilité immunitaire."
-  },
-  {
-    id: "immuno_psoriasis_dermites",
-    section: "Manifestations cutanées",
-    question: "Avez-vous des dermites ou psoriasis ?",
-    type: "boolean",
-    tooltip:
-      "Les maladies cutanées inflammatoires renseignent sur l'activité immunitaire systémique."
+    id: "immu_intolerance_alim",
+    question: "Avez-vous des intolérances alimentaires multiples (laitages, gluten, œufs, etc.) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Indice de porosité intestinale (Leaky Gut) et d'hyper-réactivité immune à des antigènes alimentaires.",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Atopie & Allergies"
   },
 
-  // ---------------------------------------------------
-  // 5. DOULEURS INFLAMMATOIRES
-  // ---------------------------------------------------
+  // ==========================================
+  // 3. INFLAMMATION & AUTO-IMMUNITÉ (Dérèglement)
+  // ==========================================
   {
-    id: "immuno_douleurs_articulaires",
-    section: "Douleurs inflammatoires",
-    question: "Avez-vous des douleurs articulaires inflammatoires (raideur, chaleur, épisodes) ?",
-    type: "boolean",
-    tooltip:
-      "Indique un terrain inflammatoire systémique ou une dérégulation de l'immunité périphérique."
+    id: "immu_douleurs_articulaires",
+    question: "Avez-vous des douleurs articulaires migratrices ou inflammatoires (raideur matinale) ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Marqueur d'inflammation de bas grade. Si raideur matinale > 30 min : penser à l'auto-immunité.",
+    weight: 3,
+    scoreDirection: "hyper",
+    section: "Inflammation & Auto-immunité"
   },
   {
-    id: "immuno_douleurs_musculaires",
-    section: "Douleurs inflammatoires",
-    question: "Avez-vous des douleurs musculaires diffuses sans cause mécanique évidente ?",
+    id: "immu_fatigue_chronique",
+    question: "Souffrez-vous d'une fatigue inexpliquée, qui ne passe pas avec le repos ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Peut traduire une inflammation systémique silencieuse (cytokines pro-inflammatoires).",
+    weight: 2,
+    scoreDirection: "hyper",
+    section: "Inflammation & Auto-immunité"
+  },
+  {
+    id: "immu_maladie_auto_immune",
+    question: "Avez-vous une maladie auto-immune diagnostiquée (Hashimoto, Crohn, Lupus, etc.) ?",
     type: "boolean",
-    tooltip:
-      "Les myalgies sont souvent liées à l'inflammation de bas grade ou à la dysrégulation immuno-adaptative."
+    tooltip: "Confirme un dérèglement structurel de la tolérance immunitaire. Important pour contextualiser le reste.",
+    weight: 3,
+    scoreDirection: "hyper",
+    section: "Inflammation & Auto-immunité"
   },
 
-  // ---------------------------------------------------
-  // 6. HYPERSENSIBILITÉS ALIMENTAIRES & IMMUNITÉ
-  // ---------------------------------------------------
+  // ==========================================
+  // 4. ORL & BARRIÈRES (Le Terrain Muqueux)
+  // ==========================================
   {
-    id: "immuno_reactions_aliments",
-    section: "Hypersensibilités alimentaires",
-    question: "Avez-vous des réactions immunitaires possibles à certains aliments (rougeur, démangeaisons, fatigue) ?",
-    type: "boolean",
-    tooltip:
-      "Les réactions systémiques après repas évoquent une hypersensibilité immunitaire."
+    id: "immu_sinusites",
+    question: "Faites-vous régulièrement des sinusites ou rhinopharyngites ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Indicateur de faiblesse des barrières muqueuses et d'un terrain congestif (stase veineuse ORL).",
+    weight: 2,
+    scoreDirection: "hypo",
+    section: "ORL & Barrières"
   },
   {
-    id: "immuno_intolerances_notables",
-    section: "Hypersensibilités alimentaires",
-    question: "Avez-vous identifié des intolérances alimentaires notables (hors digestif simple) ?",
-    type: "text",
-    tooltip:
-      "Utile pour comprendre la perméabilité intestinale et la surcharge immunitaire chronique."
+    id: "immu_angines",
+    question: "Êtes-vous sujet aux angines à répétition ou aux ganglions gonflés ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Réactivité lymphatique et vulnérabilité des muqueuses pharyngées (déficit IgA sécrétoires).",
+    weight: 2,
+    scoreDirection: "hypo",
+    section: "ORL & Barrières"
+  },
+  {
+    id: "immu_vaccins_reactions",
+    question: "Avez-vous des réactions fortes ou prolongées après vaccination ?",
+    type: "boolean",
+    tooltip: "Peut indiquer une hyper-réactivité immune (Th2 dominant) ou une fragilité corticotrope.",
+    weight: 1,
+    scoreDirection: "hyper",
+    section: "ORL & Barrières"
   }
 ];
 

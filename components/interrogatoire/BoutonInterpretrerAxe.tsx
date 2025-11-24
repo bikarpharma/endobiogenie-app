@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { AxeType, AxeInterpretation } from "@/lib/interrogatoire/axeInterpretation";
+import type { AxeType, AxeInterpretation } from "@/lib/interrogatoire/axeInterpretation";
 import { AxeInterpretationCard } from "./AxeInterpretationCard";
 
 // Helper pour calculer un hash simple des réponses
@@ -46,6 +46,19 @@ export function BoutonInterpretrerAxe({
   );
   const [responsesChanged, setResponsesChanged] = useState(false);
   const lastInterpretedHashRef = useRef<string | null>(null);
+
+  // Synchroniser l'interprétation avec la prop (quand on change d'axe)
+  useEffect(() => {
+    setInterpretation(existingInterpretation || null);
+    // Réinitialiser le hash quand on change d'axe
+    if (existingInterpretation) {
+      lastInterpretedHashRef.current = hashResponses(reponsesAxe);
+      setResponsesChanged(false);
+    } else {
+      lastInterpretedHashRef.current = null;
+      setResponsesChanged(false);
+    }
+  }, [existingInterpretation, reponsesAxe]);
 
   // Détecter les changements de réponses
   useEffect(() => {

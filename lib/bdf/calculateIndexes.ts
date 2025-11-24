@@ -1,369 +1,182 @@
-// ========================================
-// CALCUL DES INDEX - Module BdF
-// ========================================
-// Applique les formules de Biologie des Fonctions
-// et génère les commentaires interprétatifs.
+import { INDEXES } from "./indexes/indexes.config";
+import { calculateIndex } from "./indexes/calculateIndex";
+import type { IndexDefinition } from "./indexes/index-types";
 
-import type { LabValues, IndexResults, IndexValue } from "./types";
+// Type de retour unifié pour l'API
+export type IndexStatus = "low" | "normal" | "high" | "error" | "unknown";
+
+export interface BdfResult {
+  indexes: Record<string, {
+    value: number | null;
+    status: IndexStatus;
+    biomarkersMissing: string[];
+    interpretation?: string;
+  }>;
+  metadata: {
+    calculatedAt: Date;
+    biomarkersCount: number;
+  };
+}
 
 /**
- * Calcule les 8 index de Biologie des Fonctions
- * @param lab - Valeurs biologiques en entrée
- * @returns Les 8 index avec leurs commentaires
+ * FONCTION PRINCIPALE : Calcule tous les index configurés
+ * @param biomarkers - Objet { "TSH": 1.2, "NEUT": 45, ... }
  */
-export function calculateIndexes(lab: LabValues): IndexResults {
-  // ==========================================
-  // 1. INDEX GÉNITAL (GR / GB)
-  // ==========================================
-  const indexGenital = calculateIndexGenital(lab.GR, lab.GB);
+export function calculateAllIndexes(biomarkers: Record<string, number | null>): BdfResult {
+  const results: BdfResult["indexes"] = {};
+  const indexCache: Record<string, number | null> = {};
 
-  // ==========================================
-  // 2. INDEX THYROÏDIEN (LDH / CPK)
-  // ==========================================
-  const indexThyroidien = calculateIndexThyroidien(lab.LDH, lab.CPK);
+  // 1. On parcourt tous les index définis dans la config
+  INDEXES.forEach((def) => {
+    try {
+      const calc = calculateIndex(def, biomarkers, indexCache);
 
-  // ==========================================
-  // 3. INDEX GÉNITO-THYROÏDIEN (Neutrophiles / Lymphocytes)
-  // ==========================================
-  const gT = calculateGT(lab.neutrophiles, lab.lymphocytes);
+      // On stocke le résultat brut pour les dépendances futures
+      indexCache[def.id] = calc.value;
 
-  // ==========================================
-  // 4. INDEX D'ADAPTATION (Eosinophiles / Monocytes)
-  // ==========================================
-  const indexAdaptation = calculateIndexAdaptation(
-    lab.eosinophiles,
-    lab.monocytes
-  );
-
-  // ==========================================
-  // 5. INDEX ŒSTROGÉNIQUE (TSHcorr / ostéocalcine)
-  // ==========================================
-  const indexOestrogenique = calculateIndexOestrogenique(
-    lab.TSH,
-    lab.osteocalcine
-  );
-
-  // ==========================================
-  // 6. INDEX DE TURN-OVER TISSULAIRE (TSHcorr * PAOi)
-  // ==========================================
-  const turnover = calculateTurnover(lab.TSH, lab.PAOi);
-
-  // ==========================================
-  // 7. RENDEMENT THYROÏDIEN ((LDH / CPK) / TSHcorr)
-  // ==========================================
-  const rendementThyroidien = calculateRendementThyroidien(
-    lab.LDH,
-    lab.CPK,
-    lab.TSH
-  );
-
-  // ==========================================
-  // 8. REMODELAGE OSSEUX ((TSHcorr * PAOi) / Ostéocalcine)
-  // ==========================================
-  const remodelageOsseux = calculateRemodelageOsseux(
-    lab.TSH,
-    lab.PAOi,
-    lab.osteocalcine
-  );
+      // Le status et l'interprétation sont déjà calculés dans calculateIndex()
+      results[def.id] = {
+        value: calc.value,
+        status: calc.status,
+        biomarkersMissing: calc.missing,
+        interpretation: calc.interpretation
+      };
+    } catch (e) {
+      console.error(`Erreur calcul index ${def.id}:`, e);
+      results[def.id] = { value: null, status: "error", biomarkersMissing: [] };
+    }
+  });
 
   return {
-    indexGenital,
-    indexThyroidien,
-    gT,
-    indexAdaptation,
-    indexOestrogenique,
-    turnover,
-    rendementThyroidien,
-    remodelageOsseux,
+    indexes: results,
+    metadata: {
+      calculatedAt: new Date(),
+      biomarkersCount: Object.keys(biomarkers).length
+    }
   };
 }
 
 // ==========================================
-// FONCTIONS DE CALCUL INDIVIDUELLES
+// COMPATIBILITÉ ANCIENNE API (Deprecated)
 // ==========================================
+// Ces types et fonctions sont conservés pour compatibilité rétroactive
+// avec le code existant qui utilise l'ancien format
 
 /**
- * Index génital = GR / GB
- * Reflète la dominance androgénique tissulaire relative aux œstrogènes
+ * @deprecated Utilisez calculateAllIndexes() avec le nouveau format
  */
-function calculateIndexGenital(
-  GR?: number,
-  GB?: number
-): IndexValue {
-  if (!GR || !GB || GB === 0) {
-    return {
-      value: null,
-      comment: "Calcul impossible (données manquantes ou GB = 0)",
-    };
-  }
-
-  const value = GR / GB;
-
-  // Interprétation (seuil arbitraire à 600)
-  if (value > 600) {
-    return {
-      value,
-      comment: "Empreinte androgénique tissulaire marquée",
-    };
-  } else {
-    return {
-      value,
-      comment:
-        "Empreinte œstrogénique plus marquée / androgénie tissulaire plus faible",
-    };
-  }
+export interface LabValues {
+  GR?: number;
+  GB?: number;
+  hemoglobine?: number;
+  neutrophiles?: number;
+  lymphocytes?: number;
+  eosinophiles?: number;
+  monocytes?: number;
+  plaquettes?: number;
+  LDH?: number;
+  CPK?: number;
+  PAOi?: number;
+  osteocalcine?: number;
+  TSH?: number;
+  VS?: number;
+  calcium?: number;
+  potassium?: number;
 }
 
 /**
- * Index thyroïdien = LDH / CPK
- * Rendement fonctionnel des hormones thyroïdiennes en périphérie
+ * @deprecated Utilisez calculateAllIndexes() avec le nouveau format
  */
-function calculateIndexThyroidien(
-  LDH?: number,
-  CPK?: number
-): IndexValue {
-  if (!LDH || !CPK || CPK === 0) {
-    return {
-      value: null,
-      comment: "Calcul impossible (données manquantes ou CPK = 0)",
-    };
-  }
-
-  const value = LDH / CPK;
-
-  // Interprétation (seuil arbitraire à 2.0)
-  if (value > 2.0) {
-    return {
-      value,
-      comment: "Activité métabolique thyroïdienne efficace / accélérée",
-    };
-  } else {
-    return {
-      value,
-      comment: "Rendement fonctionnel thyroïdien réduit",
-    };
-  }
+export interface IndexValue {
+  value: number | null;
+  comment: string;
 }
 
 /**
- * Index génito-thyroïdien (gT) = Neutrophiles / Lymphocytes
- * Capacité de la thyroïde à répondre à la stimulation œstrogénique périphérique
+ * @deprecated Utilisez calculateAllIndexes() avec le nouveau format
  */
-function calculateGT(
-  neutrophiles?: number,
-  lymphocytes?: number
-): IndexValue {
-  if (!neutrophiles || !lymphocytes || lymphocytes === 0) {
-    return {
-      value: null,
-      comment: "Calcul impossible (données manquantes ou lymphocytes = 0)",
-    };
-  }
-
-  const value = neutrophiles / lymphocytes;
-
-  // Interprétation (seuil arbitraire à 2.5)
-  if (value > 2.5) {
-    return {
-      value,
-      comment:
-        "Réponse thyroïdienne jugée suffisante face à la stimulation œstrogénique",
-    };
-  } else {
-    return {
-      value,
-      comment: "Demande accrue adressée à l'axe thyréotrope",
-    };
-  }
+export interface IndexResults {
+  indexGenital: IndexValue;
+  indexThyroidien: IndexValue;
+  gT: IndexValue;
+  indexAdaptation: IndexValue;
+  indexOestrogenique: IndexValue;
+  turnover: IndexValue;
+  rendementThyroidien: IndexValue;
+  remodelageOsseux: IndexValue;
 }
 
 /**
- * Index d'adaptation = Eosinophiles / Monocytes
- * Stratégie d'adaptation entre ACTH/cortisol et FSH/œstrogènes
+ * FONCTION DE COMPATIBILITÉ : Convertit l'ancien format vers le nouveau
+ * @deprecated Cette fonction sera supprimée dans la v2.0
  */
-function calculateIndexAdaptation(
-  eosinophiles?: number,
-  monocytes?: number
-): IndexValue {
-  if (!eosinophiles || !monocytes || monocytes === 0) {
-    return {
+export function calculateIndexes(lab: LabValues): IndexResults {
+  console.warn("⚠️ calculateIndexes() est deprecated. Utilisez calculateAllIndexes()");
+
+  // Mapping ancien → nouveau format biomarqueurs
+  const biomarkers: Record<string, number | null> = {
+    GR: lab.GR ?? null,
+    GB: lab.GB ?? null,
+    HB: lab.hemoglobine ?? null,
+    NEUT: lab.neutrophiles ?? null,
+    LYMPH: lab.lymphocytes ?? null,
+    EOS: lab.eosinophiles ?? null,
+    MONO: lab.monocytes ?? null,
+    PLAQUETTES: lab.plaquettes ?? null,
+    LDH: lab.LDH ?? null,
+    CPK: lab.CPK ?? null,
+    PAOI: lab.PAOi ?? null,
+    OSTEO: lab.osteocalcine ?? null,
+    TSH: lab.TSH ?? null,
+    CA: lab.calcium ?? null,
+    K: lab.potassium ?? null
+  };
+
+  const result = calculateAllIndexes(biomarkers);
+
+  // Retourne le format ancien avec valeurs null par défaut
+  return {
+    indexGenital: {
+      value: result.indexes["idx_genital"]?.value ?? null,
+      comment: result.indexes["idx_genital"]?.value !== null
+        ? "Calculé avec formule endobiogénique (NEUT/LYMPH)"
+        : "Données insuffisantes"
+    },
+    indexThyroidien: {
+      value: result.indexes["idx_metabolic_activity"]?.value ?? null,
+      comment: result.indexes["idx_metabolic_activity"]?.value !== null
+        ? "Activité métabolique (LDH/CPK)"
+        : "Données insuffisantes"
+    },
+    gT: {
+      value: result.indexes["idx_genito_thyroid"]?.value ?? null,
+      comment: result.indexes["idx_genito_thyroid"]?.value !== null
+        ? "Ratio Génito-Thyroïdien"
+        : "Données insuffisantes"
+    },
+    indexAdaptation: {
+      value: result.indexes["idx_adaptation"]?.value ?? null,
+      comment: result.indexes["idx_adaptation"]?.value !== null
+        ? "Index d'Adaptation (Selye)"
+        : "Données insuffisantes"
+    },
+    indexOestrogenique: {
       value: null,
-      comment: "Calcul impossible (données manquantes ou monocytes = 0)",
-    };
-  }
-
-  const value = eosinophiles / monocytes;
-
-  // Interprétation (seuil arbitraire à 0.7)
-  if (value > 0.7) {
-    return {
-      value,
-      comment: "Orientation de l'adaptation vers FSH/œstrogènes",
-    };
-  } else {
-    return {
-      value,
-      comment: "Orientation de l'adaptation vers ACTH/cortisol",
-    };
-  }
-}
-
-/**
- * Index œstrogénique = TSHcorr / ostéocalcine
- * Pression pro-croissance / anabolique centrale
- * TSHcorr = correction de TSH entre 0.5 et 5
- */
-function calculateIndexOestrogenique(
-  TSH?: number,
-  osteocalcine?: number
-): IndexValue {
-  if (!TSH || !osteocalcine || osteocalcine === 0) {
-    return {
+      comment: "Non implémenté dans nouvelle version"
+    },
+    turnover: {
       value: null,
-      comment: "Calcul impossible (données manquantes ou ostéocalcine = 0)",
-    };
-  }
-
-  // Correction de TSH (entre 0.5 et 5)
-  const TSHcorr = correctTSH(TSH);
-
-  const value = TSHcorr / osteocalcine;
-
-  // Interprétation (seuil arbitraire à 0.05)
-  if (value > 0.05) {
-    return {
-      value,
-      comment: "Forte sollicitation pro-croissance/anabolique",
-    };
-  } else {
-    return {
-      value,
-      comment: "Pression pro-croissance plus faible",
-    };
-  }
-}
-
-/**
- * Index de turn-over tissulaire = TSHcorr * PAOi
- * Vitesse de renouvellement/remodelage tissulaire global
- */
-function calculateTurnover(TSH?: number, PAOi?: number): IndexValue {
-  if (!TSH || !PAOi) {
-    return {
+      comment: "Non implémenté dans nouvelle version"
+    },
+    rendementThyroidien: {
+      value: result.indexes["idx_thyroid_yield"]?.value ?? null,
+      comment: result.indexes["idx_thyroid_yield"]?.value !== null
+        ? "Rendement Thyroïdien ((LDH/CPK)/TSH)"
+        : "Données insuffisantes"
+    },
+    remodelageOsseux: {
       value: null,
-      comment: "Calcul impossible (données manquantes)",
-    };
-  }
-
-  // Correction de TSH (entre 0.5 et 5)
-  const TSHcorr = correctTSH(TSH);
-
-  const value = TSHcorr * PAOi;
-
-  // Interprétation (seuil arbitraire à 100)
-  if (value > 100) {
-    return {
-      value,
-      comment:
-        "Sur-sollicitation du renouvellement tissulaire avec risque de ralentissement d'exécution",
-    };
-  } else {
-    return {
-      value,
-      comment: "Renouvellement tissulaire non surchargé",
-    };
-  }
-}
-
-/**
- * Rendement thyroïdien = (IndexThyroïdien) / TSHcorr
- * = (LDH / CPK) / TSHcorr
- * Évalue l'efficacité de la réponse thyroïdienne par rapport à la sollicitation centrale
- */
-function calculateRendementThyroidien(
-  LDH?: number,
-  CPK?: number,
-  TSH?: number
-): IndexValue {
-  if (!LDH || !CPK || !TSH || CPK === 0) {
-    return {
-      value: null,
-      comment: "Calcul impossible (données manquantes)",
-    };
-  }
-
-  // Calcul de l'index thyroïdien
-  const indexThyroidien = LDH / CPK;
-
-  // Correction de TSH (entre 0.5 et 5)
-  const TSHcorr = correctTSH(TSH);
-
-  const value = indexThyroidien / TSHcorr;
-
-  // Interprétation (seuil arbitraire à 1.0)
-  if (value > 1.0) {
-    return {
-      value,
-      comment: "Réponse thyréotrope rapide par rapport à la sollicitation centrale",
-    };
-  } else {
-    return {
-      value,
-      comment: "Réponse thyréotrope plus lente / besoin de stimulation prolongée",
-    };
-  }
-}
-
-/**
- * Remodelage osseux = Turnover / Ostéocalcine
- * = (TSHcorr * PAOi) / Ostéocalcine
- * Évalue la sollicitation du remodelage structurel osseux
- */
-function calculateRemodelageOsseux(
-  TSH?: number,
-  PAOi?: number,
-  osteocalcine?: number
-): IndexValue {
-  if (!TSH || !PAOi || !osteocalcine || osteocalcine === 0) {
-    return {
-      value: null,
-      comment: "Calcul impossible (données manquantes)",
-    };
-  }
-
-  // Correction de TSH (entre 0.5 et 5)
-  const TSHcorr = correctTSH(TSH);
-
-  // Calcul du turnover
-  const turnover = TSHcorr * PAOi;
-
-  const value = turnover / osteocalcine;
-
-  // Interprétation (seuil arbitraire à 5.0)
-  if (value > 5.0) {
-    return {
-      value,
-      comment: "Sollicitation de remodelage structurel importante",
-    };
-  } else {
-    return {
-      value,
-      comment: "Remodelage tissulaire moins sollicité",
-    };
-  }
-}
-
-// ==========================================
-// UTILITAIRE : Correction TSH
-// ==========================================
-
-/**
- * Corrige TSH pour qu'elle soit entre 0.5 et 5
- * @param TSH - Valeur TSH mesurée
- * @returns TSH corrigée
- */
-function correctTSH(TSH: number): number {
-  if (TSH < 0.5) return 0.5;
-  if (TSH > 5) return 5;
-  return TSH;
+      comment: "Non implémenté dans nouvelle version"
+    }
+  };
 }

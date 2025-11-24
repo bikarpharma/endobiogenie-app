@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { AxisDefinition } from "@/lib/interrogatoire/config";
 import type { GonadoQuestion } from "@/lib/interrogatoire/config/axe-gonado";
 import { QuestionField } from "./QuestionField";
 import { SectionCard } from "./SectionCard";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface AxisFormProps {
   axis: AxisDefinition;
@@ -23,7 +25,13 @@ export function AxisForm({
     defaultValues: initialValues ?? {}
   });
 
-  const { handleSubmit, control } = form;
+  const { handleSubmit, control, reset } = form;
+
+  // IMPORTANT : Mettre à jour le formulaire quand initialValues change
+  useEffect(() => {
+    console.log(`📝 [AxisForm ${axis.key}] Rechargement des valeurs:`, initialValues);
+    reset(initialValues ?? {});
+  }, [initialValues, reset, axis.key]);
 
   const questions = axis.key === "gonado"
     ? (axis.questions as GonadoQuestion[]).filter((q) =>
@@ -46,20 +54,22 @@ export function AxisForm({
   };
 
   return (
-    <form
-      onBlur={handleSubmit(onSubmit)}
-      onChange={() => {
-        // onPartialSave sera déclenché au blur; pas besoin ici
-      }}
-      className="space-y-6"
-    >
-      {Object.entries(grouped).map(([section, qs]) => (
-        <SectionCard key={section} title={section}>
-          {qs.map((q) => (
-            <QuestionField key={q.id} question={q as any} control={control} />
-          ))}
-        </SectionCard>
-      ))}
-    </form>
+    <TooltipProvider delayDuration={200}>
+      <form
+        onBlur={handleSubmit(onSubmit)}
+        onChange={() => {
+          // onPartialSave sera déclenché au blur; pas besoin ici
+        }}
+        className="space-y-6"
+      >
+        {Object.entries(grouped).map(([section, qs]) => (
+          <SectionCard key={section} title={section}>
+            {qs.map((q) => (
+              <QuestionField key={q.id} question={q as any} control={control} />
+            ))}
+          </SectionCard>
+        ))}
+      </form>
+    </TooltipProvider>
   );
 }

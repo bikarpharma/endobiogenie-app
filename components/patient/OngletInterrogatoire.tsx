@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { InterrogatoireEndobiogenique } from "@/lib/interrogatoire/types";
-import { AxeType, AxeInterpretation, INTERROGATOIRE_AXE_MAPPING } from "@/lib/interrogatoire/axeInterpretation";
+import type { InterrogatoireEndobiogenique } from "@/lib/interrogatoire/types";
+import type { AxeType, AxeInterpretation } from "@/lib/interrogatoire/axeInterpretation";
 import { BoutonInterpretrerAxe } from "@/components/interrogatoire/BoutonInterpretrerAxe";
 
 type PatientData = {
@@ -63,58 +63,98 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
 
   // Gérer l'interprétation de tous les axes
   const handleInterpretAll = async () => {
-    if (!interrogatoire) return;
+    console.log("🔵 [DEBUG] handleInterpretAll appelé");
+    console.log("🔵 [DEBUG] interrogatoire:", interrogatoire);
+    console.log("🔵 [DEBUG] interrogatoire stringifié:", JSON.stringify(interrogatoire, null, 2));
+
+    if (!interrogatoire || !interrogatoire.v2) {
+      console.error("❌ [DEBUG] Aucun interrogatoire v2 disponible");
+      alert("Erreur : Aucun interrogatoire au format v2 trouvé. Veuillez remplir l'interrogatoire.");
+      return;
+    }
 
     setInterpretingAll(true);
+    console.log("🔵 [DEBUG] setInterpretingAll(true)");
+
+    // Utiliser uniquement le format v2
+    const answersByAxis = interrogatoire.v2?.answersByAxis || {};
+    console.log("🔵 [DEBUG] answersByAxis:", answersByAxis);
+    console.log("🔵 [DEBUG] answersByAxis stringifié:", JSON.stringify(answersByAxis, null, 2));
 
     const axes: { axe: AxeType; data: Record<string, any> }[] = [
-      { axe: "neurovegetatif", data: interrogatoire.axeNeuroVegetatif || {} },
-      { axe: "adaptatif", data: interrogatoire.axeAdaptatif || {} },
-      { axe: "thyroidien", data: interrogatoire.axeThyroidien || {} },
-      { axe: "gonadique", data: interrogatoire.sexe === 'F' ? (interrogatoire.axeGonadiqueFemme || {}) : (interrogatoire.axeGonadiqueHomme || {}) },
-      { axe: "digestif", data: interrogatoire.axeDigestifMetabolique || {} },
-      { axe: "immuno", data: interrogatoire.axeImmunoInflammatoire || {} },
-      { axe: "rythmes", data: interrogatoire.rythmes || {} },
-      { axe: "axesdevie", data: interrogatoire.axesDeVie || {} },
+      { axe: "neurovegetatif", data: answersByAxis.neuro || {} },
+      { axe: "adaptatif", data: answersByAxis.adaptatif || {} },
+      { axe: "thyroidien", data: answersByAxis.thyro || {} },
+      { axe: "gonadique", data: answersByAxis.gonado || {} },
+      { axe: "somatotrope", data: answersByAxis.somato || {} },
+      { axe: "digestif", data: answersByAxis.digestif || {} },
+      { axe: "cardiometabolique", data: answersByAxis.cardioMetabo || {} },
+      { axe: "dermato", data: answersByAxis.dermato || {} },
+      { axe: "immuno", data: answersByAxis.immuno || {} },
     ];
 
     // Filtrer seulement les axes qui ont des données
     const axesWithData = axes.filter(a => Object.keys(a.data).length > 0);
 
+    console.log(`🤖 Interprétation de ${axesWithData.length} axes avec données...`);
+    console.log("🔵 [DEBUG] axes avec données:", axesWithData.map(a => a.axe));
+
+    if (axesWithData.length === 0) {
+      alert("Aucun axe rempli à interpréter. Veuillez d'abord remplir l'interrogatoire.");
+      setInterpretingAll(false);
+      return;
+    }
+
     try {
       // Interpréter tous les axes en parallèle
-      const promises = axesWithData.map(({ axe, data }) =>
-        fetch("/api/interrogatoire/interpret", {
+      const promises = axesWithData.map(({ axe, data }) => {
+        console.log(`🔵 [DEBUG] Envoi requête pour axe: ${axe}`);
+        return fetch("/api/interrogatoire/interpret", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             patientId: patient.id,
             axe,
             reponsesAxe: data,
-            sexe: interrogatoire.sexe,
+            sexe: interrogatoire.v2.sexe,
             age,
             antecedents: patient.atcdMedicaux || undefined,
             traitements: patient.traitements || undefined,
-            contreindicationsMajeures: patient.contreindicationsMajeures ? JSON.parse(patient.contreindicationsMajeures) : undefined,
+            contreindicationsMajeures: patient.contreindicationsMajeures
+              ? (typeof patient.contreindicationsMajeures === 'string'
+                  ? JSON.parse(patient.contreindicationsMajeures)
+                  : patient.contreindicationsMajeures)
+              : undefined,
           }),
-        }).then(res => res.json())
-      );
+        }).then(res => {
+          console.log(`🔵 [DEBUG] Réponse reçue pour ${axe}:`, res.status);
+          return res.json();
+        });
+      });
 
       const results = await Promise.all(promises);
+      console.log("🔵 [DEBUG] Tous les résultats:", results);
 
       // Mettre à jour les interprétations
       const newInterpretations: Record<string, AxeInterpretation> = { ...interpretations };
       results.forEach((result) => {
         if (result.interpretation) {
           newInterpretations[result.interpretation.axe] = result.interpretation;
+        } else if (result.error) {
+          console.error(`❌ Erreur pour un axe:`, result.error);
         }
       });
       setInterpretations(newInterpretations);
 
+      console.log(`✅ ${results.length} axes interprétés avec succès`);
+      alert(`✅ ${results.length} axes interprétés avec succès !`);
+
     } catch (error) {
-      console.error("Erreur lors de l'interprétation de tous les axes:", error);
+      console.error("❌ Erreur lors de l'interprétation de tous les axes:", error);
+      alert(`Erreur lors de l'interprétation : ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     } finally {
       setInterpretingAll(false);
+      console.log("🔵 [DEBUG] setInterpretingAll(false)");
     }
   };
 
@@ -136,7 +176,7 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
   };
 
   // Fonction pour afficher un axe avec bouton d'interprétation
-  const renderAxe = (titre: string, emoji: string, axe: AxeType, data: Record<string, any> | undefined) => {
+  const renderAxe = (titre: string, axe: AxeType, data: Record<string, any> | undefined, icon?: string) => {
     if (!data || Object.keys(data).length === 0) return null;
 
     return (
@@ -148,8 +188,8 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
         marginBottom: "16px"
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <h3 style={{ fontSize: "1.1rem", fontWeight: "600", margin: 0, color: "#1f2937" }}>
-            {emoji} {titre}
+          <h3 style={{ fontSize: "1.1rem", fontWeight: "600", margin: 0, color: "#1f2937", display: "flex", alignItems: "center", gap: "8px" }}>
+            {icon && <span style={{ fontSize: "1.3rem" }}>{icon}</span>} {titre}
           </h3>
 
           {/* Bouton d'interprétation pour cet axe */}
@@ -252,7 +292,7 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
           </p>
 
           <button
-            onClick={() => router.push(`/patients/${patient.id}/interrogatoire`)}
+            onClick={() => router.push(`/${patient.id}/interrogatoire`)}
             style={{
               background: "#2563eb",
               color: "white",
@@ -312,6 +352,9 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
   }
 
   // Affichage détaillé de l'interrogatoire
+  // Récupérer les données depuis le format v2
+  const answersByAxis = interrogatoire.v2?.answersByAxis || {};
+
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
       {/* En-tête */}
@@ -327,7 +370,7 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
         </h2>
         <p style={{ fontSize: "0.95rem", opacity: 0.9 }}>
           Patient: {patient.nom} {patient.prenom} •
-          Sexe: {interrogatoire.sexe === 'H' ? 'Homme' : 'Femme'} •
+          Sexe: {interrogatoire.v2?.sexe === 'H' ? 'Homme' : 'Femme'} •
           Rempli le {interrogatoire.date_creation
             ? new Date(interrogatoire.date_creation).toLocaleDateString('fr-FR', {
                 day: 'numeric',
@@ -366,7 +409,7 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
         </button>
 
         <button
-          onClick={() => router.push(`/patients/${patient.id}/interrogatoire`)}
+          onClick={() => router.push(`/${patient.id}/interrogatoire`)}
           style={{
             background: "#2563eb",
             color: "white",
@@ -389,19 +432,17 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
         </button>
       </div>
 
-      {/* Axes détaillés */}
+      {/* Axes détaillés - FORMAT V2 */}
       <div>
-        {renderAxe("Axe Neurovégétatif", "🧠", "neurovegetatif", interrogatoire.axeNeuroVegetatif)}
-        {renderAxe("Axe Adaptatif (Stress)", "😰", "adaptatif", interrogatoire.axeAdaptatif)}
-        {renderAxe("Axe Thyroïdien", "🦋", "thyroidien", interrogatoire.axeThyroidien)}
-        {interrogatoire.sexe === 'F'
-          ? renderAxe("Axe Gonadique Femme", "🌸", "gonadique", interrogatoire.axeGonadiqueFemme)
-          : renderAxe("Axe Gonadique Homme", "🌸", "gonadique", interrogatoire.axeGonadiqueHomme)
-        }
-        {renderAxe("Axe Digestif & Métabolique", "🍽️", "digestif", interrogatoire.axeDigestifMetabolique)}
-        {renderAxe("Axe Immuno-inflammatoire", "🛡️", "immuno", interrogatoire.axeImmunoInflammatoire)}
-        {renderAxe("Rythmes biologiques", "⏰", "rythmes", interrogatoire.rythmes)}
-        {renderAxe("Axes de vie", "🌱", "axesdevie", interrogatoire.axesDeVie)}
+        {renderAxe("Axe Neurovégétatif", "neurovegetatif", answersByAxis.neuro, "🧠")}
+        {renderAxe("Axe Adaptatif (Stress)", "adaptatif", answersByAxis.adaptatif, "😰")}
+        {renderAxe("Axe Thyroïdien", "thyroidien", answersByAxis.thyro, "🦋")}
+        {renderAxe("Axe Gonadique", "gonadique", answersByAxis.gonado, "🌸")}
+        {renderAxe("Axe Somatotrope", "somatotrope", answersByAxis.somato, "💪")}
+        {renderAxe("Axe Digestif", "digestif", answersByAxis.digestif, "🍽️")}
+        {renderAxe("Axe Cardiométabolique", "cardiometabolique", answersByAxis.cardioMetabo, "❤️")}
+        {renderAxe("Axe Dermato", "dermato", answersByAxis.dermato, "🧴")}
+        {renderAxe("Axe Immuno-inflammatoire", "immuno", answersByAxis.immuno, "🛡️")}
       </div>
     </div>
   );

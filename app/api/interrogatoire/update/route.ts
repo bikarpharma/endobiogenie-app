@@ -3,28 +3,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { InterrogatoireEndobiogenique } from "@/lib/interrogatoire/types";
+import type { InterrogatoireEndobiogenique } from "@/lib/interrogatoire/types";
 import { z } from "zod";
 
 /**
  * Schéma de validation Zod pour l'interrogatoire
- * (simplifié - vous pouvez le détailler davantage)
+ * Format v2 uniquement avec answersByAxis
  */
 const InterrogatoireSchema = z.object({
   patientId: z.string().cuid(),
   interrogatoire: z.object({
     date_creation: z.string().optional(),
     sexe: z.enum(["H", "F"]),
-    axeNeuroVegetatif: z.object({}).passthrough(),
-    axeAdaptatif: z.object({}).passthrough(),
-    axeThyroidien: z.object({}).passthrough(),
-    axeGonadiqueFemme: z.object({}).passthrough().optional(),
-    axeGonadiqueHomme: z.object({}).passthrough().optional(),
-    axeDigestifMetabolique: z.object({}).passthrough(),
-    axeImmunoInflammatoire: z.object({}).passthrough(),
-    rythmes: z.object({}).passthrough(),
-    axesDeVie: z.object({}).passthrough(),
-  }),
+    v2: z.object({
+      sexe: z.enum(["H", "F"]),
+      answersByAxis: z.object({
+        historique: z.object({}).passthrough().optional(),
+        neuro: z.object({}).passthrough().optional(),
+        adaptatif: z.object({}).passthrough().optional(),
+        thyro: z.object({}).passthrough().optional(),
+        gonado: z.object({}).passthrough().optional(),
+        somato: z.object({}).passthrough().optional(),
+        digestif: z.object({}).passthrough().optional(),
+        cardioMetabo: z.object({}).passthrough().optional(),
+        dermato: z.object({}).passthrough().optional(),
+        immuno: z.object({}).passthrough().optional(),
+      }).passthrough(),
+    }),
+  }).passthrough(),
 });
 
 /**
@@ -75,13 +81,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Ajouter la date de création si absente
+    // 4. Récupérer l'interrogatoire existant pour fusion
+    const existingInterrogatoire = patient.interrogatoire as InterrogatoireEndobiogenique | null;
+
+    // 5. Fusionner les données v2 : préserver les axes non modifiés
+    let mergedV2 = interrogatoire.v2;
+    if (existingInterrogatoire?.v2?.answersByAxis && interrogatoire.v2?.answersByAxis) {
+      mergedV2 = {
+        ...interrogatoire.v2,
+        answersByAxis: {
+          ...existingInterrogatoire.v2.answersByAxis, // Garder les anciennes données
+          ...interrogatoire.v2.answersByAxis,         // Écraser avec les nouvelles
+        },
+      };
+      console.log(`🔄 [API FUSION] Fusion des axes existants avec les nouveaux`);
+    }
+
+    // 6. Ajouter la date de création si absente
     const interrogatoireWithDate: InterrogatoireEndobiogenique = {
       ...interrogatoire,
-      date_creation: interrogatoire.date_creation || new Date().toISOString(),
+      v2: mergedV2,
+      date_creation: existingInterrogatoire?.date_creation || interrogatoire.date_creation || new Date().toISOString(),
     };
 
-    // 5. Sauvegarder dans la base
+    console.log(`💾 [API SAVE] Sauvegarde interrogatoire avec ${Object.keys(interrogatoireWithDate.v2?.answersByAxis || {}).length} axes`);
+
+    // 7. Sauvegarder dans la base
     const updatedPatient = await prisma.patient.update({
       where: { id: patientId },
       data: {

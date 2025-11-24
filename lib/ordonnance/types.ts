@@ -1,8 +1,10 @@
 // ========================================
 // TYPES - Système d'Ordonnances Intelligent
+// Refactor Learning System (itergIA)
 // ========================================
 // Types pour le raisonnement thérapeutique en 4 étapes
 // + Chat contextuel avec l'IA
+// + Contexte pédagogique (lien Index → Axe → Plante)
 
 import type { IndexResults, LabValues } from "@/lib/bdf/types";
 
@@ -49,8 +51,37 @@ export type SubstanceType = 'plante' | 'gemmo' | 'HE' | 'vitamine' | 'mineral' |
  */
 export type FormeGalenique = 'EPS' | 'TM' | 'MG' | 'gélule' | 'comprimé' | 'HE' | 'poudre' | 'autre';
 
+// ========================================
+// EXTENSION PÉDAGOGIQUE (LEARNING SYSTEM)
+// ========================================
+
+/**
+ * Niveau de sécurité visuel pour l'UI
+ */
+export type NiveauSecurite = 'sur' | 'precaution' | 'interdit';
+
+/**
+ * Métadonnées pour l'affichage éducatif (Learning System)
+ * Explique le lien : Index Bio → Axe → Plante
+ */
+export type ContextePedagogique = {
+  // Le "Pourquoi" biologique
+  indexDeclencheur?: string;    // ex: "Index Thyroïdien (1.8)"
+  scorePerturbation: number;    // Score de l'axe (ex: 8/10)
+
+  // Le "Comment" physiologique
+  actionSurAxe: string;         // ex: "Relance la synthèse de T3/T4 (Action thyréotrope)"
+
+  // Le "Savoir" botanique/chimique
+  constituantsClefs?: string[]; // ex: ["Iode", "L-Tyrosine"] pour Fucus
+
+  // Niveau de certitude du système
+  confianceIA: 'haute' | 'moyenne' | 'faible';
+};
+
 /**
  * Recommandation thérapeutique complète
+ * MODIFIÉ: Ajout du contexte pédagogique
  */
 export type RecommandationTherapeutique = {
   id: string; // UUID pour tracking
@@ -59,12 +90,22 @@ export type RecommandationTherapeutique = {
   forme: FormeGalenique;
   posologie: string; // "5 ml matin à jeun"
   duree: string; // "21 jours"
+
+  // --- Structuration forte (compatibilité maintenue) ---
   axeCible: string; // "soutien corticosurrénalien"
   mecanisme: string; // "adaptogène, régule cortisol"
+
+  // --- NOUVEAU: Contexte éducatif (Learning System) ---
+  pedagogie?: ContextePedagogique;
+
   sourceVectorstore: 'endobiogenie' | 'phyto' | 'gemmo' | 'aroma' | 'code';
   niveauPreuve: 1 | 2 | 3; // 1=canon endobiogénie, 2=élargi, 3=micro
+
+  // --- Sécurité Renforcée ---
   CI: string[]; // ["grossesse", "hypertension"]
   interactions: string[]; // ["IMAO", "anticoagulants"]
+  niveauSecurite?: NiveauSecurite; // Pour code couleur UI (Vert/Orange/Rouge)
+
   priorite: number; // 1-5 (1=essentiel, 5=optionnel)
   cout?: number; // euros/mois (optionnel)
 };
