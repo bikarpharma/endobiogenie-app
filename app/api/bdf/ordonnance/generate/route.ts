@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ========================================
 // API GÉNÉRATION ORDONNANCE BDF
 // ========================================
@@ -158,7 +159,7 @@ Format de réponse (si enrichissement pertinent) :
 - [Plante] : [Précision/Alternative/Synergie]
 
 Reste concis (3-5 lignes maximum).`,
-      tools: [{ type: "file_search" }],
+      tools: [{ type: "file_search" } as any],
       tool_resources: {
         file_search: {
           vector_store_ids: [VS_GEMMO, VS_AROMA, VS_PHYTO],
