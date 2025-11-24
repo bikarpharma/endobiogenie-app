@@ -50,11 +50,8 @@ export default auth((req) => {
   return NextResponse.next();
 });
 
-// ===== CONFIGURATION =====
-// Appliquer le middleware sur toutes les routes sauf :
-// - Les fichiers statiques (_next/static)
-// - Les images (_next/image)
-// - favicon.ico
+// ===== CONFIGURATION OPTIMISÉE =====
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // On ignore tout ce qui est statique, image, favicon, mais aussi les fichiers publics courants
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.svg$).*)"],
 };
