@@ -316,15 +316,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = req.headers.get("x-user-id");
+    // Authentification via session (next-auth)
+    const session = await auth();
 
-    if (!userId) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Non authentifié" },
         { status: 401 }
       );
     }
 
+    const userId = session.user.id;
     const { id } = await params;
     const { searchParams } = new URL(req.url);
     const isPermanent = searchParams.get("permanent") === "true";

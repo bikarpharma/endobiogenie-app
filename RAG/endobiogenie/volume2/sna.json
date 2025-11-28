@@ -1,0 +1,124 @@
+{
+  "parasympathique": {
+    "nom": "Système Parasympathique (πΣ)",
+    "abreviation": "πΣ",
+    "autacoide": "Sérotonine",
+    "role": "Initie - Taux du métabolisme basal",
+    "actions": {
+      "metabolisme": "Taux du métabolisme basal",
+      "endocrinien": "Taux basal de sécrétion (production)",
+      "SNC_sensitif": "Réception d'une information",
+      "SNC_moteur": "Conceptualisation",
+      "SNP_sensitif": "Seuil de sensation",
+      "SNP_moteur": "Contraction - seuil basal",
+      "SNI": "Taux basal de motricité",
+      "emonctoire": "Niveau basal du débit circulatoire, taux basal détoxification"
+    },
+    "hyperactivite": {
+      "signes": [
+        "vagotonie",
+        "hypersécrétion",
+        "spasmes",
+        "bradycardie",
+        "hypotension"
+      ],
+      "terrains": [
+        "spasmophilie",
+        "terrain allergique",
+        "hyperémotivité"
+      ]
+    },
+    "hypoactivite": {
+      "signes": [
+        "asthénie",
+        "atonie",
+        "hypomotilité"
+      ],
+      "terrains": [
+        "épuisement",
+        "dépression"
+      ]
+    }
+  },
+  "alphasympathique": {
+    "nom": "Système Alpha-Sympathique (αΣ)",
+    "abreviation": "αΣ",
+    "autacoide": "Histamine",
+    "role": "Calibre - Étalonnage de la durée et intensité",
+    "actions": {
+      "metabolisme": "Étalonnage de la durée ou de l'intensité du métabolisme",
+      "endocrinien": "Étalonnage de la durée ou de l'intensité de la sécrétion",
+      "SNC_sensitif": "Vigilance, contextualisation de l'information",
+      "SNC_moteur": "Planification",
+      "SNP_sensitif": "Intensité de la sensation",
+      "SNP_moteur": "Étalonnage du minutage et de l'intensité de la contraction",
+      "SNI": "Étalonnage du minutage et de l'intensité de la motricité",
+      "emonctoire": "Congestion, calibration du taux de détoxification"
+    },
+    "hyperactivite": {
+      "signes": [
+        "inflammation",
+        "congestion",
+        "hyperadaptation",
+        "insomnie",
+        "hypertension"
+      ],
+      "terrains": [
+        "terrain inflammatoire",
+        "stress chronique",
+        "allergies"
+      ]
+    },
+    "hypoactivite": {
+      "signes": [
+        "insuffisance adaptative",
+        "fatigue"
+      ],
+      "terrains": [
+        "épuisement surrénalien"
+      ]
+    }
+  },
+  "betasympathique": {
+    "nom": "Système Bêta-Sympathique (βΣ)",
+    "abreviation": "βΣ",
+    "autacoide": null,
+    "role": "Termine - Accélération et achèvement",
+    "actions": {
+      "metabolisme": "Accélération et achèvement du métabolisme",
+      "endocrinien": "Excrétion d'une hormone à partir de sa glande",
+      "SNC_sensitif": "Filiation de l'information",
+      "SNC_moteur": "Exécution",
+      "SNP_sensitif": "Propagation de l'information",
+      "SNP_moteur": "Contraction",
+      "SNI": "Contraction",
+      "emonctoire": "Décongestion, excrétion de toxines"
+    },
+    "hyperactivite": {
+      "signes": [
+        "épuisement",
+        "suradaptation",
+        "tachycardie",
+        "tremblements"
+      ],
+      "terrains": [
+        "hyperthyroïdie",
+        "anxiété",
+        "stress aigu"
+      ]
+    },
+    "hypoactivite": {
+      "signes": [
+        "stagnation",
+        "accumulation",
+        "rétention"
+      ],
+      "terrains": [
+        "hypothyroïdie",
+        "constipation"
+      ]
+    }
+  },
+  "sequence": "πΣ → αΣ → βΣ (Para initie, Alpha calibre, Bêta termine)",
+  "conseil": "En endobiogénie, la séquence du SNA est programmée. Les autacoïdes calibrent l'intensité et la durée."
+}

@@ -3,7 +3,7 @@
 export interface LocalPlant {
   id: string;
   latinName: string;
-  commonName: string;
+  commonName: string; // Nom français
   vernacularName: string; // Nom en Derja/Arabe
   chemotype?: string;
   axes: string[]; // Axes cibles

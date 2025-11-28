@@ -3,7 +3,22 @@
     "allow": [
       "Bash(npx prisma format:*)",
       "Bash(npx prisma migrate dev:*)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "Bash($env:PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"je confirme pour develloememnt, donc supprimer tout les donnés\")",
+      "Bash(cat:*)",
+      "Bash(npx tsx:*)",
+      "Bash(node -e:*)",
+      "Bash(node scripts/check-synthesis.js:*)",
+      "Bash(node scripts/test-rag-direct.js:*)",
+      "Bash(dir \"C:\\Users\\DELL\\Documents\\endobiogenie-simple\\RAG\\endobiogenie\\volume1\" /b)",
+      "Bash(node scripts/clean-volume1-v2.js:*)",
+      "Bash(node scripts/clean-phyto.js:*)",
+      "Bash(python scripts/convert-aroma-pdf.py:*)",
+      "Bash(node scripts/extract-gemmo.js:*)",
+      "Bash(dir \"C:\\Users\\DELL\\Documents\\endobiogenie-simple\\RAG\\gemmo\\bourgeons\" /b)",
+      "Bash(dir:*)",
+      "Bash(npx tsc:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

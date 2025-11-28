@@ -80,6 +80,7 @@ export function NewPatientForm({ userId }: { userId: string }) {
       const response = await fetch("/api/patients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Inclure les cookies d'authentification
         body: JSON.stringify({
           ...formData,
           dateNaissance: formData.dateNaissance || null,

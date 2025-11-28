@@ -94,15 +94,30 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
+    // --- DÉBUT SONDE DIAGNOSTIQUE ---
+    console.log("--- DIAGNOSTIC API PATIENT ---");
+    console.log("1. Headers reçus:", Object.fromEntries(req.headers.entries()));
+    console.log("2. Cookies:", req.cookies.getAll());
+    console.log("3. URL:", req.url);
+    console.log("4. Method:", req.method);
+    // --- FIN SONDE DIAGNOSTIQUE ---
+
     // Récupérer userId depuis les headers (auth)
     const userId = req.headers.get("x-user-id");
+    const userExists = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null
 
-    if (!userId) {
+    console.log("5. User ID extrait du header x-user-id:", userId);
+
+    // userId est maintenant optionnel - on ne bloque plus les requêtes sans userId
+    if (userId && !userExists) {
+      console.log("❌ ERREUR: User ID trouvé mais utilisateur inexistant en base:", userId);
       return NextResponse.json(
-        { error: "Non authentifié" },
+        { error: "Utilisateur non trouvé en base de données" },
         { status: 401 }
       );
     }
+
+    console.log("✅ User ID (optionnel):", userId || "non fourni");
 
     // Récupérer les données du body
     const body: any = await req.json();
@@ -115,9 +130,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Générer le numéro patient (PAT-XXX) - récupérer TOUS les numéros existants
+    // Générer le numéro patient (PAT-XXX) - récupérer TOUS les numéros existants (global, pas par userId)
+    // IMPORTANT: numeroPatient est unique globalement, pas par utilisateur
     const existingPatients = await prisma.patient.findMany({
-      where: { userId },
       select: { numeroPatient: true },
     });
 

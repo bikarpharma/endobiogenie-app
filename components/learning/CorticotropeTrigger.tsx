@@ -1,6 +1,6 @@
 "use client";
 
-import { BrainCircuit, X } from "lucide-react";
+import { BrainCircuit, X, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,15 +15,15 @@ export default function CorticotropeTrigger() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800 transition-all shadow-sm"
         >
           <BrainCircuit className="h-4 w-4" />
           <span className="hidden sm:inline">Explorer la Physiologie (Vue Immersive)</span>
         </Button>
       </DialogTrigger>
-      
+
       {/* MODALE PLEIN ÉCRAN */}
       <DialogContent className="w-screen h-screen max-w-none m-0 p-0 rounded-none border-none bg-[#020617] flex flex-col overflow-hidden">
 
@@ -31,7 +31,7 @@ export default function CorticotropeTrigger() {
 
         {/* HEADER FLOTTANT */}
         <div className="absolute top-0 left-0 right-0 z-50 p-4 flex justify-between items-start pointer-events-none">
-            {/* Titre et info */}
+            {/* Titre et info + Bouton Retour */}
             <div className="bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/10 text-white pointer-events-auto max-w-md">
                 <h2 className="text-xl font-bold flex items-center gap-2 text-indigo-400">
                     <BrainCircuit /> Axe Corticotrope
@@ -39,6 +39,16 @@ export default function CorticotropeTrigger() {
                 <p className="text-sm text-slate-300 mt-1">
                     Mode immersif. Utilisez la molette pour zoomer, cliquez-glissez pour vous déplacer.
                 </p>
+                {/* Bouton Retour vers l'interrogatoire */}
+                <DialogClose asChild>
+                    <Button
+                        variant="outline"
+                        className="mt-3 gap-2 bg-slate-800/50 border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white transition-all"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Retour à l'Axe Adaptatif
+                    </Button>
+                </DialogClose>
             </div>
 
             {/* Bouton Fermer (Gros et visible) */}

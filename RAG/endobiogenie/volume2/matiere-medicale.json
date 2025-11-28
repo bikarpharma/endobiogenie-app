@@ -1,0 +1,913 @@
+{
+  "plantes": [
+    {
+      "nomLatin": "Achillea millefolium",
+      "nomCommun": "Achillée millefeuille",
+      "essence": "plante qui favorise les possibilités fractales d’assimi- cations scientifiques, dont certaines sont citées en Annexe 2 : lation, de croissance et d’adaptation.",
+      "resume": "plante polyvalente pour les affections cortico-gonado- différents, en fonction du niveau de connaissance actuel du lec- génitales et digestives ; c’est une plante essentielle pour la femme, teur : (1) pour ceux qui connaissent l’approche endobiogénique et pour les affections gastro-intestinales, génito-urinaires et infec- de la phyto thérapie : cette matière médicale rappellera des points tieuses, notamment enracinées dans la vagotonie chez l’homme et clés et créera un vecteur d’application des plantes médicinales la femme. Utiliser en",
+      "partiesUtilisees": "plante entière",
+      "galenique": "TM, HE, ES, la phyto th",
+      "methode": "tisane : 10 g de sommités fleuries/litre d’eau, macé- phytothérapie : la matière médicale présente l’horizon fulgu- ration 10 min ; 3 à 4 tasses par jour entre les repas ; bain de siège : rant de ce qui est possible d’obtenir en utilisant les possibilités 100 g de sommités fleuries/litre d’eau, macé",
+      "precautions": "contre-indiqué dans l’hyper-œstrogénie, pour le lavage des plaies et des lacérations",
+      "axes": [
+        "corticotrope",
+        "gonadotrope"
+      ],
+      "indications": [
+        "digestif",
+        "génital",
+        "œstrogénique",
+        "progestéronique",
+        "vagolytique",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Alnus glutinosa",
+      "nomCommun": "Aulne noir",
+      "essence": "régulateur muqueux-immuno-inflammatoire des organes",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire",
+        "immunomodulateur"
+      ]
+    },
+    {
+      "nomLatin": "Anthemis nobilis",
+      "nomCommun": "Camomille romaine",
+      "essence": "plante qui ramène toute fonction physiologique à sa muqueuses et séreuses et ses origines dans le dysfonctionnement du fonction essentielle et intrinsèque par l’entraînement des fréquences système macrophage-phagocyte. Utilisation dans tous les t",
+      "resume": "thérapie ciblée pour l’inflammation des cavités Essence : plante qui ramène toute fonction physiologique à sa muqueuses et séreuses et ses origines dans le dysfonctionnement du fonction essentielle et intrinsèque par l’entraînement des fréquences système macrophage-phagocyte. Utilisation dans tous les troubles de fonction a",
+      "partiesUtilisees": "bour",
+      "galenique": "mac",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire",
+        "anti-infectieux",
+        "antispasmodique",
+        "digestif",
+        "nerveux",
+        "respiratoire"
+      ]
+    },
+    {
+      "nomLatin": "Althea officinalis",
+      "nomCommun": "guimauve",
+      "essence": "superbe plante anti-inflammatoire pour les cas de 3 tasses par jour ; HE, enfants : 1 goutte pure sur les points de congestion et d’inflammation des muqueuses. pulsation ou la paume des pieds ; HE, tous âges : diffusée, inhalée,",
+      "resume": "anti-inflammatoire efficace pour les structures pure ; HE, 12 ans et plus : 1 mL par 120 mL de teinture. creuses et les cavités affectées",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "tisane : 1 cuillère à café de fleurs séchées plongée 5 min ou plus dans 200 mL d’eau, boire à volonté, au moins Essence : superbe plante anti-inflammatoire pour les cas de 3 tasses par jour ; HE, enfants : 1 goutte pure sur les points de congestion et d’inflammation des muqueuses. pulsatio",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire"
+      ]
+    },
+    {
+      "nomLatin": "Arctium lappa",
+      "nomCommun": "Bardane",
+      "essence": "plante qui établit un drainage central et une capacité PV. tampon tout en expulsant les toxines pa",
+      "resume": "draineur polyvalent et dépuratif idéal pour les troubles caments pris simultanément. immuno-dermatologiques",
+      "partiesUtilisees": "feuille, fleur, racine",
+      "galenique": "FE, ES, Essence",
+      "methode": "",
+      "precautions": "peut retarder l’absorption des médi- Résumé : draineur polyvalent et dépuratif idéal pour les troubles caments pris simultanément",
+      "axes": [],
+      "indications": [
+        "anti-infectieux",
+        "draineur",
+        "immunomodulateur",
+        "digestif",
+        "respiratoire",
+        "dermatologique"
+      ]
+    },
+    {
+      "nomLatin": "Ananassa sativa",
+      "nomCommun": "Ananas",
+      "essence": "plante rafraîchissante pour les conditions inflammatoires Parties utilisées : feuille, racine. Galénique : TM, ES, PV",
+      "resume": "plante ciblée pour les affections inflammatoires cataplasme : infuser 20 g de feuilles dans 250 mL d’eau 15 min. fondées sur un dysfonctionnement",
+      "partiesUtilisees": "feuille, racine",
+      "galenique": "TM, ES, PV",
+      "methode": "décoction de racine : 2 à 3 g émincés dans la compensation neuroendocrinienne. 150 mL d’eau, faire bouillir 1 h, filtrer et boire 3 fois par jour ; Résumé : pla",
+      "precautions": "synergique avec les hypoglycémiants et sation dans les affections inflammatoires digestives primaires : les diurétiques, peut augmenter l’activité des vagolytiques comme SCI, maladie de Crohn, rectocolite hémorragique, maladie le Thym",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire",
+        "digestif",
+        "nerveux",
+        "respiratoire",
+        "dermatologique",
+        "vagolytique",
+        "diurétique",
+        "hypoglycémiant"
+      ]
+    },
+    {
+      "nomLatin": "Artemisia dracunculus",
+      "nomCommun": "Estragon",
+      "essence": "plante unique de régulation neuro-digestivo-pelvienne, FSH LH, pour réguler les œstrogènes les hormones lutéales procurant une sensation de fraîcheur et de clarté dans les états de et dans les états allergiques. fatigue anxieuse et d’agitation",
+      "resume": "excellente plante pour les vagotoniques avec spasmo- Notes et précautions : contre-indiqué pendant la grossesse et philie psycho-neuro-digestive, mieux indiquée dans les condi- l’allaitement, dans l’épilepsie car il peut interagir avec les anti- tions mentales, musculaires et pelviennes telles que l’anxiété, les épileptiques ; peut provoquer une hépato-toxicité en cas d’utilisa- spasmes musculaires, l’hypertrophie de la prostate et les troubles tion prolongée ou aiguë de doses élevées d’une infusion en raison menstruels, ainsi que les infections. de la",
+      "partiesUtilisees": "feuille, fleur, ti",
+      "galenique": "TM, FE, PV",
+      "methode": "HE, interne : 1/2 à 1 goutte 2 à 3 fois par jour, de préférence diluée dans de la teinture ; HE, topique : 5 % à 50 % Borago officinalis, graines de dilution appliquée sur la zone touchée ; tisane : 25-30 g/1 L d’eau, (Huile de bourrache) infuser 10 min, boire en 3-4 doses fractionnées après les rep",
+      "precautions": "contre-indiqué pendant la grossesse et philie psycho-neuro-digestive, mieux indiquée dans les condi- l’allaitement, dans l’épilepsie car il peut interagir avec les anti- tions mentales, musculaires et pelviennes telles que l’anxiété, les épileptiques ; peut provoquer une hépato-toxicité en cas d’utilisa- spasmes musculaires, l’hypertrophie de la prostate et les troubles tion prolongée ou aiguë de doses élevées d’une infusion en raison menstruels, ainsi que les infections",
+      "axes": [
+        "corticotrope",
+        "gonadotrope"
+      ],
+      "indications": [
+        "anti-inflammatoire",
+        "anti-infectieux",
+        "antispasmodique",
+        "immunomodulateur",
+        "digestif",
+        "hépatique",
+        "nerveux",
+        "dermatologique",
+        "génital",
+        "œstrogénique",
+        "vagolytique",
+        "tonique"
+      ]
+    },
+    {
+      "nomLatin": "Avena sativa",
+      "nomCommun": "Avoine",
+      "essence": "harmonisateur du couplage gonado-thyréotrope et les",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [
+        "gonadotrope",
+        "thyréotrope"
+      ],
+      "indications": []
+    },
+    {
+      "nomLatin": "Carduus marianus",
+      "nomCommun": "Chardon-Marie",
+      "essence": "plante pour aider à l’élimination du matériel altérant les Résumé : utilisation dans la thyroïdite de Hashimoto, les fonctions des hépatocytes, et ramener le foie à un état essentiel de enfants présentant des infections ORL récurrentes et tout trouble fonctionnement harmonieux de ses capacités tampon-endocrino- pulmonaire ou ORL marqué par un index génito-thyroïdien bas. immuno-nut",
+      "resume": "utilisation dans la thyroïdite de Hashimoto, les fonctions des hépatocytes, et ramener le foie à un état essentiel de enfants présentant des infections ORL récurrentes et tout trouble fonctionnement harmonieux de ses capacités tampon-endocrino- pulmonaire ou ORL marqué par un index génito-thyroïdien bas. immuno-nutritionnelles",
+      "partiesUtilisees": "fruits, parties aériennes,",
+      "galenique": "",
+      "methode": "tisane (neuro) : 1 cuillère à soupe plongée dans cation. #1 Pla",
+      "precautions": "maladie de Basedow hyperthyroïdienne, pour une nutrition efficace",
+      "axes": [],
+      "indications": [
+        "anti-infectieux",
+        "immunomodulateur",
+        "hépatique",
+        "nerveux",
+        "respiratoire",
+        "génital",
+        "œstrogénique",
+        "diurétique",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Betula pubescens",
+      "nomCommun": "Bouleau",
+      "essence": "revitalisant capital dans le drainage hépatorénal et le Notes et précautions : peut provoquer des troubles gastro- soutien ostéo-immun. intestinaux lége",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "peut provoquer des troubles gastro- soutien ostéo-immun",
+      "axes": [],
+      "indications": [
+        "draineur",
+        "immunomodulateur",
+        "hépatique"
+      ]
+    },
+    {
+      "nomLatin": "Citrus limon",
+      "nomCommun": "Citron",
+      "essence": "plante qui restaure l’élan des processus physiolo- Essence : favorise le mouvement et l’écoulement grâce à l’amé- giques dans leur action séquentielle et leur coordination centrale- lioration de la capacité tampon et à l’amélioration de la rhéologie périphérique. des fluides",
+      "resume": "régulateur digestif et œstro-androgénique aux Résumé : à utiliser dans tous les états de stase, d’acidose et niveaux central et périphérique. C’est un antis",
+      "partiesUtilisees": "fruits",
+      "galenique": "HE, MF, EF, FP",
+      "methode": "cellulite, circulation superficielle : huile essentielle : les troubles liés à l’hyperandrogénie et/ou à l’insuffisance œstro- topique : concentration 1 % (1 goutte/1 cuillère à café d’huile de génique : acné, métrorragie, syndromes prémenstruels à prédo- support) ; toutes conditions : interne : jus",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "anti-infectieux",
+        "antispasmodique",
+        "digestif",
+        "nerveux",
+        "respiratoire",
+        "dermatologique",
+        "génital",
+        "œstrogénique",
+        "progestéronique",
+        "androgénique"
+      ]
+    },
+    {
+      "nomLatin": "Cichorium intybus",
+      "nomCommun": "Chicorée",
+      "essence": "plante qui permet les étapes appropriées de digestion et",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "digestif"
+      ]
+    },
+    {
+      "nomLatin": "Corylus avellana",
+      "nomCommun": "Noisetier",
+      "essence": "régulateur psycho-neuro-cardiaque, offrant une stabi- Résumé : plante optimale pour le syndrome métabolique avec lisation de la réponse d’adaptation exprimée à travers l’aire lim- ou sans allergie, et par voie de conséquence la dysbiose. Utilisation bique, le diencéphale, le mésencéphale, le pont et bulbe",
+      "resume": "plante optimale pour le syndrome métabolique avec lisation de la réponse d’adaptation exprimée à travers l’aire lim- ou sans allergie, et par voie de conséquence la dysbiose. Utilisation bique, le diencé",
+      "partiesUtilisees": "racine, feuille",
+      "galenique": "TM, ES, PV, H",
+      "methode": "tisane (feuille) : 10-15 g/1 L d’eau, infuser 15 min ; dans toutes les congestions neuro-pulmonaires, neuro-cardiaques et 2,5 g/250 mL d’eau, faire infuser 15 min ; cardio-pulmonaires dans lesquelles l’inflammation, la congestion, boire 2 à 3 fois par jour après les repas. l’a",
+      "precautions": "à éviter en cas de tuberculose ou de",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire",
+        "digestif",
+        "nerveux",
+        "respiratoire",
+        "dermatologique",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Cinnamomum zeylanicum",
+      "nomCommun": "Cannelle",
+      "essence": "promoteur de la plénitude de l’activité énergétique- métabolique de l’ensemble de la glande surrénale dans ses activités",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "respiratoire"
+      ]
+    },
+    {
+      "nomLatin": "Crataegus oxyacantha",
+      "nomCommun": "Aubépine",
+      "essence": "plante protectrice et calmante, adaptogène sympathique Résumé : améliore l’adaptabilité et toutes les conditions enra- régulant la perception centrale de l’agressivité et la contribution cinées dans l’asthénie et la spasmophilie. Utilisation dans tous les ca",
+      "resume": "améliore l’adaptabilité et toutes les conditions enra- régulant la perception centrale de l’agressivité et la contribution cinées dans l’asthénie et la spasmophilie. Utilisation dans tous les cardio-ostéo à la ré",
+      "partiesUtilisees": "branches et cône immature (TM) ; ai",
+      "galenique": "HE, TM, EF, ES",
+      "methode": "HE : topique : douleur rhumatismale ; nébuliser : Méthodes : feuille : décoction faite avec 1 cuillère à café 1 à 2 gouttes/3 cuillères à café, suppositoire : concentration de dans ¾ L d’eau pensant 20 min ; boire 3 à 4 fois par jour avec les 1 à 30 %, 1 à 2/jour pour les infections virales, 1 à 5 %",
+      "precautions": "utiliser Eucalyptus radiata en appli- dans un bain pour les troubles pulmonaires",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire",
+        "anti-infectieux",
+        "antispasmodique",
+        "immunomodulateur",
+        "digestif",
+        "nerveux",
+        "respiratoire",
+        "génital",
+        "œstrogénique",
+        "vagolytique",
+        "sympathique",
+        "tonique",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Cynara scolymus",
+      "nomCommun": "Artichaut",
+      "essence": "plante qui permet le retour à la fonction de chaque",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": []
+    },
+    {
+      "nomLatin": "Fabiana imbricata",
+      "nomCommun": "Pichi",
+      "essence": "plante qui aide à maintenir la qualité essentielle, Résumé : draineur hépato-bilio-rénal rapide, idéal pour les intrinsèque et héritée de la fonction thyréotrope en diminuant patients présentant des inflammations et auto-intoxiqués. Utilisa- l’hype",
+      "resume": "draineur hépato-bilio-rénal rapide, idéal pour les intrinsèque et héritée de la fonction thyréotrope en diminuant patients présentant des inflammations et auto-intoxiqués. Utilisa- l’hy",
+      "partiesUtilisees": "feuilles",
+      "galenique": "TM, ES, PV",
+      "methode": "TM : pas plus de 1 cuillère à café 2 fois par jour ; dans tous les troubles liés à un dysfonctionnement vertical de tisane : 1 cuillère à café plongée 10 min dans 4 cuillères d’eau ; la TRH : anxiété ou psychoses à manifestations somatiques, boire avant les repas. thyroïdite, tumeurs solides, dégé",
+      "precautions": "si le patient est connu pour avoir des hypertonie",
+      "axes": [
+        "thyréotrope"
+      ],
+      "indications": [
+        "anti-inflammatoire",
+        "anti-infectieux",
+        "draineur",
+        "hépatique",
+        "nerveux",
+        "dermatologique"
+      ]
+    },
+    {
+      "nomLatin": "Ficus carica",
+      "nomCommun": "Figuier",
+      "essence": "plante qui rétablit l’orientation fondamentale de l’orga- Essence : harmoniseur de la perception centrale et périphérique nisme vers la stabilité matérielle et l’épanouissement grâce à une et de la défense face aux agressions à travers l’axe neuro-spinal- régulation cortico-gonadotrope adaptogène. ostéo-digestif de défense et de",
+      "resume": "adaptogène favorisant la compétence cortico- Résumé : #1 harmoniseur neuro-intestinal, excellent revitalisant androgène tout en soutenant le rôle des œstrogènes dans la des éléments sanguins. Utilisation",
+      "partiesUtilisees": "fruit, feuille, racine",
+      "galenique": "TM, EF, ral n",
+      "methode": "générale : tisane : 1 cuillère à café feuilles ± Parties utilisées : feuille, tige, écorce. Galé",
+      "precautions": "contre-indications : constipation, états d’hypercortisolisme, utilisation chronique pendant les phases de",
+      "axes": [
+        "corticotrope",
+        "gonadotrope"
+      ],
+      "indications": [
+        "anti-inflammatoire",
+        "draineur",
+        "digestif",
+        "nerveux",
+        "dermatologique",
+        "génital",
+        "œstrogénique",
+        "androgénique",
+        "cortisolique",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Humulus lupulus",
+      "nomCommun": "Houblon",
+      "essence": "plante qui restaure le dynamisme œstro-androgénique et la confiance de l’organisme dans sa capacité de restaurer sa",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "œstrogénique",
+        "androgénique"
+      ]
+    },
+    {
+      "nomLatin": "Fumaria officinalis",
+      "nomCommun": "Fumeterre",
+      "essence": "plante qui élimine l’influence négative des systèmes ner- inflammatoires et restaurateur du dynamisme œstro-androgène. veux cent",
+      "resume": "superbe régulateur des troubles neuro-lutéaux et Essence : plante qui élimine l’influence négative des systèmes ner- inflammatoires et restaurateur du dynamisme œstro-androgène. veux central et autonome du fonctionnement intrinsèque du système Utilisation dans tous les troubles enracinés dans l’excès d’andro- nerveux entérique tout en améliorant directement l’efficacité digestive",
+      "partiesUtilisees": "fleur",
+      "galenique": "TM, ES, EF, PV",
+      "methode": "Tisane (feuille) : 2,5 g/250 mL d’eau, infuser 10 interférer avec les médicaments hormonaux. à 15 mi",
+      "precautions": "peut contrarier les antidépresseurs, Méthode : Tisane (feuille) : 2,5 g/250 mL d’eau, infuser 10 interférer avec les médicaments hormonaux",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire",
+        "antispasmodique",
+        "draineur",
+        "digestif",
+        "hépatique",
+        "nerveux",
+        "respiratoire",
+        "dermatologique",
+        "génital",
+        "œstrogénique",
+        "progestéronique",
+        "androgénique"
+      ]
+    },
+    {
+      "nomLatin": "Ilex aquifolium",
+      "nomCommun": "Houx",
+      "essence": "spasmolytique neuro-pulmonaire bien adapté aux tion de l’activité para-sympathique. À utilise",
+      "resume": "utilisation dans les spasmophilies mentales fonction- vagomimétiques, peut augmenter les effets des anti-hypertenseurs, nelles telles que les migraines et les convulsions, les spasmophilies en particulier. bêta-bloquants et inhibiteurs calciques et digitaliques",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "contre-indiqué en cas de calculs biliaires, obstruction biliaire, troubles aggravés par une augmenta- Essence : spasmolytique neuro-pulmonaire bien adapté aux tion de l’activité para-sympathique",
+      "axes": [],
+      "indications": [
+        "antispasmodique",
+        "hépatique",
+        "nerveux",
+        "respiratoire",
+        "vagolytique",
+        "sympathique",
+        "tonique"
+      ]
+    },
+    {
+      "nomLatin": "Glycyrrhiza glabra",
+      "nomCommun": "Réglisse",
+      "essence": "plante à action profonde qui renforce, protège, propulse 288 Section D L’essentiel de la thérapeutique",
+      "resume": "",
+      "partiesUtilisees": "pousses ;",
+      "galenique": "MG",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": []
+    },
+    {
+      "nomLatin": "Juglans regia",
+      "nomCommun": "Noyer noir",
+      "essence": "arbre dont les bourgeons, les feuilles, la coque et le Utilisation dans tous les troubles liés à une réponse exagérée en fruit offrent un enrichissement de l’axe neuro-digestif-immun pour TRH, TSH et/ou en cortisol, des troubles du rythme cardiaque soulager les troubles d’excès. et les spasmophilies avec une",
+      "resume": "#1 plante des troubles de la TRH liés à l’anxiété, aux manifestations thyréo-cardiaques et à la sur-fixation du cortisol. Essence : arbre dont les bourgeons, les feuilles, la coque et le Utilisation dans tous les troubles liés à une ré",
+      "partiesUtilisees": "plante entière",
+      "galenique": "TM, PV, ES",
+      "methode": "PV : acné, furoncle, eczéma, psoriasis, impétigo, ulcération cutanée diabétique (+ argile). Préparatio",
+      "precautions": "hypotension, bradycardie, grossesse où à la fois le pancréas exocrine et endocrine sont impliqués, et (surtout au premier trimestre), allaitement (peut réduire la pro- dans tous les troubles où la résolution de la maladie nécessite duction de lait par inhibition de la prolactine)",
+      "axes": [
+        "thyréotrope"
+      ],
+      "indications": [
+        "anti-infectieux",
+        "antispasmodique",
+        "immunomodulateur",
+        "digestif",
+        "nerveux",
+        "dermatologique",
+        "cortisolique",
+        "sédatif"
+      ]
+    },
+    {
+      "nomLatin": "Lithospermum officinale",
+      "nomCommun": "Grémil",
+      "essence": "plante pour dissiper les accumulations et les accrétions mycoses ; infusion (GI) : 1 cuillère à soupe ¾ litre d’eau, infuser enracinées dans l’hyperfonction gonado-thyréotrope centrale.",
+      "resume": "excellent régulateur de la fonction centrale gonado- 15 min, boire tout au long de la journée. thyréotro",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [
+        "gonadotrope",
+        "thyréotrope"
+      ],
+      "indications": [
+        "dermatologique"
+      ]
+    },
+    {
+      "nomLatin": "Lamium album",
+      "nomCommun": "Lamier blanc",
+      "essence": "plante qui permet la croissance et le développement dans Parties utilisées : plante entière. Galénique : TM, ES, PV, FE",
+      "resume": "soutient l’axe hypophyso-pancréatique, utilisation Notes et précautions : contre-indiqué en cas de grossesse, chez les enfants ayant un retard de croissance, les adultes souffrant d’allaitement, d’insuffisance hypophysaire antérieure. À fortes d’émaciation ou de troubles ulcéreux, les états de fatigue chro- doses,",
+      "partiesUtilisees": "plante entière",
+      "galenique": "TM, ES, PV, FE",
+      "methode": "tisane : 30-45 g/1 L d’eau ; boire 2 à 3 tasses un fort tropisme génito-urinaire et abdominal inférieur. par jour",
+      "precautions": "contre-indiqué en cas de grossesse, chez les enfants ayant un retard de croissance, les adultes souffrant d’allaitement, d’insuffisance hypophysaire antérieure",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire",
+        "génital"
+      ]
+    },
+    {
+      "nomLatin": "Lycopus europaeus",
+      "nomCommun": "Lycope",
+      "essence": "plante qui apporte de l’enracinement au sur- fonctionnement et à la sur-accumulation basée sur l’hyper-",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "anti-infectieux"
+      ]
+    },
+    {
+      "nomLatin": "Lavandula angustifolia",
+      "nomCommun": "Lavande",
+      "essence": "plante qui favorise le méta-fonctionnement de l’orga- thyroïdienne centrale avec inhibition de l’activité thyroïdienne nisme par la régulation de la qualité de perception et de réponse périphérique (contrairement à Lithospermum officinale). Utili- qu’elle induit, ce qui pe",
+      "resume": "superbe régulateur de la fonction gonado- Essence : plante qui favorise le méta-fonctionnement de l’orga- thyroïdienne centrale avec inhibition de l’activité thyroïdienne nisme par la régulation de la qualité de perception et de réponse périphérique (contrairement à Lithospermum officinale). Utili- qu’elle induit, ce qui",
+      "partiesUtilisees": "fleur",
+      "galenique": "TM, PV",
+      "methode": "topique général : 3 à 10 % (3 à 10 gouttes/5 mL d’huile végétale) ; friction focale : 20 à 50 % (1 à 5 mL/5 mL",
+      "precautions": "voir Arnica montana pour une diffé- génito-urinaires, intestinales ou respiratoires récurrentes",
+      "axes": [
+        "gonadotrope",
+        "thyréotrope"
+      ],
+      "indications": [
+        "anti-infectieux",
+        "antispasmodique",
+        "nerveux",
+        "respiratoire",
+        "génital",
+        "sympathique",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Matricaria recutita",
+      "nomCommun": "Camomille allemande",
+      "essence": "plante qui favorise un état de tranquillité et de certitude Notes et précautions : contre-indiqué pendant la grossesse paisible dans la perception physiologique des réponses viscérales (sauf pendant le travail). aux ag",
+      "resume": "#1 plante non sédative pour le traitement de la colère et de ses conséquences physiologiques, excellent anti-",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "contre-indiqué pendant la grossesse paisible dans la perception physiologique des réponses viscérales (sauf pendant le travail)",
+      "axes": [],
+      "indications": []
+    },
+    {
+      "nomLatin": "Melilotus officinalis",
+      "nomCommun": "Mélilot jaune",
+      "essence": "plante qui permet une régulation micro-adaptative immunitaire (infectieuse, atopique et auto-immune), la cicatrisa- spontanée du mouvement, de l’écoulement et de l’élimination tion des plaies et les affections inflammatoires du tube digestif ; des fluides accumulés. utilisation dans toutes les affections neu",
+      "resume": "superbe régulateur du flux lymphatico-vasculaire ou exacerbées par la colère ou l’asthénie nerveuse : insomnie, et de ses éléments neuro-cardio-pulmonaires. dé",
+      "partiesUtilisees": "fleur",
+      "galenique": "TM, H, FE, ES, PV",
+      "methode": "infusion : 1 cuillère à café de fleurs séchées trem- feuilles + 1 cuillère à café de Fragaria vesca, infuser 15 min dans 3 min ; utilisation : ulcérations, contusions, hémorroïdes. 1 tasse d’eau + 1/4 cuillère à café d’arge",
+      "precautions": "contre-indiqué avec l’usage des anti-par jour pendant 1 à 2 semaines",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire",
+        "anti-infectieux",
+        "immunomodulateur",
+        "digestif",
+        "nerveux",
+        "respiratoire",
+        "sympathique",
+        "sédatif",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Melissa officinalis",
+      "nomCommun": "Mélisse",
+      "essence": "revitalisant de la fonction de la deuxième boucle centri- pète par régulation du rôle capital qu’elle joue dans la régulation Essence : plante qui rétablit l’intégrité thyréotrope et son intégra-",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [
+        "thyréotrope"
+      ],
+      "indications": []
+    },
+    {
+      "nomLatin": "Mentha piperita",
+      "nomCommun": "Menthe poivrée",
+      "essence": "plante qui privilégie une gestion calibrée des entrées, Méthode : huile essentielle : inhalée ou nébulisée : infec- des débits et des sorties. tions des o",
+      "resume": "excellent tonique digestif, anti-infectieux et anta lgique inférieures, 1 goutte/3 mL de sérum physiologique ou albuté- pour les troubles neuromusculaires et dermatologiques superficiels. rol à 0,9-3 % selon indication ; to",
+      "partiesUtilisees": "bour",
+      "galenique": "SE, MG, H",
+      "methode": "huile essentielle : inhalée ou nébulisée : infec- des débits et des sorties. tio",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "anti-infectieux",
+        "digestif",
+        "nerveux",
+        "respiratoire",
+        "dermatologique",
+        "tonique"
+      ]
+    },
+    {
+      "nomLatin": "Plantago major",
+      "nomCommun": "Plantain",
+      "essence": "plante qui ramène les structures centrales en détresse et surchargées vers une fonctionnalité structuro-fonctionnelle vées. Elles peuvent aussi êt",
+      "resume": "#1 draineur polyvalent pour les troubles de l’oreille, d’application proche d’eux au-dessus d’une concentration diluée ; du nez, de la gorge, des voies respiratoires supérieures et infé- à éviter en cas de reflux gastro-œsophagien provenant d’une fai- rieures, et gastro-intestinales. blesse du s",
+      "partiesUtilisees": "feuille",
+      "galenique": "TM, ES, PV",
+      "methode": "tisane : 2 à 3 cuillères à café/L d’eau, infuser Menyanthes trifoliata 5 min, 3-4 fois par jour ; compresse pour les troubles oculaires : (Ményanthe ou Trèfle d’eau) infuser 2 cuillères à café dans une tasse d’eau pendant 15 min. Esse",
+      "precautions": "les menthones à forte dose peuvent être neurotoxiques et provoquer une fermeture glottique à doses éle- Essence : plante qui ramène les structures centrales en détresse et surchargées vers une fonctionnalité structuro-fonctionnelle vées",
+      "axes": [],
+      "indications": [
+        "draineur",
+        "nerveux",
+        "respiratoire",
+        "dermatologique"
+      ]
+    },
+    {
+      "nomLatin": "Populus nigra",
+      "nomCommun": "Peuplier noir",
+      "essence": "plante qui permet des réponses adaptatives pour briser Résumé : excellent régulateur de la désadaptation par la res- les restrictions imposées en interne résultant de l’incompétence tauration du séquençage du SNA (relance du bêta), de l’équi- de la réponse. lib",
+      "resume": "excellent régulateur de la désadaptation par la res- les restrictions imposées en interne résultant de l’incompétence tauration du séquençage du SNA (relance du bêta), de l’équi- de la réponse. libre œstro-androgénique et de la régulation de l’inflammation, Résumé : aide su",
+      "partiesUtilisees": "feuille",
+      "galenique": "TM, PV, FE",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire",
+        "antispasmodique",
+        "immunomodulateur",
+        "nerveux",
+        "respiratoire",
+        "œstrogénique",
+        "androgénique",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Passiflora incarnata",
+      "nomCommun": "Passiflore",
+      "essence": "plante qui atténue l’intensité de ce que l’organisme",
+      "resume": "",
+      "partiesUtilisees": "bour",
+      "galenique": "MG",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": []
+    },
+    {
+      "nomLatin": "Poterium sanguisorba",
+      "nomCommun": "Pimprenelle",
+      "essence": "plante qui arrête l’hémorragie, conséquence méta- d’anxiété (GABA insuffisant comme indiqué en cas d’index bas bolique des dysfonctionnements du SNC, des axes thyréo- βMSH/aMSH + index radicaux libres nocifs élevés), de stress post- somatotropes, digestifs, tissulaires ou sanguins. Son effet t",
+      "resume": "#1 régulateur sympathico-corticotrope dans les cas Essence : plante qui arrête l’hémorragie, conséquence méta- d’anxiété (GABA insuffisant comme indiqué en cas d’index bas bolique des dysfonctionnements du SNC, des axes thyréo- βMSH/aMSH + index radicaux libres nocifs élevés), de stress post- somatotropes, digestifs, tissulaires ou sanguins. Son effet traumatique, et de tout trouble à cortisol élevé (index cortisol élevé)",
+      "partiesUtilisees": "bour",
+      "galenique": "MG",
+      "methode": "",
+      "precautions": "à utiliser le jour pour l’endurance, générale de l’organisme",
+      "axes": [
+        "corticotrope",
+        "thyréotrope",
+        "somatotrope"
+      ],
+      "indications": [
+        "digestif",
+        "nerveux",
+        "cortisolique",
+        "sympathique"
+      ]
+    },
+    {
+      "nomLatin": "Raphanus niger",
+      "nomCommun": "Radis noir",
+      "essence": "plante polyvalente offrant une fraîcheur à l’organisme Essence : régulateur cosmobiologique du mouvement saisonnier par le retour à l’équilibre des états d’hyper- et d’hypofonction- nement. jus MG, TM, ES, HL, PV",
+      "resume": "#1 adaptation pré-printemps et détoxifiant, troubles Résumé : utilisation chez les patients souffrant de troubles du bain (éviter avant le coucher). Notes et",
+      "partiesUtilisees": "racine",
+      "galenique": "TM, ES, sirop",
+      "methode": "HE interne (chémotype 1,8 cinéole ou verbénone) : d’olive ou de lin ou du miel pour réduire le risque de brûlures ne pas dépasser 300 mg/jour ; hydrolat : 1 à 3 cuillères à café d’estomac) ; sirop simple : couper un radis noir entier en fines 2 fois ou 3 fois par jour ; HE externe (chémotype camphre",
+      "precautions": "contre-indiqué en cas d’obstruction ser 15 min, 1 à 3 tasses/jour ; bain : HE : 10 à 20 gouttes dans biliaire ; relatif : hypothyroïdie latente ou franche, à utiliser avec l’excipient, décoction : 50 g/L, décoction 10 min, ajouter à l’eau précaution en cas de gastrite",
+      "axes": [
+        "corticotrope",
+        "thyréotrope"
+      ],
+      "indications": [
+        "anti-inflammatoire",
+        "immunomodulateur",
+        "digestif",
+        "hépatique",
+        "respiratoire",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Rhodiola rosea",
+      "nomCommun": "Rhodiole",
+      "essence": "véritable adaptogène tout au long du cycle de vie pour surrénale. Utilise",
+      "resume": "à utiliser lorsqu’une régulation et un soutien sont allergiques. requis dans",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "dermatologique",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Rubus fruticosus",
+      "nomCommun": "Mûrier",
+      "essence": "plante qui régule les conséquences de la sur-sollicitation les personnes nerveuses et crispées si elles ont une activité bêta- et de l’hyper-fonctionnement somato-pancréatique. sympathique basse et une T",
+      "resume": "excellente plante pour le traitement des troubles métaboliques, immunitaires et inflammatoires dus à une hyper- activité exocrine ou endocrine du pancréas",
+      "partiesUtilisees": "racine",
+      "galenique": "TM, ES, PV",
+      "methode": "",
+      "precautions": "peut aggraver le trouble bipolaire ou Essence : plante qui régule les conséquences de la sur-sollicitation les personnes nerveuses et crispées si elles ont une activité bêta- et de l’hyper-fonctionnement somato-pancréatique",
+      "axes": [
+        "somatotrope"
+      ],
+      "indications": [
+        "anti-inflammatoire",
+        "immunomodulateur",
+        "nerveux",
+        "sympathique"
+      ]
+    },
+    {
+      "nomLatin": "Secale cereale",
+      "nomCommun": "Seigle",
+      "essence": "ré-intégrateur et réparateur subtil mais efficace de Parties utilisées : feuille. Galénique : HE, TM, ES, PV",
+      "resume": "restauration hépatobiliaire-pancréatique. Utilisation avec l’artériosclérose",
+      "partiesUtilisees": "feuille",
+      "galenique": "HE, TM, ES, PV",
+      "methode": "",
+      "precautions": "interaction possible avec certains médi- l’excrétion",
+      "axes": [
+        "corticotrope",
+        "gonadotrope",
+        "thyréotrope"
+      ],
+      "indications": [
+        "hépatique",
+        "dermatologique"
+      ]
+    },
+    {
+      "nomLatin": "Salvia sclarea",
+      "nomCommun": "Sauge sclarée",
+      "essence": "plante qui agit de façon précise sur les mécanismes physiologiques impliqués dans le déploiement physiologique des",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": []
+    },
+    {
+      "nomLatin": "Sequoia gigantea",
+      "nomCommun": "Sequoia",
+      "essence": "revitalisant fondé sur sa capacité à favoriser la durée et tation, dans la structure et dans l’activité structuro-fonctionnelle. la pe",
+      "resume": "harmoniseur neuro-endocrinien et revitalisant poly- pour la sénescence. endocrinien à action",
+      "partiesUtilisees": "plante entière",
+      "galenique": "HE, ES, FE, Parties utilis",
+      "methode": "tisane : 5-10 g/L d’eau, infuser 10 à 15 min, boire en 3 à 4 doses fractionnées par jour ; HE, interne : 2 à 6 gouttes/ jour en doses fractionnées ; HE, externe : 5 à 10 % appliquée sur",
+      "precautions": "",
+      "axes": [
+        "corticotrope",
+        "gonadotrope",
+        "thyréotrope"
+      ],
+      "indications": [
+        "nerveux",
+        "cortisolique",
+        "tonique"
+      ]
+    },
+    {
+      "nomLatin": "Taraxacum officinale",
+      "nomCommun": "Pissenlit",
+      "essence": "plante qui permet de lever les blocages du drainage et œstrogénicité, les cancers œstro-dépendants, la grossesse (sauf l’accumulation de chaleur métabolique. ap",
+      "resume": "excellent draineur dans des conditions impliquant les enfants âgés de 6 à 7 ans à la fin de la phase de croissance un excès de chaleur et des conditions dysmétaboliques. Utilisation tissulaire thyroïdienne",
+      "partiesUtilisees": "plante entière",
+      "galenique": "TM, FE, ES,",
+      "methode": "",
+      "precautions": "contre-indiqué dans les états d’hyper- Essence : plante qui permet de lever les blocages du drainage et œstrogénicité, les cancers œstro-dépendants, la grossesse (sauf l’accumulation de chaleur métabolique",
+      "axes": [],
+      "indications": [
+        "draineur",
+        "œstrogénique"
+      ]
+    },
+    {
+      "nomLatin": "Satureja montana",
+      "nomCommun": "Sarriette des montagnes",
+      "essence": "promoteur d’endurance, de persévérance et d’adaptabilité ments antihypertenseurs, diurétiques et hypoglycémiants. face aux ag",
+      "resume": "surtout indiquée dans les cas avancés d’asthénie et d’insuffisance surrénale, lorsque les infections jouent un rôle pré- pondérant dans l’incitation à la crise d’asthme et chez les patients",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "peut augmenter les effets des médica- Essence : promoteur d’endurance, de persévérance et d’adaptabilité ments antihypertenseurs, diurétiques et hypoglycémiants",
+      "axes": [],
+      "indications": [
+        "anti-infectieux",
+        "diurétique",
+        "hypoglycémiant",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Valeriana officinalis",
+      "nomCommun": "Valériane",
+      "essence": "plante douce de régulation négative et d’élimination Essence : tonique qui le jour réduit les tendances anxio-dépressives des toxines émotionnelles ou physiques accumulées. et angoissantes tandis que la nuit, il pe",
+      "resume": "particulièrement utile chez l’enfant et l’adulte sen- profond et réparateur, ce qui contribue à l’amélioration des états sible, utilisation chez les patients anxieux et dans toute affection anxio-dépressifs diurnes dans le temps. aggravée",
+      "partiesUtilisees": "rhizome, racines, stolons",
+      "galenique": "PV, Parties utilis",
+      "methode": "tisane : 2,5 g de racine (1 cuillère à soupe bombée) pour 150 mL d’eau, infuser 10-15 min, 1 à 4 tasses par jour ; macération à froid : même recette, laisser reposer 12 h ; bain : 100 g de racines/2 L d’eau, laisser infuser 15 min, ajouter à un",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "antispasmodique",
+        "nerveux",
+        "tonique"
+      ]
+    },
+    {
+      "nomLatin": "Urtica dioica, racine",
+      "nomCommun": "Ortie piquante",
+      "essence": "plante qui arrête l’excès de séquestration et de fermeture 100 g de racine/L d’eau, laisser infuser 10 min, appliquer sur les androgénique, permettant ainsi le drainage et l’épuration. contusions et les a",
+      "resume": "dépuratif régulant le métabolisme périphérique des Notes et précautions : la valériane a une odeur forte, ce androgènes gonadiques et les facteurs associés. À utiliser dans tous qui",
+      "partiesUtilisees": "racine",
+      "galenique": "TM, ES, PV",
+      "methode": "plante en vrac : 3 à 5 cuillères à soupe de racine sèche dans ¾ L d’eau ; décocter 3 min et infuser 10 min, boire en 3 doses égales/jour",
+      "precautions": "la valériane a une odeur forte, ce androgènes gonadiques et les facteurs associés",
+      "axes": [],
+      "indications": [
+        "draineur",
+        "génital",
+        "androgénique"
+      ]
+    },
+    {
+      "nomLatin": "Vinca minor",
+      "nomCommun": "Pervenche",
+      "essence": "plante qui régule la consommation énergétique mentale",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": []
+    },
+    {
+      "nomLatin": "Urtica dioica, feuille",
+      "nomCommun": "Ortie piquante",
+      "essence": "plante qui revitalise et adapte l’organisme à l’accom- Résumé : régulateur du dysfonctionnement spasmophile et neurologique enraciné dans le dysfonctionnement vasculo- modation avec l’environnement extérieur. panc",
+      "resume": "régulateur du dysfonctionnement spasmophile et neurologique enraciné dans le dysfonctionnement vasculo- modation avec l’environnement extérieur.",
+      "partiesUtilisees": "feuille",
+      "galenique": "TM, ES, PV",
+      "methode": "plante fraîche : décoction 10 min dans ¾ L d’eau, Notes et précautions : à éviter chez les femmes allaitantes. boire e",
+      "precautions": "à éviter chez les femmes allaitantes",
+      "axes": [],
+      "indications": [
+        "anti-inflammatoire",
+        "antispasmodique",
+        "immunomodulateur",
+        "nerveux"
+      ]
+    },
+    {
+      "nomLatin": "Zingiber officinale",
+      "nomCommun": "Gingembre",
+      "essence": "plante qui localise la vitalité essentielle de l’orga- réduite si elle est utilisée simultanément. nisme où elle fait face à la stagnation, l’ischémie, la lassitude ou l’insuffisance, qu’elle soit de natu",
+      "resume": "",
+      "partiesUtilisees": "",
+      "galenique": "",
+      "methode": "",
+      "precautions": "",
+      "axes": [],
+      "indications": [
+        "immunomodulateur",
+        "digestif"
+      ]
+    },
+    {
+      "nomLatin": "Viola tricolor",
+      "nomCommun": "Pensée sauvage",
+      "essence": "plante qui assure l’intégrité matérielle par l’axe de tage sur l’achèvement de la deuxième boucle que sur l’adaptation de la première boucle. Utilisation dans les états d’insuffisance ou la compétence immuno-pulmonai",
+      "resume": "réparateur et revitalisant efficace des fonctions cortico tropes, gonadotropes et thyréotropes se concentrant davan- Essence : plante qui assure l’intégrité matérielle par l’axe de tage sur l’achèvement de la deuxième boucle que sur l’adaptation de la première boucle. Utilisation dans les états d’insuffisance ou la com",
+      "partiesUtilisees": "rhizome",
+      "galenique": "HE, ES, FE, TM, PV",
+      "methode": "tisane ou compresse : infuser 1 cuillère à café dans Le rôle particulier de l’argile médicinale 200 mL d’eau 10 min, à boire 3 fois par jour avant les repas ou appliquer sur la zone touchée. Les argiles médici",
+      "precautions": "",
+      "axes": [
+        "corticotrope",
+        "gonadotrope",
+        "thyréotrope"
+      ],
+      "indications": [
+        "draineur",
+        "immunomodulateur",
+        "digestif",
+        "respiratoire",
+        "androgénique",
+        "cortisolique",
+        "adaptogène"
+      ]
+    },
+    {
+      "nomLatin": "Vitex agnus castus",
+      "nomCommun": "Gattilier",
+      "essence": "plante assurant le vecteur central-gonadotrope de européenne. Deuxièmement, elle est moins ast",
+      "resume": "régulateur suprême de la fonction gonadotrope mentales périphérique et centrale ainsi que des relations relatives gonado- 2. Absor",
+      "partiesUtilisees": "baies, sommités fleuries",
+      "galenique": "TM, EF, PV, fruits",
+      "methode": "",
+      "precautions": "contre-indiqué (standard et dose Remarques sur l’utilisation de l’argile élevée) : grossesse, allaitement, conditions dans lesquelles la relance de l’ACTH est indésirable",
+      "axes": [
+        "gonadotrope",
+        "thyréotrope",
+        "somatotrope"
+      ],
+      "indications": [
+        "anti-inflammatoire",
+        "nerveux",
+        "œstrogénique"
+      ]
+    }
+  ],
+  "total": 50,
+  "source": "Volume 2, Chapitre 43"
+}

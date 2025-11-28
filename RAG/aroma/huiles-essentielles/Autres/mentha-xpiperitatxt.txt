@@ -1,0 +1,45 @@
+# Mentha xpiperita
+## 
+
+
+---
+
+Menthaxpiperita.17,36,44,45,58,63,64,103,
+118, 126, 183,203,216,220,248,272,284,29~
+297,298,299,300,302,303,304,305, 307, 308,
+30~318,319,321,322,332,333,336,340,401
+Menthe 44,64,68,80,318,319,331
+Mentheàlonguesfeuilles 68,233,401
+Menthebergamote 400
+Menthedeschamps 400
+Menthepoivrée..67,70,104,203,279,312,318,
+328,401Menthepouliot 328,402
+Menthesuave 403
+Menthesylvestre 401
+Mentheverte 402
+Metrosideros 47
+Meumathamanticum 229
+Michelia 46
+Micheliachampaca 46
+Micromyrtus 47
+Millepertuis 27,62,245,385
+Monarda 45
+Monarda fistulosa 44, 45,86,126,183,404
+Monarde fistuleuse 404
+Monodora 39
+Monodora citriodora 39
+Mosla 45
+Moutarde 101,104
+Moutarde noire 356
+Muscade (noixde) 90,196, 199, 249,404
+Muscade 197
+Muscadier 404
+Myrceugenia 47
+Myrcia 47
+Myricagale 47,216, 220, 404
+Myriquebaumier 102,404
+Myristica 47
+Myristica fragrans 47,63,196, 198, 404
+Myrocarpus 48
+Myrocarpus fastigiatus 48,185,221,405
+.Myrospermum erythroxylon 185

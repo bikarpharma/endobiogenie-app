@@ -115,7 +115,20 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 6. Retourner confirmation
+    // 8. Créer une consultation si c'est le premier interrogatoire
+    if (!existingInterrogatoire) {
+      await prisma.consultation.create({
+        data: {
+          patientId,
+          dateConsultation: new Date(),
+          type: "initiale",
+          motifConsultation: "Interrogatoire initial",
+        },
+      });
+      console.log(`📋 [API] Consultation initiale créée pour patient ${patientId}`);
+    }
+
+    // 9. Retourner confirmation
     return NextResponse.json({
       success: true,
       message: "Interrogatoire enregistré avec succès",

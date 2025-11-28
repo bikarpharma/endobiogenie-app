@@ -1,7 +1,7 @@
 import type { QuestionConfig } from "../types";
 
 /**
- * AXE NEUROVÉGÉTATIF (ANS - SYSTÈME NERVEUX AUTONOME) - NIVEAU EXPERT
+ * AXE NEUROVÉGÉTATIF (ANS - SYSTÈME NERVEUX AUTONOME)
  * -------------------------------------------------
  * Discrimine les 3 branches du système nerveux autonome :
  * - PARASYMPATHIQUE (Anabolisme, Sécrétion, Congestion)
@@ -22,6 +22,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Signe d'hypertonie vagale haute. Le parasympathique stimule les sécrétions digestives.",
     weight: 2,
+    priority: 2, // IMPORTANT
     scoreDirection: "hyper",
     section: "Parasympathique"
   },
@@ -32,6 +33,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Hyper-réflexivité vagale. Indique un système parasympathique très réactif.",
     weight: 2,
+    priority: 2, // IMPORTANT
     scoreDirection: "hyper",
     section: "Parasympathique"
   },
@@ -42,6 +44,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Vasodilatation muqueuse passive sous l'effet du vague post-prandial.",
     weight: 2,
+    priority: 3, // OPTIONNEL
     scoreDirection: "hyper",
     section: "Parasympathique"
   },
@@ -52,6 +55,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Le parasympathique favorise l'intériorisation, la mémorisation et le repli sur soi.",
     weight: 1,
+    priority: 3, // OPTIONNEL
     scoreDirection: "hyper",
     section: "Parasympathique"
   },
@@ -66,6 +70,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Vasoconstriction périphérique excessive. Le sang est chassé vers les muscles profonds.",
     weight: 3,
+    priority: 1, // ESSENTIEL
     scoreDirection: "hyper",
     section: "Sympathique Alpha"
   },
@@ -76,6 +81,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "L'Alpha ferme les capillaires et assèche les muqueuses (inhibition des sécrétions).",
     weight: 2,
+    priority: 2, // IMPORTANT
     scoreDirection: "hyper",
     section: "Sympathique Alpha"
   },
@@ -86,6 +92,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Spasme tonique des sphincters et assèchement colique.",
     weight: 2,
+    priority: 2, // IMPORTANT
     scoreDirection: "hyper",
     section: "Sympathique Alpha"
   },
@@ -96,6 +103,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Hypervigilance cérébrale médiée par la noradrénaline.",
     weight: 2,
+    priority: 2, // IMPORTANT
     scoreDirection: "hyper",
     section: "Sympathique Alpha"
   },
@@ -110,6 +118,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Hypersensibilité des récepteurs Bêta-1 cardiaques à l'adrénaline.",
     weight: 3,
+    priority: 1, // ESSENTIEL
     scoreDirection: "hyper",
     section: "Sympathique Bêta"
   },
@@ -120,6 +129,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Réactivité vasomotrice de surface et spasme laryngé.",
     weight: 2,
+    priority: 2, // IMPORTANT
     scoreDirection: "hyper",
     section: "Sympathique Bêta"
   },
@@ -130,6 +140,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Excitation neuromusculaire périphérique.",
     weight: 2,
+    priority: 3, // OPTIONNEL
     scoreDirection: "hyper",
     section: "Sympathique Bêta"
   },
@@ -140,6 +151,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Le Bêta provoque des spasmes cinétiques (mouvements désordonnés des muscles lisses).",
     weight: 2,
+    priority: 3, // OPTIONNEL
     scoreDirection: "hyper",
     section: "Sympathique Bêta"
   },
@@ -154,6 +166,7 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Indique souvent une dominance Sympathique Alpha au moment du coucher (incapacité à lâcher prise).",
     weight: 2,
+    priority: 1, // ESSENTIEL
     scoreDirection: "hyper",
     section: "Équilibre & Sommeil"
   },
@@ -164,8 +177,33 @@ const AxeNeuroConfig: QuestionConfig[] = [
     scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
     tooltip: "Décharge d'adrénaline nocturne (réactionnelle à une hypoglycémie ou stress).",
     weight: 2,
+    priority: 1, // ESSENTIEL
     scoreDirection: "hyper",
     section: "Équilibre & Sommeil"
+  },
+  {
+    id: "neuro_reveil_1h_3h",
+    question: "Vous réveillez-vous entre 1h et 3h du matin ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "L'heure du foie en chronobiologie. Signe de congestion hépatobiliaire nocturne.",
+    weight: 2,
+    priority: 1, // ESSENTIEL
+    scoreDirection: "hyper",
+    section: "Équilibre & Sommeil",
+    tags: ["congestion_hepatique", "chronobiologie"]
+  },
+  {
+    id: "neuro_reves",
+    question: "Avez-vous des rêves très vifs ou des cauchemars fréquents ?",
+    type: "scale_1_5",
+    scaleLabels: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"],
+    tooltip: "Rêves vifs = TRH élevé. Cauchemars = décharge adrénergique nocturne.",
+    weight: 2,
+    priority: 2, // IMPORTANT
+    scoreDirection: "hyper",
+    section: "Équilibre & Sommeil",
+    tags: ["trh_eleve", "sommeil_rem"]
   }
 ];
 

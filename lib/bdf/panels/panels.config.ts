@@ -12,52 +12,52 @@ import type { PanelDefinition } from "./panel-types";
 
 export const PANELS: PanelDefinition[] = [
   {
-    id: "panel_neuro",
-    label: "1. NEUROVÉGÉTATIF",
-    description: "Équilibre du Système Nerveux Autonome (Terrain)",
-    indexes: ["idx_genital", "idx_parasympa"],
+    id: "panel_sna",
+    label: "1. SNA - SYSTÈME NERVEUX AUTONOME",
+    description: "Équilibre sympathique/parasympathique et mobilisation",
+    indexes: ["idx_starter", "idx_mobilisation_leucocytes", "idx_mobilisation_plaquettes", "idx_histamine"],
     color: "blue"
   },
   {
     id: "panel_adaptation",
-    label: "2. ADAPTATION",
-    description: "Capacité de réponse au stress (Axe Corticotrope)",
-    indexes: ["idx_adaptation", "idx_mineralo"],
+    label: "2. CORTICOTROPE (Adaptation)",
+    description: "Capacité de réponse au stress - Axe HPA",
+    indexes: ["idx_adaptation", "idx_cortisol_ratio", "idx_mineralo"],
     color: "purple"
   },
   {
     id: "panel_thyroid",
     label: "3. THYRÉOTROPE",
-    description: "Gestion de l'énergie et du métabolisme basal",
-    indexes: ["idx_thyroid_yield", "idx_metabolic_activity"],
+    description: "Gestion de l'énergie et métabolisme basal",
+    indexes: ["idx_thyroidien", "idx_rendement_thyroidien", "idx_pth"],
     color: "amber"
   },
   {
     id: "panel_gonado",
     label: "4. GONADOTROPE",
-    description: "Construction, reproduction et expansion",
-    indexes: ["idx_androgenic", "idx_genito_thyroid"],
+    description: "Équilibre Androgènes/Œstrogènes",
+    indexes: ["idx_genital", "idx_genital_corrige", "idx_genito_thyroidien", "idx_oestrogenes"],
     color: "rose"
   },
   {
     id: "panel_somato",
     label: "5. SOMATOTROPE",
-    description: "Structure, réparation et croissance",
-    indexes: ["idx_growth"],
+    description: "Structure, croissance et réparation tissulaire",
+    indexes: ["idx_croissance", "idx_turnover", "idx_remodelage_osseux", "idx_insuline"],
     color: "emerald"
   },
   {
     id: "panel_metabo",
     label: "6. MÉTABOLIQUE",
-    description: "Rendement cellulaire et oxydation",
-    indexes: ["idx_metabolic_activity"],
+    description: "Catabolisme/Anabolisme et rendement cellulaire",
+    indexes: ["idx_catabolisme", "idx_rendement_metabolique", "idx_hepatique", "idx_capacite_tampon"],
     color: "orange"
   },
   {
     id: "panel_immuno",
-    label: "7. IMMUNITAIRE",
-    description: "Inflammation et défense (Th1/Th2)",
-    indexes: ["idx_genital"], // Le N/L ratio sert aussi pour l'immunité
+    label: "7. IMMUNITAIRE / INFLAMMATOIRE",
+    description: "Inflammation systémique et terrain immunitaire",
+    indexes: ["idx_inflammation", "idx_genito_thyroidien"],
     color: "red"
   }
 ];

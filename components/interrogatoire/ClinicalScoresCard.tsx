@@ -1,18 +1,55 @@
 "use client";
 
 import { useMemo } from "react";
-import { calculateClinicalScoresV2 } from "@/lib/interrogatoire/clinicalScoringV2";
-import type { AxeScore } from "@/lib/interrogatoire/clinicalScoringV2";
+import { calculateClinicalScoresV3 } from "@/lib/interrogatoire/clinicalScoringV3";
+import type { ScoringResultV3, ScoreAxeEndobiogenique, OrientationEndobiogenique } from "@/lib/interrogatoire/clinicalScoringV3";
 
 interface ClinicalScoresCardProps {
   answersByAxis: Record<string, Record<string, any>>;
   sexe: "F" | "H";
 }
 
+// Type pour l'affichage legacy
+interface LegacyAxeScore {
+  hypo: number;
+  hyper: number;
+  orientation: "hypo" | "hyper" | "equilibre" | "mixte";
+  details?: string;
+  confiance: number;
+}
+
+// Convertir le format V3 vers le format legacy pour l'affichage
+function convertToLegacy(score: ScoreAxeEndobiogenique): LegacyAxeScore {
+  let legacyOrientation: LegacyAxeScore["orientation"] = "equilibre";
+
+  switch (score.orientation) {
+    case "insuffisance":
+      legacyOrientation = "hypo";
+      break;
+    case "sur_sollicitation":
+      legacyOrientation = "hyper";
+      break;
+    case "instabilite":
+    case "mal_adaptation":
+      legacyOrientation = "mixte";
+      break;
+    default:
+      legacyOrientation = "equilibre";
+  }
+
+  return {
+    hypo: score.insuffisance,
+    hyper: score.surSollicitation,
+    orientation: legacyOrientation,
+    details: score.description,
+    confiance: score.confiance
+  };
+}
+
 export function ClinicalScoresCard({ answersByAxis, sexe }: ClinicalScoresCardProps) {
-  // Calculer les scores cliniques avec le moteur V2
-  const scores = useMemo(() => {
-    return calculateClinicalScoresV2(answersByAxis, sexe);
+  // Calculer les scores cliniques avec le moteur V3 (utilise les vrais IDs)
+  const scoringResult = useMemo(() => {
+    return calculateClinicalScoresV3(answersByAxis, sexe);
   }, [answersByAxis, sexe]);
 
   // Mapping des clés d'axe vers leurs labels
@@ -29,7 +66,7 @@ export function ClinicalScoresCard({ answersByAxis, sexe }: ClinicalScoresCardPr
   };
 
   // Fonction pour déterminer la couleur selon l'orientation
-  const getColorClass = (orientation: AxeScore["orientation"]) => {
+  const getColorClass = (orientation: LegacyAxeScore["orientation"]) => {
     switch (orientation) {
       case "hypo":
         return "bg-blue-100 border-blue-300";
@@ -59,16 +96,23 @@ export function ClinicalScoresCard({ answersByAxis, sexe }: ClinicalScoresCardPr
     return emojiMap[axisKey] || "📊";
   };
 
-  // Convertir les scores en tableau pour l'affichage
-  // Filtrer uniquement les axes fonctionnels (exclure historique et modeVie)
-  const scoreEntries = Object.entries(scores)
-    .filter(([axisKey]) => axisKey !== "historique" && axisKey !== "modeVie")
-    .map(([axisKey, score]) => ({
-      key: axisKey,
-      label: axeLabels[axisKey] || axisKey,
-      score,
-      emoji: getAxisEmoji(axisKey)
-    }));
+  // Convertir les scores V3 en tableau pour l'affichage dynamique par axe
+  const scoreEntries = useMemo(() => {
+    if (!scoringResult?.axes) return [];
+
+    return Object.entries(scoringResult.axes)
+      .filter(([_, axeScore]) => axeScore !== undefined)
+      .map(([axisKey, axeScore]) => {
+        const legacyScore = convertToLegacy(axeScore as ScoreAxeEndobiogenique);
+        return {
+          key: axisKey,
+          label: axeLabels[axisKey] || axisKey,
+          score: legacyScore,
+          originalScore: axeScore as ScoreAxeEndobiogenique,
+          emoji: getAxisEmoji(axisKey)
+        };
+      });
+  }, [scoringResult]);
 
   // Si aucun score n'est disponible
   if (scoreEntries.length === 0) {
@@ -89,11 +133,11 @@ export function ClinicalScoresCard({ answersByAxis, sexe }: ClinicalScoresCardPr
     <div className="clinical-scores-card bg-white rounded-xl shadow-lg border-2 border-slate-200 p-6 space-y-4">
       <div className="flex items-center gap-3">
         <span className="text-2xl">📊</span>
-        <h3 className="text-xl font-bold text-slate-900">Scores Cliniques</h3>
+        <h3 className="text-xl font-bold text-slate-900">Scores Cliniques en Temps Réel</h3>
       </div>
 
       <div className="space-y-4">
-        {scoreEntries.map(({ key, label, score, emoji }) => (
+        {scoreEntries.map(({ key, label, score, originalScore, emoji }) => (
           <div
             key={key}
             className={`p-4 border-2 rounded-xl ${getColorClass(score.orientation)} transition-all hover:shadow-md`}
@@ -108,22 +152,22 @@ export function ClinicalScoresCard({ answersByAxis, sexe }: ClinicalScoresCardPr
             <div className="space-y-3">
               {/* Orientation principale */}
               <div className="text-base font-bold text-gray-900">
-                {score.orientation === "hypo" && "⬇️ Hypofonctionnement"}
-                {score.orientation === "hyper" && "⬆️ Hyperfonctionnement"}
-                {score.orientation === "mixte" && "⚠️ Profil Mixte"}
+                {score.orientation === "hypo" && "⬇️ Insuffisance"}
+                {score.orientation === "hyper" && "⬆️ Sur-sollicitation"}
+                {score.orientation === "mixte" && "⚠️ Instabilité"}
                 {score.orientation === "equilibre" && "✅ Équilibré"}
               </div>
 
               {/* Scores détaillés */}
               <div className="flex gap-4 text-sm text-gray-700">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold">Hypo:</span>
+                  <span className="font-semibold">Insuffisance:</span>
                   <span className={`font-bold text-lg ${score.hypo > 50 ? "text-blue-600" : ""}`}>
                     {score.hypo}%
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold">Hyper:</span>
+                  <span className="font-semibold">Sur-sollicitation:</span>
                   <span className={`font-bold text-lg ${score.hyper > 50 ? "text-red-600" : ""}`}>
                     {score.hyper}%
                   </span>
@@ -150,10 +194,18 @@ export function ClinicalScoresCard({ answersByAxis, sexe }: ClinicalScoresCardPr
                 </div>
               </div>
 
-              {/* Description textuelle (optionnel) */}
+              {/* Description textuelle */}
               {score.details && (
                 <div className="text-xs text-gray-600 italic mt-1">
                   {score.details}
+                </div>
+              )}
+
+              {/* Symptômes clés détectés */}
+              {originalScore.symptomesCles && originalScore.symptomesCles.length > 0 && (
+                <div className="text-xs text-gray-500 mt-2">
+                  <span className="font-semibold">Signes:</span>{" "}
+                  {originalScore.symptomesCles.slice(0, 3).join(" • ")}
                 </div>
               )}
             </div>
@@ -161,9 +213,61 @@ export function ClinicalScoresCard({ answersByAxis, sexe }: ClinicalScoresCardPr
         ))}
       </div>
 
+      {/* Terrains détectés */}
+      {scoringResult?.terrainsDetectes && scoringResult.terrainsDetectes.length > 0 && (
+        <div className="mt-4 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
+          <h4 className="font-bold text-amber-800 mb-2">🎯 Terrains Pathologiques Détectés</h4>
+          <div className="space-y-2">
+            {scoringResult.terrainsDetectes.map((terrain, idx) => (
+              <div key={idx} className="text-sm">
+                <span className="font-semibold text-amber-900 capitalize">{terrain.terrain.replace(/_/g, ' ')}</span>
+                <span className="text-amber-700"> (score: {terrain.score})</span>
+                {terrain.indicateurs && terrain.indicateurs.length > 0 && (
+                  <ul className="ml-4 text-xs text-amber-600 list-disc">
+                    {terrain.indicateurs.slice(0, 3).map((ind, i) => (
+                      <li key={i}>{ind}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Synthèse globale */}
+      {scoringResult?.syntheseGlobale && (
+        <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+          <h4 className="font-bold text-slate-700 mb-2">📋 Synthèse</h4>
+          <div className="text-sm text-slate-600 space-y-1">
+            {scoringResult.syntheseGlobale.axePrioritaire && (
+              <div>
+                <span className="font-semibold">Axe prioritaire:</span>{" "}
+                <span className="capitalize">{scoringResult.syntheseGlobale.axePrioritaire}</span>
+              </div>
+            )}
+            <div>
+              <span className="font-semibold">Capacité d'adaptation:</span>{" "}
+              <span className={
+                scoringResult.syntheseGlobale.capaciteAdaptation === "epuisee" ? "text-red-600 font-bold" :
+                scoringResult.syntheseGlobale.capaciteAdaptation === "faible" ? "text-orange-600" :
+                scoringResult.syntheseGlobale.capaciteAdaptation === "moderee" ? "text-yellow-600" :
+                "text-green-600"
+              }>
+                {scoringResult.syntheseGlobale.capaciteAdaptation}
+              </span>
+            </div>
+            {scoringResult.syntheseGlobale.risqueSpasmophilie && (
+              <div className="text-orange-600 font-semibold">
+                ⚠️ Risque de terrain spasmophile
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="text-xs text-gray-500 italic">
-        Scores calculés automatiquement avec le moteur V2 (scoring pondéré).
-        La confiance augmente avec le nombre de questions répondues.
+        Scores calculés dynamiquement avec le moteur V3. La confiance augmente avec le nombre de questions répondues.
       </div>
     </div>
   );

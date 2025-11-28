@@ -25,70 +25,128 @@ async function main() {
 
   console.log(`✅ Médecin créé : ${doctor.email} (Mdp: medecine)`)
 
-  // 2. CRÉATION DU PATIENT "CAS CLINIQUE"
-  // -------------------------------------
-  // Cas : Femme 42 ans, Stress chronique, Tendance Hyperthyroïdie réactionnelle
+  // 2. CRÉATION DU PATIENT "CAS CLINIQUE" - KARIM KARIM
+  // ----------------------------------------------------
+  // Cas : Homme 35 ans, Surmenage professionnel, Épuisement surrénalien
   const patient = await prisma.patient.create({
     data: {
       userId: doctor.id,
-      numeroPatient: 'PAT-DEMO-2024',
-      nom: 'MARTIN',
-      prenom: 'Sophie',
-      dateNaissance: new Date('1982-05-15'), // 42 ans
-      sexe: 'F',
-      email: 'sophie.martin@email.com',
-      telephone: '06 00 00 00 00',
-      notes: 'Patiente adressée pour fatigue chronique et palpitations. Sommeil non réparateur.',
-      allergies: 'Pénicilline',
-      atcdMedicaux: 'Spasmophilie (2015), Gastrites à répétition',
-      traitementActuel: 'Magnésium marin, Aubépine le soir',
-      tags: ["Stress", "Thyroïde", "Sommeil"],
-      // Contexte clinique pour l'IA
-      symptomesActuels: ["Palpitations", "Réveils nocturnes 3h", "Anxiété", "Frilosité paradoxale"],
-      pathologiesAssociees: ["Dystonie Neuro-Végétative"],
+      numeroPatient: 'PAT-KARIM-2025',
+      nom: 'KARIM',
+      prenom: 'Karim',
+      dateNaissance: new Date('1990-03-20'), // 35 ans
+      sexe: 'M',
+      email: 'karim.karim@email.com',
+      telephone: '06 12 34 56 78',
+      notes: 'Patient entrepreneur, travaille 12h/jour, sommeil insuffisant. Consulte pour fatigue chronique et baisse de performances.',
+      allergies: 'Aucune',
+      atcdMedicaux: 'Rien à signaler',
+      atcdChirurgicaux: 'Appendicectomie (2008)',
+      traitementActuel: 'Aucun traitement en cours',
+      tags: ["Stress", "Fatigue", "Burnout"],
+      // 3. INTERROGATOIRE CLINIQUE (stocké en JSON)
+      // -------------------------------------------
+      interrogatoire: {
+        // Fatigue et Énergie
+        "fatigue_matinale": "Oui, très difficile de me lever",
+        "fatigue_horaire": "Surtout le matin et après 15h",
+        "sommeil_qualite": "Non réparateur, réveils à 3h du matin",
+        "sommeil_duree": "5-6h par nuit",
+
+        // Stress et Nervosité
+        "stress_niveau": "8/10 - Constant",
+        "anxiete": "Oui, notamment le soir",
+        "irritabilite": "Oui, facilement agacé",
+        "concentration": "Difficultés à se concentrer",
+
+        // Digestif
+        "appetit": "Diminué",
+        "digestion": "Ballonnements après repas",
+        "transit": "Alternance diarrhée/constipation",
+        "reveil_3h": "Oui, presque toutes les nuits",
+
+        // Cardiovasculaire
+        "palpitations": "Occasionnelles",
+        "tension": "Normale aux dernières mesures",
+
+        // Température et Métabolisme
+        "frilosite": "Extrémités froides",
+        "transpiration": "Sueurs nocturnes parfois",
+        "poids": "Perte de 3kg en 6 mois",
+
+        // Douleurs
+        "douleurs_musculaires": "Courbatures fréquentes",
+        "maux_tete": "Céphalées de tension",
+
+        // Libido et Hormones
+        "libido": "En baisse",
+        "erection": "Qualité diminuée",
+
+        // Scores synthétiques par axe
+        "scores": {
+          corticotrope: 85, // Axe surrénalien très sollicité
+          thyroide: 65,
+          digestif: 70,
+          cardiovasculaire: 45,
+          genital: 60,
+        }
+      },
     },
   })
 
-  console.log(`✅ Patiente créée : ${patient.nom} ${patient.prenom}`)
+  console.log(`✅ Patient créé : ${patient.nom} ${patient.prenom}`)
+  console.log(`✅ Interrogatoire inclus pour ${patient.nom}`)
 
   // 3. INJECTION DE LA BIOLOGIE DES FONCTIONS (BdF)
   // ----------------------------------------------
-  // Simulation d'un profil "Hyper-Sympathique avec effondrement Adaptatif"
+  // Profil : Épuisement surrénalien avec hypercatabolisme
   await prisma.bdfAnalysis.create({
     data: {
       patientId: patient.id,
       date: new Date(),
-      // Données brutes (Inputs)
+      // Données brutes (NFS + Biochimie)
       inputs: {
-        TSH: 0.45,   // Basse (Sollicitation)
-        T4L: 18.5,   // Haute normale
-        T3L: 4.2,    // Normale
-        FSH: 6.5,
-        LH: 5.2,
-        Cortisol_8h: 240, // Élevé (Stress phase alarme)
-        Leucocytes: 7500,
-        Neutrophiles: 70, // % élevé (Sympathicotonie relative)
-        Lymphocytes: 25,  // % bas
-        Monocytes: 5,
-        Eosinophiles: 0,  // Effondrement (Stress aigu)
+        // Hémogramme
+        GR: 4.8,
+        HB: 14.5,
+        HCT: 43,
+        VGM: 89,
+        CCMH: 33,
+        GB: 6200,
+        NEUT: 62,      // Neutrophiles %
+        LYMPH: 28,     // Lymphocytes %
+        MONO: 8,
+        EOS: 2,        // Éosinophiles %
+        BASO: 0,
+        PLAQUETTES: 245,
+
+        // Biochimie
+        LDH: 420,      // Élevé (catabolisme)
+        CPK: 95,       // Normal
+        TSH: 2.1,      // Normal
+        NA: 142,       // Sodium
+        K: 4.2,        // Potassium
+        CA: 9.5,       // Calcium
+        P: 3.8,        // Phosphore
+        PAL: 85,       // Phosphatases alcalines
+
+        // Hormones (si disponibles)
+        T4L: 14,
+        T3L: 3.2,
+        Cortisol_8h: 380, // Élevé (stress chronique)
       },
-      // Index calculés (Simulation pour l'affichage)
-      indexes: [
-        { name: "Indice Catabolique", value: 4.5, status: "high", description: "Excès de dégradation tissulaire" },
-        { name: "Activité Thyroïdienne Globale", value: 120, status: "high", description: "Hyper-fonctionnement réactionnel" },
-        { name: "Indice d'Adaptation (Cortisol/DHEA)", value: 0.8, status: "low", description: "Ressources adaptatives faibles" },
-        { name: "Indice Sympathique", value: 85, status: "high", description: "Prédominance orthosympathique (Stress)" }
-      ],
-      summary: "PROFIL ENDOBIOGÉNIQUE : État d'alerte neuro-endocrinien. Sollicitation excessive de l'axe thyréotrope pour compenser une demande énergétique accrue. Terrain en phase catabolique.",
-      axes: ["Neuro-végétatif", "Thyréotrope", "Corticotrope"],
-      ragText: "Selon la théorie (Vol 2), ce profil correspond à une 'Hyperthyroïdie fonctionnelle de contrainte'. Le système tente de maintenir l'homéostasie par une augmentation du métabolisme basal.",
+      // Index calculés seront générés automatiquement
+      indexes: [],
+      summary: "PROFIL ENDOBIOGÉNIQUE : Épuisement surrénalien en phase de compensation. Index Génital élevé (2.21) témoignant d'une sympathicotonie. Hypercatabolisme (LDH/CPK = 4.42). Index d'Adaptation limite (14) suggérant une réserve adaptative faible.",
+      axes: ["Corticotrope", "Sympathique", "Métabolique"],
+      ragText: "Terrain de stress chronique avec sollicitation excessive de l'axe corticotrope. Nécessité de soutenir les surrénales sans les stimuler.",
     }
   })
 
   console.log(`✅ Analyse BdF injectée pour ${patient.nom}`)
 
-  // 4. CRÉATION D'UNE ORDONNANCE (Brouillon)
-  // ----------------------------------------
+  // 4. CRÉATION D'UNE ORDONNANCE ENDOBIOGÉNIQUE (Brouillon)
+  // --------------------------------------------------------
   await prisma.ordonnance.create({
     data: {
       patientId: patient.id,

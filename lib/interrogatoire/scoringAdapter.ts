@@ -1,11 +1,23 @@
 // ========================================
-// ADAPTATEUR DE COMPATIBILITÉ V1 ← V2
+// ADAPTATEUR DE COMPATIBILITÉ V1 ← V2/V3
 // ========================================
-// Convertit les scores V2 (nouveau format) vers le format V1
+// Convertit les scores V2/V3 (nouveau format) vers le format V1
 // pour maintenir la compatibilité avec le système d'ordonnances
 
-import type { ClinicalScoresV2, AxeScore } from "./clinicalScoringV2";
+import type { AxeScore } from "./clinicalScoringV2";
+import type { ScoringResultV3, ScoreAxeEndobiogenique } from "./clinicalScoringV3";
 import type { ClinicalAxeScores } from "./clinicalScoring";
+
+// Type pour compatibilité avec l'ancien format V2
+type ClinicalScoresV2 = {
+  neuro?: AxeScore;
+  adaptatif?: AxeScore;
+  thyro?: AxeScore;
+  gonado?: AxeScore;
+  somato?: AxeScore;
+  digestif?: AxeScore;
+  immuno?: AxeScore;
+};
 
 /**
  * Convertit un AxeScore V2 en score simple (0-10)
@@ -104,6 +116,84 @@ export function adaptScoresV2ToV1(scoresV2: ClinicalScoresV2): ClinicalAxeScores
       stressChronique,
       traumatismes,
       sommeil,
+    },
+  };
+}
+
+/**
+ * Adaptateur : ScoringResultV3 → ClinicalAxeScores (ancien format)
+ * Version mise à jour utilisant le nouveau scoring V3
+ */
+export function adaptScoresV3ToV1(scoresV3: ScoringResultV3): ClinicalAxeScores {
+  const { axes } = scoresV3;
+
+  // Helper pour convertir ScoreAxeEndobiogenique en orientation
+  const getNeuroOrientation = (score?: ScoreAxeEndobiogenique): ClinicalAxeScores["neuroVegetatif"]["orientation"] => {
+    if (!score) return "equilibre";
+    if (score.orientation === "sur_sollicitation") return "sympathicotonique";
+    if (score.orientation === "insuffisance") return "parasympathicotonique";
+    return "equilibre";
+  };
+
+  const getAdaptatifOrientation = (score?: ScoreAxeEndobiogenique): ClinicalAxeScores["adaptatif"]["orientation"] => {
+    if (!score) return "equilibre";
+    if (score.orientation === "sur_sollicitation") return "hyperadaptatif";
+    if (score.orientation === "insuffisance") return "hypoadaptatif";
+    return "equilibre";
+  };
+
+  const getThyroOrientation = (score?: ScoreAxeEndobiogenique): ClinicalAxeScores["thyroidien"]["orientation"] => {
+    if (!score) return "normal";
+    if (score.orientation === "insuffisance") return "hypometabolisme";
+    if (score.orientation === "sur_sollicitation") return "hypermetabolisme";
+    return "normal";
+  };
+
+  const getGonadoOrientation = (score?: ScoreAxeEndobiogenique): ClinicalAxeScores["gonadique"]["orientation"] => {
+    if (!score) return "normal";
+    if (score.orientation === "insuffisance") return "hypogonadisme";
+    if (score.orientation === "sur_sollicitation") return "hypergonadisme";
+    if (score.orientation === "instabilite" || score.orientation === "mal_adaptation") return "dysregulation";
+    return "normal";
+  };
+
+  return {
+    neuroVegetatif: {
+      sympathetic: axes.neuro ? Math.round(axes.neuro.surSollicitation / 20) : 0,
+      parasympathetic: axes.neuro ? Math.round(axes.neuro.insuffisance / 20) : 0,
+      orientation: getNeuroOrientation(axes.neuro),
+    },
+    adaptatif: {
+      hyper: axes.adaptatif ? Math.round(axes.adaptatif.surSollicitation / 20) : 0,
+      hypo: axes.adaptatif ? Math.round(axes.adaptatif.insuffisance / 20) : 0,
+      orientation: getAdaptatifOrientation(axes.adaptatif),
+    },
+    thyroidien: {
+      hypo: axes.thyro ? Math.round(axes.thyro.insuffisance / 20) : 0,
+      hyper: axes.thyro ? Math.round(axes.thyro.surSollicitation / 20) : 0,
+      orientation: getThyroOrientation(axes.thyro),
+    },
+    gonadique: {
+      hypo: axes.gonado ? Math.round(axes.gonado.insuffisance / 20) : 0,
+      hyper: axes.gonado ? Math.round(axes.gonado.surSollicitation / 20) : 0,
+      orientation: getGonadoOrientation(axes.gonado),
+    },
+    digestif: {
+      dysbiose: axes.digestif ? Math.round(axes.digestif.surSollicitation / 20) : 0,
+      lenteur: axes.digestif ? Math.round(axes.digestif.insuffisance / 20) : 0,
+      inflammation: axes.digestif ? Math.round(axes.digestif.surSollicitation / 30) : 0,
+    },
+    immunoInflammatoire: {
+      hyper: axes.immuno ? Math.round(axes.immuno.surSollicitation / 20) : 0,
+      hypo: axes.immuno ? Math.round(axes.immuno.insuffisance / 20) : 0,
+    },
+    rythmes: {
+      desynchronisation: 0, // Non implémenté en V3
+    },
+    axesVie: {
+      stressChronique: axes.adaptatif ? Math.round(axes.adaptatif.intensite) : 0,
+      traumatismes: 0,
+      sommeil: axes.neuro ? Math.round(axes.neuro.intensite) : 0,
     },
   };
 }

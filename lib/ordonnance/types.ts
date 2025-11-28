@@ -29,9 +29,21 @@ export type TherapeuticScope = {
 
 /**
  * Axe neuroendocrinien perturbé identifié
+ * ÉTENDU: Ajout des axes SNA (spasmophilie) et histamine
  */
 export type AxePerturbation = {
-  axe: 'thyroidien' | 'corticotrope' | 'genital' | 'somatotrope' | 'gonadotrope';
+  axe:
+    | 'thyroidien'
+    | 'corticotrope'
+    | 'genital'
+    | 'somatotrope'
+    | 'gonadotrope'
+    // Nouveaux axes SNA (Volume 2 - Spasmophilie)
+    | 'sna'           // SNA générique
+    | 'sna_alpha'     // Type 1: α-sympathique
+    | 'sna_beta'      // Type 2: β-sympathique
+    | 'sna_mixte'     // Type 3: mixte α+β
+    | 'histamine';    // Type 8: histaminique
   niveau: 'hypo' | 'hyper' | 'desequilibre';
   score: number; // 0-10 (intensité de la perturbation)
   justification: string; // ex: "Index thyroïdien 1.8 < 2.0"
@@ -85,7 +97,8 @@ export type ContextePedagogique = {
  */
 export type RecommandationTherapeutique = {
   id: string; // UUID pour tracking
-  substance: string; // "Rhodiola rosea"
+  substance: string; // "Rhodiola rosea" (nom latin)
+  nomFrancais?: string; // "Rhodiole" (nom français pour l'affichage)
   type: SubstanceType;
   forme: FormeGalenique;
   posologie: string; // "5 ml matin à jeun"

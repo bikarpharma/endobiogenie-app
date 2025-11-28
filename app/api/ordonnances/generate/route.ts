@@ -1,32 +1,27 @@
 // ========================================
 // API GÉNÉRATION ORDONNANCE - /api/ordonnances/generate
 // ========================================
-// POST : Génère une ordonnance intelligente via raisonnement IA en 4 étapes
+// POST : Génère une ordonnance intelligente basée sur la synthèse unifiée IA
+//
+// NOUVEAU FLUX:
+// 1. Récupérer ou générer la synthèse unifiée (clinical-engine.ts)
+// 2. Transformer suggestedPrescription en format ordonnance
+// 3. Sauvegarder l'ordonnance
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { TherapeuticReasoningEngine } from "@/lib/ordonnance/therapeuticReasoning";
-import type {
-  GenerateOrdonnanceRequest,
-  OrdonnanceStructuree,
-  TherapeuticScope,
-  RecommandationTherapeutique,
-} from "@/lib/ordonnance/types";
-import type { IndexResults, LabValues } from "@/lib/bdf/types";
+import { getPatientClinicalContext } from "@/lib/clinical-data-aggregator";
+import { generateClinicalSynthesis } from "@/app/actions/clinical-engine";
+import type { TherapeuticScope } from "@/lib/ordonnance/types";
 import { v4 as uuidv4 } from "uuid";
-import { InterrogatoireEndobiogenique } from "@/lib/interrogatoire/types";
-import { ClinicalAxeScores } from "@/lib/interrogatoire/clinicalScoring";
-import { calculateClinicalScoresV2 } from "@/lib/interrogatoire/clinicalScoringV2";
-import { adaptScoresV2ToV1 } from "@/lib/interrogatoire/scoringAdapter";
-import { fuseClinicalBdfRag, BdfIndexes, RagContext, FusedAxePerturbation } from "@/lib/ordonnance/fusionClinique";
 
 export const runtime = "nodejs";
-export const maxDuration = 60; // Peut prendre du temps avec vectorstores
+export const maxDuration = 120; // 2 minutes max pour la génération IA
 
 /**
  * POST /api/ordonnances/generate
- * Génère une ordonnance structurée en 3 volets via raisonnement IA
+ * Génère une ordonnance structurée basée sur la synthèse unifiée IA
  */
 export async function POST(req: NextRequest) {
   try {
@@ -44,14 +39,21 @@ export async function POST(req: NextRequest) {
     // ==========================================
     // VALIDATION REQUEST
     // ==========================================
-    const body: GenerateOrdonnanceRequest = await req.json();
+    const body = await req.json();
 
-    if (!body.patientId || !body.scope) {
+    if (!body.patientId) {
       return NextResponse.json(
-        { error: "Données incomplètes : patientId et scope requis" },
+        { error: "Données incomplètes : patientId requis" },
         { status: 400 }
       );
     }
+
+    const scope: TherapeuticScope = {
+      planteMedicinale: body.scope?.planteMedicinale ?? true,
+      gemmotherapie: body.scope?.gemmotherapie ?? true,
+      aromatherapie: body.scope?.aromatherapie ?? false,
+      micronutrition: body.scope?.micronutrition ?? true,
+    };
 
     // ==========================================
     // RÉCUPÉRATION PATIENT
@@ -64,9 +66,13 @@ export async function POST(req: NextRequest) {
       include: {
         bdfAnalyses: {
           orderBy: { date: "desc" },
-          take: 1, // Plus récente par défaut
+          take: 1,
         },
-        axeInterpretations: true, // Charger les interprétations IA des axes
+        syntheseGlobale: {
+          where: { isLatest: true },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     });
 
@@ -77,384 +83,349 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log("═══════════════════════════════════════════════════════");
+    console.log("🧬 GÉNÉRATION ORDONNANCE DEPUIS SYNTHÈSE UNIFIÉE");
+    console.log("═══════════════════════════════════════════════════════");
+    console.log(`📋 Patient: ${patient.prenom} ${patient.nom}`);
+
     // ==========================================
-    // RÉCUPÉRATION ANALYSE BdF
+    // ÉTAPE 1: RÉCUPÉRER OU GÉNÉRER LA SYNTHÈSE UNIFIÉE
     // ==========================================
-    let bdfAnalysis = null;
-    let indexes: IndexResults | null = null;
-    let inputs: LabValues | null = null;
+    let synthesis: any = null;
+    const existingSynthesis = patient.syntheseGlobale[0];
 
-    if (body.bdfAnalysisId) {
-      // BdF spécifique fournie
-      bdfAnalysis = await prisma.bdfAnalysis.findFirst({
-        where: {
-          id: body.bdfAnalysisId,
-          patientId: body.patientId,
-        },
-      });
-    } else if (patient.bdfAnalyses.length > 0) {
-      // Prendre la plus récente
-      bdfAnalysis = patient.bdfAnalyses[0];
-    }
+    // Utiliser la synthèse existante si elle date de moins de 24h
+    const synthesisFresh = existingSynthesis &&
+      (Date.now() - new Date(existingSynthesis.createdAt).getTime()) < 24 * 60 * 60 * 1000;
 
-    if (bdfAnalysis) {
-      // Reconstituer indexes et inputs
-      const indexesData = bdfAnalysis.indexes as any;
+    if (synthesisFresh && existingSynthesis.content) {
+      console.log("📊 Utilisation de la synthèse existante...");
+      synthesis = existingSynthesis.content as any;
+    } else {
+      console.log("🤖 Génération d'une nouvelle synthèse IA...");
+      try {
+        const context = await getPatientClinicalContext(body.patientId);
+        synthesis = await generateClinicalSynthesis(context);
 
-      // Gérer les deux formats possibles: objet ou tableau (pour compatibilité)
-      if (Array.isArray(indexesData)) {
-        // Format tableau (ancien format)
-        indexes = {
-          indexGenital: indexesData.find((i: any) => i.name === "indexGenital") || { value: null, comment: "" },
-          indexThyroidien: indexesData.find((i: any) => i.name === "indexThyroidien") || { value: null, comment: "" },
-          gT: indexesData.find((i: any) => i.name === "gT") || { value: null, comment: "" },
-          indexAdaptation: indexesData.find((i: any) => i.name === "indexAdaptation") || { value: null, comment: "" },
-          indexOestrogenique: indexesData.find((i: any) => i.name === "indexOestrogenique") || { value: null, comment: "" },
-          turnover: indexesData.find((i: any) => i.name === "turnover") || { value: null, comment: "" },
-          rendementThyroidien: indexesData.find((i: any) => i.name === "rendementThyroidien") || { value: null, comment: "" },
-          remodelageOsseux: indexesData.find((i: any) => i.name === "remodelageOsseux") || { value: null, comment: "" },
-        };
-      } else {
-        // Format objet (nouveau format depuis calculateAllIndexes)
-        indexes = {
-          indexGenital: indexesData.indexGenital || { value: null, comment: "" },
-          indexThyroidien: indexesData.indexThyroidien || { value: null, comment: "" },
-          gT: indexesData.gT || { value: null, comment: "" },
-          indexAdaptation: indexesData.indexAdaptation || { value: null, comment: "" },
-          indexOestrogenique: indexesData.indexOestrogenique || { value: null, comment: "" },
-          turnover: indexesData.turnover || { value: null, comment: "" },
-          rendementThyroidien: indexesData.rendementThyroidien || { value: null, comment: "" },
-          remodelageOsseux: indexesData.remodelageOsseux || { value: null, comment: "" },
-        };
+        // Sauvegarder la nouvelle synthèse
+        await prisma.unifiedSynthesis.create({
+          data: {
+            patientId: body.patientId,
+            content: synthesis as any,
+            confiance: synthesis.meta?.confidenceScore || 0.8,
+            modelUsed: synthesis.meta?.modelUsed || "gpt-4o",
+            isLatest: true,
+          },
+        });
+        console.log("✅ Nouvelle synthèse générée et sauvegardée");
+      } catch (error) {
+        console.error("❌ Erreur génération synthèse:", error);
+        return NextResponse.json(
+          { error: "Impossible de générer la synthèse clinique" },
+          { status: 500 }
+        );
       }
-      inputs = bdfAnalysis.inputs as LabValues;
-    } else if (body.inputs) {
-      // Pas de BdF, mais inputs fournis directement (cas rare)
-      inputs = body.inputs;
-      // TODO: Calculer indexes à la volée si nécessaire
     }
 
-    // Note: BdF n'est plus obligatoire - on peut générer avec interrogatoire seul
-    // Vérifier qu'on a au moins une source (BdF OU interrogatoire)
-    const interrogatoireExists = patient.interrogatoire !== null;
-    if (!bdfAnalysis && !interrogatoireExists) {
+    if (!synthesis || !synthesis.suggestedPrescription) {
       return NextResponse.json(
-        { error: "Aucune donnée clinique disponible - Le patient doit avoir au minimum un interrogatoire ou une analyse BdF" },
+        { error: "Aucune prescription suggérée dans la synthèse" },
         { status: 400 }
       );
     }
 
     // ==========================================
-    // CONTEXTE PATIENT ENRICHI
+    // ÉTAPE 2: TRANSFORMER LA PRESCRIPTION EN ORDONNANCE
     // ==========================================
-    const age = patient.dateNaissance
-      ? new Date().getFullYear() - new Date(patient.dateNaissance).getFullYear()
-      : 0;
+    console.log("\n💊 Transformation de la prescription suggérée...");
 
-    const CI = Array.isArray(patient.contreindicationsMajeures)
-      ? patient.contreindicationsMajeures as string[]
-      : [];
+    const prescription = synthesis.suggestedPrescription;
+    const drainage = synthesis.drainage;
+    const spasmophilie = synthesis.spasmophilie;
 
-    const traitements = [];
-    if (patient.traitementActuel) traitements.push(patient.traitementActuel);
-    if (patient.traitements) traitements.push(patient.traitements);
+    // Construire les recommandations depuis la synthèse
+    const voletEndobiogenique: any[] = [];
+    const voletPhytoElargi: any[] = [];
+    const voletComplements: any[] = [];
 
-    const symptomes = body.symptomes || [];
-    // Ajouter les symptômes actuels du patient
-    if (Array.isArray(patient.symptomesActuels)) {
-      symptomes.push(...(patient.symptomesActuels as string[]));
-    }
-
-    const patientContext = {
-      age,
-      sexe: patient.sexe as "M" | "F",
-      CI,
-      traitements,
-      symptomes,
-      // Nouveaux champs pour contexte enrichi
-      pathologies: Array.isArray(patient.pathologiesAssociees) ? patient.pathologiesAssociees as string[] : [],
-      autresBilans: typeof patient.autresBilans === "object" ? patient.autresBilans as Record<string, number> : {},
-      // Allergies et antécédents (sécurité ++)
-      allergies: patient.allergies || "",
-      atcdMedicaux: patient.atcdMedicaux || "",
-      atcdChirurgicaux: patient.atcdChirurgicaux || "",
-    };
-
-    // ==========================================
-    // FUSION CLINIQUE : INTERROGATOIRE + BDF + RAG
-    // ==========================================
-    console.log(`🧠 Démarrage raisonnement IA fusionné pour patient ${patient.nom} ${patient.prenom}`);
-
-    // 1. Charger l'interrogatoire endobiogénique
-    const interrogatoire = patient.interrogatoire as InterrogatoireEndobiogenique | null;
-
-    let clinicalScores: ClinicalAxeScores | null = null;
-    let axesFusionnes: FusedAxePerturbation[] = [];
-
-    if (interrogatoire?.v2?.answersByAxis) {
-      console.log("📋 Interrogatoire endobiogénique V2 trouvé, calcul des scores cliniques...");
-      // Utiliser le nouveau moteur de scoring V2
-      const scoresV2 = calculateClinicalScoresV2(interrogatoire.v2.answersByAxis, interrogatoire.sexe);
-      // Adapter vers l'ancien format pour compatibilité avec fuseClinicalBdfRag
-      clinicalScores = adaptScoresV2ToV1(scoresV2);
-      console.log(`✅ Scores cliniques calculés (V2):
-  - Neurovégétatif: ${clinicalScores.neuroVegetatif.orientation}
-  - Adaptatif: ${clinicalScores.adaptatif.orientation}
-  - Thyroïdien: ${clinicalScores.thyroidien.orientation}
-  - Gonadique: ${clinicalScores.gonadique.orientation}`);
-    } else {
-      console.log("⚠️ Aucun interrogatoire V2 trouvé, utilisation BdF seule");
-    }
-
-    // 2. Construire BdfIndexes pour la fusion
-    const bdfIndexes: BdfIndexes = {
-      indexThyroidien: indexes?.indexThyroidien.value ?? undefined,
-      indexAdaptation: indexes?.indexAdaptation.value ?? undefined,
-      indexGenital: indexes?.indexGenital.value ?? undefined,
-      indexGenitoThyroidien: indexes?.gT.value ?? undefined,
-      indexOestrogenique: indexes?.indexOestrogenique.value ?? undefined,
-      indexTurnover: indexes?.turnover.value ?? undefined,
-      indexRendementThyroidien: indexes?.rendementThyroidien.value ?? undefined,
-      indexRemodelageOsseux: indexes?.remodelageOsseux.value ?? undefined,
-    };
-
-    // 3. Construire RagContext
-    const ragAxes = bdfAnalysis?.axes as string[] || [];
-    const ragSummary = bdfAnalysis?.summary || "";
-    const ragContext: RagContext = {
-      axes: [], // TODO: parser ragAxes pour extraire structure
-      resume: ragSummary,
-    };
-
-    console.log(`📊 RAG Enrichment: ${ragAxes.length} axes identifiés: ${ragAxes.join(", ")}`);
-
-    // 3.5. Charger les interprétations IA stockées (Niveau 1)
-    const storedInterpretations = patient.axeInterpretations || [];
-    console.log(`🤖 Interprétations IA stockées: ${storedInterpretations.length} axes interprétés`);
-
-    // Convertir au format attendu par la fusion
-    const interpretationsMap: Record<string, any> = {};
-    storedInterpretations.forEach((interp: any) => {
-      interpretationsMap[interp.axe] = {
-        orientation: interp.orientation,
-        mecanismes: interp.mecanismes as string[],
-        prudences: interp.prudences as string[],
-        modulateurs: interp.modulateurs as string[],
-        resumeClinique: interp.resumeClinique,
-        confiance: interp.confiance,
-      };
-    });
-
-    // 4. FUSION : Interrogatoire + BdF + RAG + Interprétations IA (Niveau 2)
-    if (interrogatoire && clinicalScores) {
-      axesFusionnes = fuseClinicalBdfRag(
-        interrogatoire,
-        clinicalScores,
-        bdfIndexes,
-        ragContext,
-        interpretationsMap // Passer les interprétations IA stockées
-      );
-
-      console.log(`🔀 Fusion complète : ${axesFusionnes.length} axes perturbés fusionnés`);
-      axesFusionnes.forEach(axe => {
-        console.log(`  - ${axe.axe} (${axe.niveau}) : score ${axe.score}/10 | confiance: ${axe.confiance}`);
-        console.log(`    Sources: Clinique=${axe.sources.clinique}, BdF=${axe.sources.bdf}, RAG=${axe.sources.rag}, IA=${axe.sources.ia || false}`);
+    // Phase drainage (si présente)
+    if (prescription.phaseDrainage?.formule) {
+      prescription.phaseDrainage.formule.forEach((p: any, idx: number) => {
+        voletEndobiogenique.push({
+          id: `drainage-${idx}`,
+          substance: p.nomLatin || p.nom,
+          nomFrancais: p.nom,
+          type: "plante",
+          forme: p.forme || "EPS",
+          posologie: p.posologie,
+          duree: prescription.phaseDrainage.duree || "3 semaines",
+          axeCible: "Drainage - " + p.indication,
+          mecanisme: p.indication,
+          priorite: 0,
+        });
       });
-    } else {
-      console.log("⚠️ Pas de fusion possible, fallback vers BdF seule");
+    }
+
+    // Phytothérapie
+    if (scope.planteMedicinale && prescription.phytotherapie) {
+      prescription.phytotherapie.forEach((p: any, idx: number) => {
+        voletEndobiogenique.push({
+          id: `phyto-${idx}`,
+          substance: p.nomLatin || p.nom,
+          nomFrancais: p.nom,
+          type: "plante",
+          forme: p.forme || "EPS",
+          posologie: p.posologie,
+          duree: p.duree,
+          axeCible: p.indication,
+          mecanisme: p.pedagogicalHint || p.indication,
+          priorite: 1,
+        });
+      });
+    }
+
+    // Gemmothérapie
+    if (scope.gemmotherapie && prescription.gemmotherapie) {
+      prescription.gemmotherapie.forEach((g: any, idx: number) => {
+        voletEndobiogenique.push({
+          id: `gemmo-${idx}`,
+          substance: g.nomLatin || g.nom,
+          nomFrancais: g.nom,
+          type: "gemmo",
+          forme: "MG",
+          posologie: g.posologie,
+          duree: g.duree,
+          axeCible: g.indication,
+          mecanisme: g.pedagogicalHint || g.indication,
+          priorite: 1,
+        });
+      });
+    }
+
+    // Aromathérapie
+    if (scope.aromatherapie && prescription.aromatherapie) {
+      prescription.aromatherapie.forEach((a: any, idx: number) => {
+        voletPhytoElargi.push({
+          id: `aroma-${idx}`,
+          substance: a.nomLatin || a.huile,
+          nomFrancais: a.huile,
+          type: "HE",
+          forme: `HE - ${a.voie}`,
+          posologie: a.posologie,
+          duree: a.duree,
+          axeCible: a.indication,
+          mecanisme: a.pedagogicalHint || a.indication,
+          precautions: a.precautions,
+          priorite: 2,
+        });
+      });
+    }
+
+    // Oligo-éléments et supplémentation
+    if (scope.micronutrition) {
+      if (prescription.oligoElements) {
+        prescription.oligoElements.forEach((o: any, idx: number) => {
+          voletComplements.push({
+            id: `oligo-${idx}`,
+            substance: o.element,
+            type: "mineral",
+            forme: o.forme || "gélule",
+            posologie: o.posologie,
+            duree: "3 mois",
+            axeCible: o.indication,
+            priorite: 2,
+          });
+        });
+      }
+
+      // Depuis la spasmophilie
+      if (spasmophilie?.supplementation) {
+        const supp = spasmophilie.supplementation;
+        if (supp.magnesium) {
+          voletComplements.push({
+            id: "spasmophilie-mg",
+            substance: "Magnésium",
+            type: "mineral",
+            forme: supp.magnesium.forme,
+            posologie: supp.magnesium.posologie,
+            duree: supp.magnesium.duree,
+            axeCible: "Terrain spasmophile",
+            priorite: 1,
+          });
+        }
+        if (supp.vitamineD) {
+          voletComplements.push({
+            id: "spasmophilie-vitd",
+            substance: "Vitamine D3",
+            type: "vitamine",
+            forme: supp.vitamineD.forme,
+            posologie: supp.vitamineD.posologie,
+            duree: supp.vitamineD.duree,
+            axeCible: "Terrain spasmophile",
+            priorite: 1,
+          });
+        }
+        if (supp.calcium) {
+          voletComplements.push({
+            id: "spasmophilie-ca",
+            substance: "Calcium",
+            type: "mineral",
+            forme: supp.calcium.forme,
+            posologie: supp.calcium.posologie,
+            duree: supp.calcium.duree,
+            axeCible: "Terrain spasmophile",
+            priorite: 2,
+          });
+        }
+        if (supp.vitamineB6) {
+          voletComplements.push({
+            id: "spasmophilie-b6",
+            substance: "Vitamine B6",
+            type: "vitamine",
+            forme: "gélule",
+            posologie: supp.vitamineB6.posologie,
+            duree: supp.vitamineB6.duree,
+            axeCible: "Terrain spasmophile",
+            priorite: 2,
+          });
+        }
+      }
     }
 
     // ==========================================
-    // RAISONNEMENT THÉRAPEUTIQUE (4 ÉTAPES)
+    // ÉTAPE 3: CONSTRUIRE LA SYNTHÈSE CLINIQUE
     // ==========================================
+    let syntheseClinique = `## Synthèse Clinique Endobiogénique\n\n`;
+    syntheseClinique += `**Terrain**: ${synthesis.terrain?.type} - ${synthesis.terrain?.justification}\n\n`;
+    syntheseClinique += `**Équilibre neuro-végétatif**: ${synthesis.neuroVegetative?.status} (${synthesis.neuroVegetative?.dominance})\n\n`;
 
-    const engine = new TherapeuticReasoningEngine();
-
-    // Si pas de BdF, créer des indexes vides pour le moteur
-    // Le moteur utilisera les axes fusionnés dans tous les cas
-    const finalIndexes = indexes || {
-      indexGenital: { value: null, comment: "" },
-      indexThyroidien: { value: null, comment: "" },
-      gT: { value: null, comment: "" },
-      indexAdaptation: { value: null, comment: "" },
-      indexOestrogenique: { value: null, comment: "" },
-      turnover: { value: null, comment: "" },
-      rendementThyroidien: { value: null, comment: "" },
-      remodelageOsseux: { value: null, comment: "" },
-    };
-
-    const finalInputs = inputs || {} as LabValues;
-
-    if (!indexes || !inputs) {
-      console.log("⚠️ Génération sans BdF - utilisation des axes fusionnés et interprétations IA uniquement");
+    if (drainage?.necessite) {
+      syntheseClinique += `### Drainage\n`;
+      syntheseClinique += `Priorité: ${drainage.priorite} - ${drainage.strategieDrainage}\n\n`;
     }
 
-    const raisonnement = await engine.executeFullReasoning(
-      finalIndexes,
-      finalInputs,
-      body.scope,
-      patientContext,
-      { ragAxes, ragSummary, axesFusionnes } // Passer axes fusionnés
-    );
+    if (spasmophilie && spasmophilie.severite !== 'Absent') {
+      syntheseClinique += `### Spasmophilie\n`;
+      syntheseClinique += `Score: ${spasmophilie.score}/100 - ${spasmophilie.severite}\n`;
+      syntheseClinique += `${spasmophilie.pedagogicalHint}\n\n`;
+    }
 
-    console.log(`✅ Raisonnement terminé : ${raisonnement.axesPerturbés.length} axes perturbés, ${raisonnement.recommandationsEndobiogenie.length} recommandations endobiogénie`);
+    syntheseClinique += `### Stratégie thérapeutique\n`;
+    if (synthesis.therapeuticStrategy?.priorites) {
+      synthesis.therapeuticStrategy.priorites.forEach((p: string) => {
+        syntheseClinique += `- ${p}\n`;
+      });
+    }
 
-    // ==========================================
-    // SYNTHÈSE CLINIQUE OPTIMISÉE (API directe)
-    // ==========================================
-    console.log("📝 Génération synthèse clinique optimisée...");
-
-    const { generateClinicalSynthesis } = await import("@/lib/ordonnance/openaiDirect");
-
-    const allRecommendations = [
-      ...raisonnement.recommandationsEndobiogenie,
-      ...raisonnement.recommandationsElargies,
-      ...raisonnement.recommandationsMicronutrition,
+    // Conseils
+    const conseilsAssocies = [
+      ...(prescription.conseilsHygiene || []),
+      ...(prescription.conseilsAlimentaires || []),
+      ...(spasmophilie?.conseilsSpecifiques || []),
     ];
 
-    let syntheseClinique = raisonnement.raisonnementDetaille;
-
-    try {
-      // Utiliser les axes fusionnés si disponibles, sinon fallback vers axes BdF
-      const axesForSynthesis = axesFusionnes.length > 0 ? axesFusionnes : raisonnement.axesPerturbés;
-
-      // VALIDATION CRITIQUE: Ne générer de synthèse QUE s'il y a des axes perturbés
-      if (axesForSynthesis.length === 0) {
-        console.log("⚠️ Aucun axe perturbé détecté - synthèse vide");
-        syntheseClinique = "Aucune perturbation significative détectée. L'interrogatoire et/ou l'analyse biologique ne révèlent pas de déséquilibre nécessitant une intervention thérapeutique à ce stade.";
-      } else {
-        // Ajouter un préfixe explicatif si fusion utilisée
-        let contexteSynthese = "";
-        if (axesFusionnes.length > 0) {
-          const bdfDate = bdfAnalysis ? new Date(bdfAnalysis.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "";
-          contexteSynthese = `[ANALYSE INTÉGRÉE]\nCette ordonnance est basée sur une analyse fusionnée combinant :\n- Interrogatoire clinique endobiogénique (${interrogatoire ? '✓' : '✗'})\n- Biologie de fonction (BdF) ${bdfAnalysis ? `du ${bdfDate} ✓` : '✗'}\n- Enrichissement RAG endobiogénie (${ragAxes.length > 0 ? '✓' : '✗'})\n\n`;
-        }
-
-        const synthese = await generateClinicalSynthesis(
-          axesForSynthesis as any,
-          patientContext,
-          allRecommendations
-        );
-
-        syntheseClinique = contexteSynthese + synthese;
-        console.log("✅ Synthèse clinique fusionnée générée via API directe");
-      }
-    } catch (error) {
-      console.error("⚠️ Erreur synthèse clinique, fallback vers basique:", error);
-      // Garder la synthèse de base si erreur
-    }
+    // Surveillance
+    const surveillanceBiologique = synthesis.warnings || [];
 
     // ==========================================
-    // STRUCTURATION ORDONNANCE SELON SCOPE
+    // ÉTAPE 4: SAUVEGARDER L'ORDONNANCE
     // ==========================================
+    console.log("\n💾 Sauvegarde en base de données...");
+
+    const derniereBdf = patient.bdfAnalyses[0];
     const ordonnanceId = uuidv4();
 
-    // Construire les volets en fonction du scope sélectionné
-    // Logique: Toujours VOLET 1 Endobiogénie, puis volets selon scope, puis optionnellement micro-nutrition
-
-    let voletEndobiogenique = raisonnement.recommandationsEndobiogenie;
-    let voletPhytoElargi: RecommandationTherapeutique[] = [];
-    let voletComplements = raisonnement.recommandationsMicronutrition;
-
-    // Si AUCUN scope élargi n'est sélectionné → 3 volets classiques
-    const hasExtendedScope = body.scope.planteMedicinale || body.scope.gemmotherapie || body.scope.aromatherapie;
-
-    if (hasExtendedScope) {
-      // Utiliser les recommandations élargies obtenues depuis les vectorstores
-      // DÉDUPLICATION: Enlever du volet phyto élargi les plantes déjà présentes dans le volet endobiogénie
-      const substancesEndobiogenie = new Set(
-        voletEndobiogenique.map(r => r.substance.toLowerCase().trim())
-      );
-
-      voletPhytoElargi = raisonnement.recommandationsElargies.filter(rec => {
-        const substanceName = rec.substance.toLowerCase().trim();
-        const isDuplicate = substancesEndobiogenie.has(substanceName);
-
-        if (isDuplicate) {
-          console.log(`🔄 Déduplication: "${rec.substance}" déjà dans volet endobiogénie, retiré du volet phyto`);
-        }
-
-        return !isDuplicate;
-      });
-
-      console.log(`✅ Déduplication: ${raisonnement.recommandationsElargies.length - voletPhytoElargi.length} doublons retirés`);
-    } else {
-      // Pas de scope élargi → volet phyto vide
-      voletPhytoElargi = [];
-    }
-
-    const ordonnance: OrdonnanceStructuree = {
-      id: ordonnanceId,
-      patientId: patient.id,
-      bdfAnalysisId: bdfAnalysis?.id || undefined,
-
-      // VOLET 1 : Endobiogénie canon
-      voletEndobiogenique,
-
-      // VOLET 2 : Phyto/Gemmo/Aroma élargi (selon scope)
-      voletPhytoElargi,
-
-      // VOLET 3 : Micro-nutrition
-      voletComplements,
-
-      // Scope utilisé (pour affichage dynamique des titres)
-      scope: body.scope,
-
-      // Métadonnées
-      syntheseClinique,
-      conseilsAssocies: [
-        "Maintenir une alimentation équilibrée",
-        "Respecter les horaires de prise",
-        "Signaler tout effet indésirable",
-      ],
-      surveillanceBiologique: [],
-      dateRevaluation: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000), // +3 semaines
-
-      statut: "brouillon",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    // ==========================================
-    // SAUVEGARDE EN BASE DE DONNÉES
-    // ==========================================
-    await prisma.ordonnance.create({
+    const ordonnance = await prisma.ordonnance.create({
       data: {
-        id: ordonnance.id,
-        patientId: ordonnance.patientId,
-        bdfAnalysisId: ordonnance.bdfAnalysisId || null,
-        voletEndobiogenique: ordonnance.voletEndobiogenique as any,
-        voletPhytoElargi: ordonnance.voletPhytoElargi as any,
-        voletComplements: ordonnance.voletComplements as any,
-        scope: ordonnance.scope as any,
-        syntheseClinique: ordonnance.syntheseClinique,
-        conseilsAssocies: ordonnance.conseilsAssocies,
-        surveillanceBiologique: ordonnance.surveillanceBiologique,
-        dateRevaluation: ordonnance.dateRevaluation || null,
-        statut: ordonnance.statut,
-        createdAt: ordonnance.createdAt,
-        updatedAt: ordonnance.updatedAt,
+        id: ordonnanceId,
+        patientId: patient.id,
+        bdfAnalysisId: derniereBdf?.id || null,
+
+        voletEndobiogenique,
+        voletPhytoElargi,
+        voletComplements,
+
+        scope: scope,
+        syntheseClinique,
+        conseilsAssocies,
+        surveillanceBiologique,
+
+        statut: "brouillon",
       },
     });
 
-    console.log(`💾 Ordonnance sauvegardée : ${ordonnanceId}`);
+    console.log("✅ Ordonnance créée:", ordonnance.id);
 
     // ==========================================
-    // RÉPONSE
+    // ÉTAPE 5: CONSTRUIRE LA RÉPONSE
     // ==========================================
+    const axesPerturbés = synthesis.endocrineAxes
+      ?.filter((a: any) => a.status !== 'Normo')
+      .map((a: any) => ({
+        axe: a.axis.toLowerCase(),
+        niveau: a.status.toLowerCase(),
+        score: 7,
+        justification: a.mechanism,
+      })) || [];
+
+    if (drainage?.necessite) {
+      axesPerturbés.unshift({
+        axe: "drainage",
+        niveau: drainage.priorite,
+        score: 8,
+        justification: drainage.strategieDrainage,
+      });
+    }
+
+    if (spasmophilie && spasmophilie.severite !== 'Absent') {
+      axesPerturbés.push({
+        axe: "spasmophilie",
+        niveau: spasmophilie.severite.toLowerCase(),
+        score: Math.round(spasmophilie.score / 10),
+        justification: spasmophilie.pedagogicalHint,
+      });
+    }
+
+    console.log("\n═══════════════════════════════════════════════════════");
+    console.log("📋 RÉSULTATS");
+    console.log("═══════════════════════════════════════════════════════");
+    console.log(`Volet Endobiogénique: ${voletEndobiogenique.length} recommandations`);
+    console.log(`Volet Phyto élargi: ${voletPhytoElargi.length} recommandations`);
+    console.log(`Volet Compléments: ${voletComplements.length} recommandations`);
+    console.log(`Conseils: ${conseilsAssocies.length}`);
+
     return NextResponse.json(
       {
         success: true,
-        ordonnance,
-        alertes: raisonnement.alertes,
-        coutEstime: raisonnement.coutEstime,
+        ordonnance: {
+          id: ordonnance.id,
+          patientId: ordonnance.patientId,
+          bdfAnalysisId: ordonnance.bdfAnalysisId,
+          voletEndobiogenique: ordonnance.voletEndobiogenique,
+          voletPhytoElargi: ordonnance.voletPhytoElargi,
+          voletComplements: ordonnance.voletComplements,
+          scope: ordonnance.scope,
+          syntheseClinique: ordonnance.syntheseClinique,
+          conseilsAssocies: ordonnance.conseilsAssocies,
+          surveillanceBiologique: ordonnance.surveillanceBiologique,
+          statut: ordonnance.statut,
+          createdAt: ordonnance.createdAt.toISOString(),
+        },
+        alertes: synthesis.warnings?.map((w: string) => ({
+          niveau: "info",
+          type: "terrain",
+          message: w,
+        })) || [],
+        raisonnement: {
+          axesPerturbés,
+          terrain: synthesis.terrain,
+          drainage: drainage,
+          spasmophilie: spasmophilie,
+        },
         sourcesUtilisees: {
-          interrogatoire: !!interrogatoire,
-          bdf: !!bdfAnalysis,
-          bdfDate: bdfAnalysis?.date || null,
-          bdfId: bdfAnalysis?.id || null,
-          interpretationsIA: storedInterpretations.length,
-          rag: ragAxes.length > 0,
+          syntheseIA: true,
+          bdf: !!derniereBdf,
+          bdfDate: derniereBdf?.date || null,
         },
       },
       { status: 201 }

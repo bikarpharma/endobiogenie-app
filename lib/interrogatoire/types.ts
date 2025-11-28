@@ -19,6 +19,9 @@ export interface QuestionConfig {
   weight?: number; // Poids de la question (1-3) pour le calcul du score
   tags?: string[]; // Tags pour catégoriser (ex: ["hypo_global", "hypo_metabolisme"])
   scoreDirection?: "hypo" | "hyper" | "neutral"; // Direction du score
+
+  // ===== PRIORISATION =====
+  priority?: 1 | 2 | 3; // 1=Essentiel (mode rapide), 2=Important (mode standard), 3=Optionnel (mode complet)
 }
 
 // ---------------------------------------------------------------------------

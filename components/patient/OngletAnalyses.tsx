@@ -1,12 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-type BdfIndex = {
-  name: string;
-  value: number | null;
-  comment: string;
-};
+import BdfResultsView from "@/components/bdf/BdfResultsView";
+import type { BdfResult } from "@/lib/bdf/calculateIndexes";
 
 export function OngletAnalyses({ patient }: { patient: any }) {
   const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
@@ -77,8 +73,7 @@ export function OngletAnalyses({ patient }: { patient: any }) {
 
             {/* Lignes */}
             {patient.bdfAnalyses.map((analysis: any) => {
-              const indexes = analysis.indexes as BdfIndex[];
-              const firstLine = analysis.summary.split("\n")[0];
+              const firstLine = analysis.summary?.split("\n")[0] || "Analyse BdF";
 
               return (
                 <div
@@ -197,111 +192,46 @@ export function OngletAnalyses({ patient }: { patient: any }) {
             </div>
           </div>
 
-          {/* Index BdF */}
-          <div style={{ marginBottom: "32px" }}>
-            <h4
-              style={{
-                fontSize: "0.95rem",
-                fontWeight: "600",
-                color: "#1f2937",
-                marginBottom: "12px",
-              }}
-            >
-              📊 Index BdF calculés
-            </h4>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: "16px",
-              }}
-            >
-              {Object.entries(selectedAnalysis.indexes as Record<string, any>).map(([name, data], idx) => {
-                const index = { name, ...data };
-                const colors: Record<string, { bg: string; border: string; text: string }> = {
-                  "Index génital": { bg: "#fef3c7", border: "#fbbf24", text: "#78350f" },
-                  "Index thyroïdien": { bg: "#dbeafe", border: "#3b82f6", text: "#1e40af" },
-                  "g/T": { bg: "#fce7f3", border: "#ec4899", text: "#9f1239" },
-                  "Index adaptation": { bg: "#d1fae5", border: "#10b981", text: "#065f46" },
-                  "Index œstrogénique": { bg: "#e0e7ff", border: "#6366f1", text: "#3730a3" },
-                  Turnover: { bg: "#fef3c7", border: "#eab308", text: "#854d0e" },
-                  "Rendement thyroïdien": { bg: "#ccfbf1", border: "#14b8a6", text: "#115e59" },
-                  "Remodelage osseux": { bg: "#fed7aa", border: "#f97316", text: "#9a3412" },
-                };
-
-                const color = colors[index.name] || {
-                  bg: "#f3f4f6",
-                  border: "#9ca3af",
-                  text: "#374151",
-                };
-
-                return (
-                  <div
-                    key={idx}
-                    style={{
-                      background: color.bg,
-                      padding: "16px",
-                      borderRadius: "10px",
-                      border: `2px solid ${color.border}`,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        fontWeight: "700",
-                        color: color.text,
-                        marginBottom: "8px",
-                      }}
-                    >
-                      {index.name}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "1.5rem",
-                        fontWeight: "700",
-                        color: color.text,
-                        marginBottom: "4px",
-                      }}
-                    >
-                      {index.value !== null ? index.value.toFixed(2) : "N/A"}
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: color.text, lineHeight: "1.3" }}>
-                      {index.comment}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          {/* Affichage des 7 panels endobiogéniques avec BdfResultsView */}
+          <BdfResultsView
+            result={{
+              indexes: selectedAnalysis.indexes,
+              metadata: {
+                calculatedAt: new Date(selectedAnalysis.createdAt),
+                biomarkersCount: Object.keys(selectedAnalysis.inputs as Record<string, any>).length,
+              },
+            } as BdfResult}
+          />
 
           {/* Résumé fonctionnel */}
-          <div style={{ marginBottom: "32px" }}>
-            <h4
-              style={{
-                fontSize: "0.95rem",
-                fontWeight: "600",
-                color: "#1f2937",
-                marginBottom: "12px",
-              }}
-            >
-              🔬 Résumé fonctionnel
-            </h4>
-            <div
-              style={{
-                background: "#f0f9ff",
-                padding: "20px",
-                borderRadius: "10px",
-                border: "2px solid #0ea5e9",
-                fontSize: "0.9rem",
-                color: "#0c4a6e",
-                lineHeight: "1.8",
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {selectedAnalysis.summary}
+          {selectedAnalysis.summary && (
+            <div style={{ marginTop: "32px", marginBottom: "32px" }}>
+              <h4
+                style={{
+                  fontSize: "0.95rem",
+                  fontWeight: "600",
+                  color: "#1f2937",
+                  marginBottom: "12px",
+                }}
+              >
+                🔬 Résumé fonctionnel
+              </h4>
+              <div
+                style={{
+                  background: "#f0f9ff",
+                  padding: "20px",
+                  borderRadius: "10px",
+                  border: "2px solid #0ea5e9",
+                  fontSize: "0.9rem",
+                  color: "#0c4a6e",
+                  lineHeight: "1.8",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {selectedAnalysis.summary}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Axes sollicités */}
           {selectedAnalysis.axes &&

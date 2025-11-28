@@ -6,6 +6,7 @@ import { BdfIndexes } from "@/lib/bdf/calculateIndexes";
 interface BodyMapProps {
   scores: Record<string, number>;
   bdf: BdfIndexes;
+  highlightedOrgan?: string | null;
 }
 
 interface OrganState {
@@ -15,7 +16,7 @@ interface OrganState {
   glow: string;
 }
 
-export default function BodyMap({ scores, bdf }: BodyMapProps) {
+export default function BodyMap({ scores, bdf, highlightedOrgan }: BodyMapProps) {
   const [hoveredOrgan, setHoveredOrgan] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
@@ -159,6 +160,35 @@ export default function BodyMap({ scores, bdf }: BodyMapProps) {
     });
   };
 
+  // Helper pour vérifier si un organe doit être surligné
+  const isOrganHighlighted = (organId: string): boolean => {
+    if (!highlightedOrgan) return false;
+
+    // Normalisation des noms pour le matching
+    const normalizedHighlight = highlightedOrgan.toLowerCase().trim();
+    const normalizedOrgan = organId.toLowerCase().trim();
+
+    // Mapping des IDs possibles
+    const organMappings: Record<string, string[]> = {
+      foie: ["foie", "liver"],
+      surrénales: ["surrenales", "surrénales", "adrenal"],
+      intestins: ["intestins", "intestin", "intestines"],
+      cœur: ["cœur", "coeur", "heart", "cardiac"],
+      thyroïde: ["thyroïde", "thyroide", "thyroid"],
+      cerveau: ["cerveau", "brain"],
+      gonades: ["gonades", "gonadal"],
+    };
+
+    // Vérifier si l'organe correspond
+    for (const [key, variations] of Object.entries(organMappings)) {
+      if (variations.includes(normalizedHighlight) && variations.includes(normalizedOrgan)) {
+        return true;
+      }
+    }
+
+    return normalizedHighlight === normalizedOrgan;
+  };
+
   // --- DONNÉES DES ORGANES ---
   const organs = [
     { id: "Cerveau", cx: 150, cy: 50, r: 18, shape: "circle" },
@@ -235,6 +265,7 @@ export default function BodyMap({ scores, bdf }: BodyMapProps) {
         {organs.map((organ, idx) => {
           const state = getOrganState(organ.id);
           const isHovered = hoveredOrgan === organ.id;
+          const isHighlighted = isOrganHighlighted(organ.id);
 
           // Gestion des shapes multiples
           if (organ.shape === "circle" || organ.shape === "circle-left" || organ.shape === "circle-right") {
@@ -245,12 +276,16 @@ export default function BodyMap({ scores, bdf }: BodyMapProps) {
                 cy={organ.cy}
                 r={organ.r}
                 fill={state.color}
-                fillOpacity={isHovered ? 0.9 : 0.7}
-                stroke={state.color}
-                strokeWidth={isHovered ? 3 : 2}
+                fillOpacity={isHovered || isHighlighted ? 1 : 0.7}
+                stroke={isHighlighted ? "#ffffff" : state.color}
+                strokeWidth={isHovered || isHighlighted ? 4 : 2}
                 filter="url(#glow)"
-                style={{ filter: state.glow }}
-                className={`cursor-pointer transition-all duration-300 ${state.pulse ? "animate-pulse" : ""}`}
+                style={{
+                  filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
+                  transform: isHighlighted ? "scale(1.1)" : "scale(1)",
+                  transformOrigin: "center"
+                }}
+                className={`cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`}
                 onMouseEnter={(e) => handleOrganHover(organ.id, e)}
                 onMouseLeave={() => setHoveredOrgan(null)}
               />
@@ -266,12 +301,16 @@ export default function BodyMap({ scores, bdf }: BodyMapProps) {
                 rx={organ.rx}
                 ry={organ.ry}
                 fill={state.color}
-                fillOpacity={isHovered ? 0.9 : 0.7}
-                stroke={state.color}
-                strokeWidth={isHovered ? 3 : 2}
+                fillOpacity={isHovered || isHighlighted ? 1 : 0.7}
+                stroke={isHighlighted ? "#ffffff" : state.color}
+                strokeWidth={isHovered || isHighlighted ? 4 : 2}
                 filter="url(#glow)"
-                style={{ filter: state.glow }}
-                className={`cursor-pointer transition-all duration-300 ${state.pulse ? "animate-pulse" : ""}`}
+                style={{
+                  filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
+                  transform: isHighlighted ? "scale(1.1)" : "scale(1)",
+                  transformOrigin: "center"
+                }}
+                className={`cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`}
                 onMouseEnter={(e) => handleOrganHover(organ.id, e)}
                 onMouseLeave={() => setHoveredOrgan(null)}
               />
@@ -284,12 +323,16 @@ export default function BodyMap({ scores, bdf }: BodyMapProps) {
                 key={`${organ.id}-${idx}`}
                 d="M150,190 C150,175 135,165 125,165 C115,165 105,175 105,185 C105,200 150,215 150,215 C150,215 195,200 195,185 C195,175 185,165 175,165 C165,165 150,175 150,190 Z"
                 fill={state.color}
-                fillOpacity={isHovered ? 0.9 : 0.7}
-                stroke={state.color}
-                strokeWidth={isHovered ? 3 : 2}
+                fillOpacity={isHovered || isHighlighted ? 1 : 0.7}
+                stroke={isHighlighted ? "#ffffff" : state.color}
+                strokeWidth={isHovered || isHighlighted ? 4 : 2}
                 filter="url(#glow)"
-                style={{ filter: state.glow }}
-                className={`cursor-pointer transition-all duration-300 ${state.pulse ? "animate-pulse" : ""}`}
+                style={{
+                  filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
+                  transform: isHighlighted ? "scale(1.1)" : "scale(1)",
+                  transformOrigin: "center"
+                }}
+                className={`cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`}
                 onMouseEnter={(e) => handleOrganHover(organ.id, e)}
                 onMouseLeave={() => setHoveredOrgan(null)}
               />
@@ -302,12 +345,16 @@ export default function BodyMap({ scores, bdf }: BodyMapProps) {
                 key={`${organ.id}-${idx}`}
                 points={organ.points}
                 fill={state.color}
-                fillOpacity={isHovered ? 0.9 : 0.7}
-                stroke={state.color}
-                strokeWidth={isHovered ? 3 : 2}
+                fillOpacity={isHovered || isHighlighted ? 1 : 0.7}
+                stroke={isHighlighted ? "#ffffff" : state.color}
+                strokeWidth={isHovered || isHighlighted ? 4 : 2}
                 filter="url(#glow)"
-                style={{ filter: state.glow }}
-                className={`cursor-pointer transition-all duration-300 ${state.pulse ? "animate-pulse" : ""}`}
+                style={{
+                  filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
+                  transform: isHighlighted ? "scale(1.1)" : "scale(1)",
+                  transformOrigin: "center"
+                }}
+                className={`cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`}
                 onMouseEnter={(e) => handleOrganHover(organ.id, e)}
                 onMouseLeave={() => setHoveredOrgan(null)}
               />
@@ -321,12 +368,16 @@ export default function BodyMap({ scores, bdf }: BodyMapProps) {
                 key={`${organ.id}-${idx}`}
                 d="M130,300 Q120,320 130,340 T150,360 T170,340 Q180,320 170,300 Z"
                 fill={state.color}
-                fillOpacity={isHovered ? 0.9 : 0.7}
-                stroke={state.color}
-                strokeWidth={isHovered ? 3 : 2}
+                fillOpacity={isHovered || isHighlighted ? 1 : 0.7}
+                stroke={isHighlighted ? "#ffffff" : state.color}
+                strokeWidth={isHovered || isHighlighted ? 4 : 2}
                 filter="url(#glow)"
-                style={{ filter: state.glow }}
-                className={`cursor-pointer transition-all duration-300 ${state.pulse ? "animate-pulse" : ""}`}
+                style={{
+                  filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
+                  transform: isHighlighted ? "scale(1.1)" : "scale(1)",
+                  transformOrigin: "center"
+                }}
+                className={`cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`}
                 onMouseEnter={(e) => handleOrganHover(organ.id, e)}
                 onMouseLeave={() => setHoveredOrgan(null)}
               />

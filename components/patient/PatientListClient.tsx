@@ -36,12 +36,6 @@ export function PatientListClient({ patients }: { patients: PatientData[] }) {
     try {
       const response = await fetch(`/api/patients/${deleteModal.patient.id}?permanent=true`, {
         method: "DELETE",
-        headers: {
-          "x-user-id": document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("userId="))
-            ?.split("=")[1] || "",
-        },
       });
 
       if (response.ok) {

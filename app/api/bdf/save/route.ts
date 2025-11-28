@@ -70,10 +70,11 @@ export async function POST(req: Request) {
       : "Analyse BdF : Tous les index dans les normes.";
 
     // 8. Créer l'analyse BdF en base
+    const analysisDate = date ? new Date(date) : new Date();
     const bdfAnalysis = await prisma.bdfAnalysis.create({
       data: {
         patientId,
-        date: date ? new Date(date) : new Date(),
+        date: analysisDate,
         inputs: inputs,
         indexes: bdfResult.indexes,
         summary: summary,
@@ -81,7 +82,22 @@ export async function POST(req: Request) {
       }
     });
 
-    // 9. Retourner le résultat
+    // 9. Créer automatiquement une consultation associée
+    await prisma.consultation.create({
+      data: {
+        patientId,
+        dateConsultation: analysisDate,
+        type: "suivi",
+        motifConsultation: "Analyse BdF",
+        bdfAnalysisId: bdfAnalysis.id,
+        inputs: inputs,
+        indexes: bdfResult.indexes,
+        summary: summary,
+        axes: axesSollicites,
+      }
+    });
+
+    // 10. Retourner le résultat
     return NextResponse.json({
       success: true,
       analysisId: bdfAnalysis.id,

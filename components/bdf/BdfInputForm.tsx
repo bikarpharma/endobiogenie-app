@@ -1,6 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { BIOMARKERS } from "@/lib/bdf/biomarkers/biomarkers.config";
 import { calculateAllIndexes } from "@/lib/bdf/calculateIndexes";
 import { useState } from "react";
@@ -63,7 +64,8 @@ interface BdfInputFormProps {
 }
 
 export default function BdfInputForm({ patientId }: BdfInputFormProps = {}) {
-  const { register, handleSubmit, reset } = useForm();
+  const router = useRouter();
+  const { register, handleSubmit, reset, getValues } = useForm();
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -87,36 +89,6 @@ export default function BdfInputForm({ patientId }: BdfInputFormProps = {}) {
     // Ajouter les inputs bruts au résultat pour l'affichage
     setResults({ ...res, inputs: cleanData });
     setLoading(false);
-
-    // ✅ SAUVEGARDE AUTOMATIQUE si patientId fourni
-    if (patientId) {
-      setSaving(true);
-      try {
-        const response = await fetch('/api/bdf/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            patientId,
-            inputs: cleanData,
-            date: new Date().toISOString()
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error('Erreur lors de la sauvegarde');
-        }
-
-        const result = await response.json();
-        setSaveMessage({
-          type: 'success',
-          text: `✅ Analyse BdF sauvegardée automatiquement (${result.indexCount} index calculés, ${result.abnormalIndexCount} hors normes)`
-        });
-      } catch (error) {
-        setSaveMessage({ type: 'error', text: '⚠️ Erreur lors de la sauvegarde automatique.' });
-      } finally {
-        setSaving(false);
-      }
-    }
   };
 
   const loadTestCase = (caseKey: keyof typeof TEST_CASES) => {
@@ -125,14 +97,66 @@ export default function BdfInputForm({ patientId }: BdfInputFormProps = {}) {
     setSaveMessage(null);
   };
 
+  // Sauvegarde manuelle
+  const handleSave = async () => {
+    if (!patientId || !results) return;
+
+    setSaving(true);
+    setSaveMessage(null);
+
+    try {
+      const response = await fetch('/api/bdf/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId,
+          inputs: results.inputs,
+          date: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la sauvegarde');
+      }
+
+      const result = await response.json();
+      setSaveMessage({
+        type: 'success',
+        text: `Analyse BdF sauvegardee (${result.indexCount} index calcules, ${result.abnormalIndexCount} hors normes)`
+      });
+    } catch (error) {
+      setSaveMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Retour vers la fiche patient
+  const handleBack = () => {
+    if (patientId) {
+      router.push(`/patients/${patientId}`);
+    } else {
+      router.back();
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6">
+      {/* Bouton Retour */}
+      <button
+        type="button"
+        onClick={handleBack}
+        className="mb-6 flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors"
+      >
+        <span>&larr;</span> Retour
+      </button>
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">
           Analyse Biologique Fonctionnelle (BdF)
         </h1>
         <p className="text-slate-600">
-          Saisissez les valeurs biologiques pour générer l'analyse endobiogénique
+          Saisissez les valeurs biologiques pour générer l'analyse endobiogenique
         </p>
       </div>
 
@@ -203,14 +227,26 @@ export default function BdfInputForm({ patientId }: BdfInputFormProps = {}) {
         </div>
 
         {/* BOUTONS D'ACTION */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap">
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 min-w-[200px] bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'CALCUL EN COURS...' : saving ? 'CALCUL & SAUVEGARDE...' : 'CALCULER LES INDEX 🧬'}
+            {loading ? 'CALCUL EN COURS...' : 'CALCULER LES INDEX'}
           </button>
+
+          {/* Bouton Sauvegarder - visible uniquement si patientId et résultats */}
+          {patientId && results && (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="min-w-[200px] bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'SAUVEGARDE...' : 'SAUVEGARDER'}
+            </button>
+          )}
         </div>
 
         {/* Message de sauvegarde */}
@@ -227,18 +263,6 @@ export default function BdfInputForm({ patientId }: BdfInputFormProps = {}) {
 
       {/* AFFICHAGE DES RÉSULTATS AVEC LES 7 PANELS */}
       <BdfResultsView result={results} />
-
-      {/* JSON brut (pour debug technique) - Accordéon replié */}
-      {results && (
-        <details className="mt-6 bg-slate-900 text-green-400 rounded-xl overflow-auto">
-          <summary className="cursor-pointer p-4 text-white font-mono text-sm hover:bg-slate-800 transition">
-            🔍 Voir le JSON brut (Debug technique)
-          </summary>
-          <pre className="p-6 text-xs overflow-auto">
-            {JSON.stringify(results, null, 2)}
-          </pre>
-        </details>
-      )}
     </div>
   );
 }

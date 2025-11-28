@@ -139,7 +139,7 @@ export function calculateIndexes(lab: LabValues): IndexResults {
     indexGenital: {
       value: result.indexes["idx_genital"]?.value ?? null,
       comment: result.indexes["idx_genital"]?.value !== null
-        ? "Calculé avec formule endobiogénique (NEUT/LYMPH)"
+        ? "Calculé avec formule endobiogénique (GR/GB)"
         : "Données insuffisantes"
     },
     indexThyroidien: {

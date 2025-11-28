@@ -110,20 +110,30 @@ export function OrdonnancePanel({ ordonnance, loading }: OrdonnancePanelProps) {
       {/* Contenu des Volets */}
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
 
-        <VoletSection
-          title="VOLET 1 - ENDOBIOGÉNIE (Canon)"
-          emoji="🛡️"
-          color="#059669"
-          recommendations={ordonnance.voletEndobiogenique}
-          expanded={expandedSections.volet1}
-          onToggle={() => toggleSection("volet1")}
-          description="Traitement de fond des déséquilibres neuro-endocriniens majeurs"
-          badge="Priorité Absolue"
-        />
-
-        {/* VOLET 2 - PHYTOTHÉRAPIE: Filtrer par type 'plante' */}
+        {/* VOLET 1 - ENDOBIOGÉNIE: Uniquement type='plante' (drainage + phyto axe) */}
         {(() => {
-          const phytoRecommendations = ordonnance.voletPhytoElargi?.filter(rec => rec.type === 'plante') || [];
+          // Filtrer pour n'afficher que les plantes (pas gemmo qui a son propre volet)
+          const endoPlantes = ordonnance.voletEndobiogenique?.filter(rec => rec.type === 'plante') || [];
+          return (
+            <VoletSection
+              title="VOLET 1 - ENDOBIOGÉNIE (Canon)"
+              emoji="🛡️"
+              color="#059669"
+              recommendations={endoPlantes}
+              expanded={expandedSections.volet1}
+              onToggle={() => toggleSection("volet1")}
+              description="Traitement de fond des déséquilibres neuro-endocriniens majeurs"
+              badge="Priorité Absolue"
+            />
+          );
+        })()}
+
+        {/* VOLET 2 - PHYTOTHÉRAPIE: Filtrer par type 'plante' dans les DEUX volets */}
+        {(() => {
+          // Chercher dans voletEndobiogenique ET voletPhytoElargi
+          const phytoFromEndo = ordonnance.voletEndobiogenique?.filter(rec => rec.type === 'plante') || [];
+          const phytoFromElargi = ordonnance.voletPhytoElargi?.filter(rec => rec.type === 'plante') || [];
+          const phytoRecommendations = [...phytoFromElargi]; // Phyto élargi = hors volet 1
           return phytoRecommendations.length > 0 && (
             <VoletSection
               title="VOLET 2 - PHYTOTHÉRAPIE ÉLARGIE"
@@ -138,9 +148,12 @@ export function OrdonnancePanel({ ordonnance, loading }: OrdonnancePanelProps) {
           );
         })()}
 
-        {/* VOLET 3 - GEMMOTHÉRAPIE: Filtrer par type 'gemmo' */}
+        {/* VOLET 3 - GEMMOTHÉRAPIE: Chercher dans voletEndobiogenique (où l'API les stocke) */}
         {(() => {
-          const gemmoRecommendations = ordonnance.voletPhytoElargi?.filter(rec => rec.type === 'gemmo') || [];
+          // Bug fix: L'API stocke gemmo dans voletEndobiogenique avec type='gemmo'
+          const gemmoFromEndo = ordonnance.voletEndobiogenique?.filter(rec => rec.type === 'gemmo') || [];
+          const gemmoFromElargi = ordonnance.voletPhytoElargi?.filter(rec => rec.type === 'gemmo') || [];
+          const gemmoRecommendations = [...gemmoFromEndo, ...gemmoFromElargi];
           return gemmoRecommendations.length > 0 && (
             <VoletSection
               title="VOLET 3 - GEMMOTHÉRAPIE"
@@ -276,8 +289,15 @@ function RecommandationCard({ recommendation, index, color }: { recommendation: 
             {/* Numéro */}
             <span style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#e5e7eb", color: "#6b7280", fontSize: "0.7rem", fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "center" }}>{index + 1}</span>
 
-            {/* Nom Substance */}
-            <h4 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#1f2937", margin: 0 }}>{recommendation.substance}</h4>
+            {/* Nom Substance - Afficher nom français si disponible */}
+            <h4 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#1f2937", margin: 0 }}>
+              {recommendation.nomFrancais || recommendation.substance}
+              {recommendation.nomFrancais && (
+                <span style={{ fontSize: "0.75rem", fontWeight: "400", color: "#6b7280", marginLeft: "8px", fontStyle: "italic" }}>
+                  ({recommendation.substance})
+                </span>
+              )}
+            </h4>
 
             {/* Forme Galénique */}
             <span style={{ fontSize: "0.75rem", padding: "2px 8px", background: "#f3f4f6", borderRadius: "4px", color: "#4b5563", fontWeight: "500" }}>{recommendation.forme}</span>

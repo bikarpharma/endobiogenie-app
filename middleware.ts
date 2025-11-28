@@ -12,6 +12,16 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isAuth = !!req.auth; // true si connecté
 
+  // --- DÉBUT SONDE DIAGNOSTIQUE MIDDLEWARE ---
+  if (pathname.startsWith("/api/patients")) {
+    console.log("🔍 MIDDLEWARE - API Patients appelé");
+    console.log("- Path:", pathname);
+    console.log("- Auth présente:", isAuth);
+    console.log("- Session complète:", req.auth);
+    console.log("- User ID:", req.auth?.user?.id);
+  }
+  // --- FIN SONDE DIAGNOSTIQUE ---
+
   // ===== ROUTES PUBLIQUES =====
   const publicPaths = ["/", "/login", "/register", "/api/auth"];
   const isPublic = publicPaths.some((path) => pathname.startsWith(path));
@@ -43,5 +53,14 @@ export default auth((req) => {
 
 // ===== CONFIGURATION STRICTE =====
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
+  matcher: [
+    /*
+     * Match toutes les routes SAUF:
+     * - _next/static (fichiers statiques)
+     * - _next/image (optimisation d'images)
+     * - favicon.ico, fichiers .png
+     * - api/auth/* (NextAuth routes publiques)
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)",
+  ],
 };

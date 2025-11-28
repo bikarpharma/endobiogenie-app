@@ -123,7 +123,7 @@ model Message {
 // Table "patients" : dossiers patients
 model Patient {
   id     String @id @default(cuid())
-  userId String // Praticien propriétaire
+  userId String? // Praticien propriétaire (optionnel)
 
   // Informations patient
   numeroPatient String    @unique // PAT-001, PAT-002, etc.
@@ -165,14 +165,14 @@ model Patient {
   archivedAt DateTime?
 
   // Relations
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   consultations   Consultation[]
   bdfAnalyses        BdfAnalysis[]
   anthropometries    Anthropometrie[]
   ordonnances        Ordonnance[]
   ordonnanceChats    OrdonnanceChat[]
   axeInterpretations AxeInterpretation[]
-  syntheseGlobale    SyntheseGlobale[]
+  syntheseGlobale    UnifiedSynthesis[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -345,28 +345,31 @@ model AxeInterpretation {
 }
 
 // Table "synthese_globale" : synthèse transversale de tous les axes endobiogéniques
-model SyntheseGlobale {
+model UnifiedSynthesis {
   id        String @id @default(cuid())
   patientId String
 
-  // === SYNTHÈSE ENDOBIOGÉNIQUE GLOBALE ===
-  terrainDominant          String   @db.Text // Ex: "Terrain Alpha hyper-sympathique avec insuffisance corticotrope"
-  prioritesTherapeutiques  Json // string[] - Priorités thérapeutiques par ordre d'importance
-  axesPrincipaux           Json // string[] - Axes principaux perturbés
-  mecanismesCommuns        Json // string[] - Mécanismes transversaux identifiés
-  plantesMajeures          Json // string[] - Plantes majeures recommandées avec justification
-  hygieneDeVie             Json // string[] - Conseils hygiéno-diététiques transversaux
-  signesDAlarme            Json // string[] - Signes d'alarme à surveiller
-  pronostic                String   @db.Text // Pronostic et évolution attendue
-  resumeGlobal             String   @db.Text // Synthèse narrative globale (3-4 phrases)
+  // === CONTENU DE L'ANALYSE ===
+  content Json // Contenu de l'analyse au format UnifiedAnalysisOutput
 
   // Métadonnées
   nombreAxesAnalyses       Int      @default(0) // Nombre d'axes utilisés pour la synthèse
   inclusBiologieFonction   Boolean  @default(false) // Inclut données BdF dans l'analyse
   confiance                Float    @default(0.8) // Score de confiance global (0-1)
+  modelUsed                String? // Modèle IA utilisé, ex: gpt-4o-2024-05-13
+  promptVersion            String? // Version du prompt, ex: v2.1-endobiogeny-expert
+  inputHash                String? // Hash des données d'entrée pour détecter les changements
+  executionTimeMs          Int? // Temps d'exécution en millisecondes
+
+  // Versioning
+  version                  Int      @default(1) // Numéro de version de cette synthèse
+  supersededById           String? // ID de la version qui remplace celle-ci
+  isLatest                 Boolean  @default(true) // Indique si c'est la version la plus récente
 
   // Relations
   patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  supersededBy UnifiedSynthesis? @relation("VersionHistory", fields: [supersededById], references: [id], onDelete: SetNull)
+  previousVersions UnifiedSynthesis[] @relation("VersionHistory")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -496,4 +499,103 @@ model BdfIndexResult {
   @@index([consultationId])
   @@index([indexCode])
   @@map("bdf_index_results")
+}
+
+// ===== MODULE PHYTODEX (Bibliothèque documentaire Tunisie / Maghreb) =====
+// NOTE: Module isolé - pas de lien avec le moteur clinique pour l'instant
+
+/// Niveau de preuve pour les usages traditionnels
+enum EvidenceLevel {
+  TRADITION_ONLY    // Usage rapporté uniquement par la tradition
+  PRECLINICAL_DATA  // Données expérimentales (in vitro / in vivo)
+  SOME_CLINICAL_DATA // Quelques données cliniques humaines
+}
+
+/// Type de source bibliographique
+enum SourceType {
+  BOOK            // Ouvrage de référence
+  THESIS          // Thèse universitaire
+  ARTICLE         // Article scientifique
+  FIELD_INTERVIEW // Enquête de terrain
+  REPORT          // Rapport institutionnel
+}
+
+/// Plante documentaire du Phytodex (Tunisie / Maghreb)
+model PhytodexPlant {
+  id          Int      @id @default(autoincrement())
+  latinName   String   // Ex : Rosmarinus officinalis
+  family      String?  // Famille botanique (optionnel pour MVP)
+
+  // Noms vernaculaires
+  mainVernacularName   String?  // Nom français courant
+  arabicName           String?  // Nom en arabe (ex: شندقورة)
+  otherVernacularNames String?  // Liste séparée par virgules pour MVP
+
+  // Contexte géographique
+  region String? // Ex : "Nord Tunisie", "Cap Bon", "Sud / zones arides"
+
+  // Partie utilisée (drogue)
+  partUsed String? // Ex : "Feuille", "Sommité fleurie", "Racine"
+
+  // Infos "cliniques" générales (orientées terrain)
+  mainActions           String? @db.Text // Ex : "Adaptogène, cholérétique, léger tonique"
+  mainIndications       String? @db.Text // Ex : "Fatigue fonctionnelle, troubles digestifs légers"
+  usualForms            String? // Ex : "Infusion, gélules, HE"
+  officinalAvailability String? // Ex : "Disponible en officine en Tunisie sous forme X"
+
+  // Sécurité de base
+  safetyNotes String? @db.Text // CI, précautions, grandes lignes
+
+  // Image (cache URL Wikimedia)
+  imageUrl String? // URL de l'image Wikimedia Commons
+
+  // Bloc "usage traditionnel"
+  traditionalUses TraditionalUse[]
+
+  // Métadonnées
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([latinName])
+  @@index([mainVernacularName])
+  @@index([arabicName])
+  @@index([region])
+  @@map("phytodex_plants")
+}
+
+/// Usage traditionnel associé à une plante dans le Phytodex
+model TraditionalUse {
+  id      Int           @id @default(autoincrement())
+  plant   PhytodexPlant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  plantId Int
+
+  indicationCategory String? // Ex : "Digestif", "Respiratoire", "Stress", "Articulaire"
+  indicationDetail   String  @db.Text // Ex : "Tisane pour ballonnements post-prandiaux"
+  partUsed           String? // Ex : "Feuille", "Sommité fleurie"
+  preparation        String? // Ex : "Infusion 10 min", "Macération huileuse"
+  dosageNotes        String? @db.Text // Texte libre (usage traditionnel, non normalisé)
+
+  source   SourceReference @relation(fields: [sourceId], references: [id])
+  sourceId Int
+
+  evidenceLevel EvidenceLevel // Niveau de preuve
+
+  createdAt DateTime @default(now())
+
+  @@index([plantId])
+  @@index([indicationCategory])
+  @@map("phytodex_traditional_uses")
+}
+
+/// Référence bibliographique pour les usages traditionnels
+model SourceReference {
+  id       Int        @id @default(autoincrement())
+  type     SourceType
+  citation String     @db.Text // Référence bibliographique ou description courte
+
+  uses TraditionalUse[]
+
+  createdAt DateTime @default(now())
+
+  @@map("phytodex_sources")
 }

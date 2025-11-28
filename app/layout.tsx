@@ -70,6 +70,9 @@ export default async function RootLayout({
                   <Link href="/phyto" className="nav-link">
                     🌿 Phyto
                   </Link>
+                  <Link href="/phytodex" className="nav-link">
+                    📚 Phytodex
+                  </Link>
                   <Link href="/fiches" className="nav-link nav-link--muted">
                     Fiches
                   </Link>

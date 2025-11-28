@@ -21,15 +21,15 @@ import {
   Calendar
 } from "lucide-react";
 
-// Mapping icônes par panel
+// Mapping icônes par panel (utilise l'ID du panel)
 const PANEL_ICONS: Record<string, any> = {
-  neurovegetal: Brain,
-  adaptation: Activity,
-  thyrotrope: Zap,
-  gonadotrope: Baby,
-  somatotrope: TrendingUp,
-  metabolique: Apple,
-  immunitaire: Shield,
+  panel_sna: Brain,           // SNA - Système Nerveux Autonome
+  panel_adaptation: Activity, // Corticotrope
+  panel_thyroid: Zap,         // Thyréotrope
+  panel_gonado: Baby,         // Gonadotrope
+  panel_somato: TrendingUp,   // Somatotrope
+  panel_metabo: Apple,        // Métabolique
+  panel_immuno: Shield,       // Immunitaire
 };
 
 // Helper pour mapper les couleurs Tailwind par panel

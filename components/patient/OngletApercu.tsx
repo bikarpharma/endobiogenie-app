@@ -1,14 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import BdfResultsView from "@/components/bdf/BdfResultsView";
-import type { BdfResult } from "@/lib/bdf/calculateIndexes";
-
-type BdfIndex = {
-  name: string;
-  value: number | null;
-  comment: string;
-};
 
 export function OngletApercu({ patient }: { patient: any }) {
   const derniereBdf = patient.bdfAnalyses[0];
@@ -72,53 +64,60 @@ export function OngletApercu({ patient }: { patient: any }) {
         )}
       </div>
 
-      {/* Snapshot dernière BdF */}
+      {/* Bref aperçu dernière BdF */}
       {derniereBdf ? (
-        <div style={{ marginBottom: "32px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "24px",
-            }}
-          >
-            <h3 style={{ fontSize: "1.5rem", fontWeight: "700", color: "#1f2937", margin: 0 }}>
-              📊 Dernière analyse BdF
-            </h3>
-            <div style={{ fontSize: "0.9rem", color: "#6b7280", fontWeight: "500" }}>
-              {new Date(derniereBdf.date).toLocaleDateString("fr-FR", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
+        <Link
+          href={`/patients/${patient.id}?tab=analyses`}
+          style={{
+            display: "block",
+            background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+            border: "1px solid #e2e8f0",
+            borderRadius: "12px",
+            padding: "20px 24px",
+            marginBottom: "32px",
+            textDecoration: "none",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ fontSize: "1.5rem" }}>📊</span>
+              <div>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "#1f2937", margin: 0 }}>
+                  Dernière analyse BdF
+                </h3>
+                <p style={{ fontSize: "0.85rem", color: "#6b7280", margin: "4px 0 0 0" }}>
+                  {Object.keys(derniereBdf.inputs as Record<string, any>).length} biomarqueurs • {Object.keys(derniereBdf.indexes as Record<string, any>).length} index calculés
+                </p>
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                {new Date(derniereBdf.date).toLocaleDateString("fr-FR", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </div>
+              <div style={{ fontSize: "0.8rem", color: "#3b82f6", fontWeight: "500", marginTop: "4px" }}>
+                Voir les détails →
+              </div>
             </div>
           </div>
-
-          {/* ✅ 7 PANELS ENDOBIOGÉNIQUES COMPLETS */}
-          <BdfResultsView
-            result={{
-              indexes: derniereBdf.indexes,
-              metadata: {
-                calculatedAt: new Date(derniereBdf.createdAt),
-                biomarkersCount: Object.keys(derniereBdf.inputs as Record<string, any>).length,
-              },
-            } as BdfResult}
-          />
-        </div>
+        </Link>
       ) : (
         <div
           style={{
             background: "#f9fafb",
-            padding: "48px",
+            padding: "32px",
             borderRadius: "12px",
             textAlign: "center",
             color: "#6b7280",
             marginBottom: "32px",
           }}
         >
-          <p style={{ fontSize: "1.1rem", marginBottom: "8px" }}>Aucune analyse BdF enregistrée</p>
-          <p style={{ fontSize: "0.9rem" }}>Créez une première analyse pour ce patient</p>
+          <p style={{ fontSize: "1rem", marginBottom: "4px" }}>Aucune analyse BdF enregistrée</p>
+          <p style={{ fontSize: "0.85rem", margin: 0 }}>Créez une première analyse pour ce patient</p>
         </div>
       )}
 
@@ -137,7 +136,7 @@ export function OngletApercu({ patient }: { patient: any }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "16px" }}>
           {/* Nouvelle analyse BdF - toujours visible */}
           <Link
-            href={`/${patient.id}/bdf`}
+            href={`/bdf?patientId=${patient.id}`}
             style={{
               padding: "16px 24px",
               background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -158,7 +157,7 @@ export function OngletApercu({ patient }: { patient: any }) {
 
           {/* Interrogatoire - toujours visible */}
           <Link
-            href={`/${patient.id}/interrogatoire`}
+            href={`/patients/${patient.id}/interrogatoire`}
             style={{
               padding: "16px 24px",
               background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",

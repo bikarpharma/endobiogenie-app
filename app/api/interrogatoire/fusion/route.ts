@@ -7,7 +7,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { InterrogatoireEndobiogenique } from "@/lib/interrogatoire/types";
-import { scoreInterrogatoire, ClinicalAxeScores } from "@/lib/interrogatoire/clinicalScoring";
+import { ClinicalAxeScores } from "@/lib/interrogatoire/clinicalScoring";
+import { calculateClinicalScoresV3 } from "@/lib/interrogatoire/clinicalScoringV3";
+import { adaptScoresV3ToV1 } from "@/lib/interrogatoire/scoringAdapter";
 import { fuseClinicalBdfRag, BdfIndexes, RagContext, FusedAxePerturbation } from "@/lib/ordonnance/fusionClinique";
 import type { IndexResults, LabValues } from "@/lib/bdf/types";
 
@@ -70,10 +72,29 @@ export async function POST(req: NextRequest) {
     const interrogatoire = patient.interrogatoire as InterrogatoireEndobiogenique | null;
 
     let clinicalScores: ClinicalAxeScores | null = null;
+    let scoresV3 = null;
 
     if (interrogatoire) {
       console.log("📋 Interrogatoire trouvé, calcul des scores cliniques...");
-      clinicalScores = scoreInterrogatoire(interrogatoire);
+
+      // Utiliser le nouveau scoring V3 si format v2 disponible
+      if (interrogatoire.v2?.answersByAxis) {
+        const answersByAxis = interrogatoire.v2.answersByAxis;
+        const sexe = interrogatoire.v2.sexe || (patient.sexe === "M" ? "H" : "F");
+
+        console.log("🔄 Utilisation du scoring V3 (format v2 détecté)");
+        scoresV3 = calculateClinicalScoresV3(answersByAxis, sexe as "H" | "F");
+
+        // Adapter V3 vers V1 pour la fusion
+        clinicalScores = adaptScoresV3ToV1(scoresV3);
+
+        console.log(`✅ Scoring V3 calculé: ${Object.keys(scoresV3.axes).length} axes scorés`);
+        if (scoresV3.terrainsDetectes.length > 0) {
+          console.log(`🎯 Terrains détectés: ${scoresV3.terrainsDetectes.map(t => t.terrain).join(", ")}`);
+        }
+      } else {
+        console.log("⚠️ Format v2 non disponible - Aucun scoring V3 possible");
+      }
     } else {
       console.log("⚠️ Aucun interrogatoire trouvé");
     }
@@ -222,6 +243,24 @@ export async function POST(req: NextRequest) {
       syntheseNarrative,
       coherenceGlobale,
       recommandationsGenerales,
+      // Nouvelles données V3
+      scoringV3: scoresV3 ? {
+        terrainsDetectes: scoresV3.terrainsDetectes,
+        syntheseGlobale: scoresV3.syntheseGlobale,
+        axesScores: Object.fromEntries(
+          Object.entries(scoresV3.axes).map(([key, score]) => [
+            key,
+            score ? {
+              orientation: score.orientation,
+              intensite: score.intensite,
+              insuffisance: score.insuffisance,
+              surSollicitation: score.surSollicitation,
+              description: score.description,
+              symptomesCles: score.symptomesCles,
+            } : null
+          ])
+        ),
+      } : null,
     });
   } catch (error: any) {
     console.error("❌ [API /interrogatoire/fusion] Erreur:", error);

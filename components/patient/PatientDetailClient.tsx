@@ -10,6 +10,7 @@ import { OngletAnalyses } from "./OngletAnalyses";
 import { OngletConsultations } from "./OngletConsultations";
 import { OngletOrdonnancesIntelligent } from "../ordonnance/OngletOrdonnancesIntelligent";
 import { OngletSynthese } from "./OngletSynthese";
+import PatientVisualReport from "./PatientVisualReport";
 
 type PatientData = {
   id: string;
@@ -39,7 +40,7 @@ type PatientData = {
   interrogatoire: any;
 };
 
-type Tab = "apercu" | "identite" | "interrogatoire" | "analyses" | "consultations" | "synthese" | "ordonnances";
+type Tab = "apercu" | "identite" | "interrogatoire" | "analyses" | "consultations" | "synthese" | "ordonnances" | "rapport-visuel";
 
 export function PatientDetailClient({ patient }: { patient: PatientData }) {
   const [activeTab, setActiveTab] = useState<Tab>("apercu");
@@ -237,6 +238,24 @@ export function PatientDetailClient({ patient }: { patient: PatientData }) {
           >
             💊 Ordonnances ({patient.ordonnances?.length || 0})
           </button>
+          <button
+            onClick={() => setActiveTab("rapport-visuel")}
+            style={{
+              flex: 1,
+              padding: "16px 24px",
+              background: activeTab === "rapport-visuel" ? "white" : "transparent",
+              border: "none",
+              borderBottom:
+                activeTab === "rapport-visuel" ? "3px solid #2563eb" : "3px solid transparent",
+              fontSize: "0.95rem",
+              fontWeight: activeTab === "rapport-visuel" ? "600" : "500",
+              color: activeTab === "rapport-visuel" ? "#2563eb" : "#6b7280",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            📊 Rapport Visuel
+          </button>
         </div>
 
         {/* Contenu de l'onglet actif */}
@@ -248,6 +267,9 @@ export function PatientDetailClient({ patient }: { patient: PatientData }) {
           {activeTab === "consultations" && <OngletConsultations patient={patient} />}
           {activeTab === "synthese" && <OngletSynthese patient={patient} />}
           {activeTab === "ordonnances" && <OngletOrdonnancesIntelligent patient={patient} />}
+          {activeTab === "rapport-visuel" && (
+            <PatientVisualReport patientName={`${patient.prenom} ${patient.nom}`} />
+          )}
         </div>
       </div>
     </div>

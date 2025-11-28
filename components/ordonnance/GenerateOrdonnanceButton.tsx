@@ -171,7 +171,7 @@ export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis, hasInterro
               <ScopeOption
                 icon="🌿"
                 label="Plantes médicinales (Phytothérapie)"
-                description="Vectorstore: Phytothérapie clinique (25 MB)"
+                description="Tisanes et extraits de plantes médicinales"
                 checked={scope.planteMedicinale}
                 onChange={(checked) => setScope({ ...scope, planteMedicinale: checked })}
                 recommended
@@ -181,7 +181,7 @@ export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis, hasInterro
               <ScopeOption
                 icon="🌱"
                 label="Gemmothérapie (Macérats de bourgeons)"
-                description="Vectorstore: Gemmothérapie (3 MB)"
+                description="Extraits concentrés de bourgeons et jeunes pousses"
                 checked={scope.gemmotherapie}
                 onChange={(checked) => setScope({ ...scope, gemmotherapie: checked })}
                 recommended
@@ -191,7 +191,7 @@ export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis, hasInterro
               <ScopeOption
                 icon="💧"
                 label="Aromathérapie (Huiles essentielles)"
-                description="Vectorstore: Aromathérapie (18 MB)"
+                description="Huiles essentielles et leurs applications thérapeutiques"
                 checked={scope.aromatherapie}
                 onChange={(checked) => setScope({ ...scope, aromatherapie: checked })}
               />

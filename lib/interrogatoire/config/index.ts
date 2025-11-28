@@ -10,6 +10,7 @@ import AxeDigestifConfig from "./axe-digestif";
 import AxeImmunoConfig from "./axe-immuno";
 import AxeCardioMetaboConfig from "./axe-cardio-metabo";
 import AxeDermatoConfig from "./axe-dermato";
+import TerrainsPathologiquesConfig from "./terrains-pathologiques";
 
 export type AxisKey =
   | "historique"
@@ -22,7 +23,8 @@ export type AxisKey =
   | "digestif"
   | "immuno"
   | "cardioMetabo"
-  | "dermato";
+  | "dermato"
+  | "terrains";
 
 export type BlocKey = "terrain" | "gestionnaires" | "emonctoires";
 
@@ -52,10 +54,10 @@ export const BLOCS_DEFINITION: BlocDefinition[] = [
   {
     key: "terrain",
     label: "Terrain & Histoire",
-    description: "Les fondations : antécédents, mode de vie, contexte",
+    description: "Les fondations : antécédents, mode de vie, contexte, terrains pathologiques",
     color: "bg-blue-50 border-blue-200",
     icon: "🟦",
-    axes: ["historique", "modeVie"]
+    axes: ["historique", "modeVie", "terrains"]
   },
   {
     key: "gestionnaires",
@@ -168,6 +170,14 @@ export const AXES_DEFINITION: AxisDefinition[] = [
     questions: AxeDermatoConfig,
     bloc: "emonctoires",
     icon: "🧴"
+  },
+  {
+    key: "terrains",
+    label: "Terrains Pathologiques",
+    description: "Spasmophile, Atopique, Auto-immun, Congestif, Métabolique",
+    questions: TerrainsPathologiquesConfig,
+    bloc: "terrain",
+    icon: "🎯"
   }
 ];
 
@@ -182,5 +192,6 @@ export {
   AxeDigestifConfig,
   AxeImmunoConfig,
   AxeCardioMetaboConfig,
-  AxeDermatoConfig
+  AxeDermatoConfig,
+  TerrainsPathologiquesConfig
 };

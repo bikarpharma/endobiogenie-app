@@ -1,0 +1,181 @@
+{
+  "foie": {
+    "nom": "Foie",
+    "axes": [
+      "corticotrope",
+      "thyréotrope",
+      "gonadotrope",
+      "somatotrope"
+    ],
+    "fonctions": [
+      "Détoxification des métabolites",
+      "Métabolisme des hormones",
+      "Stockage du glycogène",
+      "Production de bile",
+      "Synthèse protéique"
+    ],
+    "signesCongestion": [
+      "Réveil nocturne entre 1h et 3h",
+      "Intolérance aux graisses",
+      "Fatigue matinale",
+      "Nausées",
+      "Teint jaunâtre",
+      "Céphalées hépatiques"
+    ],
+    "conseilClinique": "En cas de doute, drainer le foie. Le drainage hépatobiliaire peut résoudre de nombreux troubles apparemment non liés.",
+    "plantesdraineurs": [
+      {
+        "nom": "Taraxacum officinale",
+        "action": "Cholagogue et cholérétique"
+      },
+      {
+        "nom": "Rosmarinus officinalis",
+        "action": "Hépatoprotecteur, cholérétique"
+      },
+      {
+        "nom": "Carduus marianus",
+        "action": "Hépatoprotecteur, régénérateur"
+      },
+      {
+        "nom": "Chelidonium majus",
+        "action": "Antispasmodique biliaire"
+      }
+    ]
+  },
+  "reins": {
+    "nom": "Reins",
+    "axes": [
+      "corticotrope"
+    ],
+    "fonctions": [
+      "Filtration du sang",
+      "Équilibre hydro-électrolytique",
+      "Régulation de la pression artérielle",
+      "Élimination des déchets azotés"
+    ],
+    "signesCongestion": [
+      "Œdèmes des membres inférieurs",
+      "Hypertension",
+      "Lombalgie",
+      "Urines foncées ou troubles"
+    ],
+    "plantesdraineurs": [
+      {
+        "nom": "Solidago virgaurea",
+        "action": "Diurétique, anti-inflammatoire urinaire"
+      },
+      {
+        "nom": "Orthosiphon stamineus",
+        "action": "Diurétique puissant"
+      },
+      {
+        "nom": "Pilosella",
+        "action": "Diurétique, éliminateur urée"
+      }
+    ]
+  },
+  "poumons": {
+    "nom": "Poumons",
+    "axes": [
+      "thyréotrope"
+    ],
+    "fonctions": [
+      "Échanges gazeux O2/CO2",
+      "Élimination du CO2",
+      "Barrière immunitaire",
+      "Régulation pH sanguin"
+    ],
+    "signesCongestion": [
+      "Toux productive ou sèche",
+      "Dyspnée",
+      "Infections ORL récurrentes",
+      "Oppression thoracique"
+    ],
+    "plantesdraineurs": [
+      {
+        "nom": "Plantago major",
+        "action": "Expectorant, anti-inflammatoire"
+      },
+      {
+        "nom": "Thymus vulgaris",
+        "action": "Antiseptique respiratoire"
+      },
+      {
+        "nom": "Eucalyptus globulus",
+        "action": "Expectorant, antiseptique"
+      },
+      {
+        "nom": "Hyssopus officinalis",
+        "action": "Fluidifiant bronchique"
+      }
+    ]
+  },
+  "peau": {
+    "nom": "Peau",
+    "axes": [
+      "corticotrope"
+    ],
+    "fonctions": [
+      "Élimination des toxines par sudation",
+      "Thermorégulation",
+      "Barrière protectrice",
+      "Synthèse vitamine D"
+    ],
+    "signesCongestion": [
+      "Eczéma",
+      "Acné",
+      "Prurit",
+      "Éruptions cutanées",
+      "Transpiration excessive ou insuffisante"
+    ],
+    "plantesdraineurs": [
+      {
+        "nom": "Viola tricolor",
+        "action": "Dépuratif cutané"
+      },
+      {
+        "nom": "Arctium lappa",
+        "action": "Draineur cutané polyvalent"
+      },
+      {
+        "nom": "Fumaria officinalis",
+        "action": "Dépuratif, régulateur biliaire"
+      }
+    ]
+  },
+  "intestins": {
+    "nom": "Intestins",
+    "axes": [
+      "corticotrope",
+      "thyréotrope",
+      "gonadotrope"
+    ],
+    "fonctions": [
+      "Absorption des nutriments",
+      "Élimination des déchets",
+      "Barrière immunitaire (GALT)",
+      "Production de sérotonine"
+    ],
+    "signesCongestion": [
+      "Constipation",
+      "Ballonnements",
+      "Dysbiose",
+      "Perméabilité intestinale"
+    ],
+    "conseilClinique": "Le tractus GI est le lieu où tous les éléments clés du terrain se rencontrent: neuroendocrinien, immunité, émonctoires, pouvoir tampon.",
+    "plantesdraineurs": [
+      {
+        "nom": "Malva sylvestris",
+        "action": "Adoucissant, laxatif doux"
+      },
+      {
+        "nom": "Aloe vera",
+        "action": "Laxatif, cicatrisant"
+      },
+      {
+        "nom": "Plantago psyllium",
+        "action": "Régulateur du transit"
+      }
+    ]
+  }
+}
