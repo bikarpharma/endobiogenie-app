@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import SmartSymptomeSearch from "@/components/ui/SmartSymptomeSearch";
+import SmartAllergySearch from "@/components/ui/SmartAllergySearch";
+import SmartApciSelector from "@/components/chronic/SmartApciSelector";
+import ChronicDiseaseTagSelector from "@/components/chronic/ChronicDiseaseTagSelector";
+import type { PatientChronicProfile } from "@/lib/clinical/apci";
+import { createEmptyChronicProfile } from "@/lib/clinical/apci";
+import type { PatientAllergyEntry } from "@/lib/clinical/allergies";
 
 type BdfAnalysisData = {
   inputs: Record<string, number>;
@@ -25,20 +32,18 @@ export function NewPatientForm({ userId }: { userId: string }) {
     sexe: "",
     telephone: "",
     email: "",
-    allergies: "",
+    allergies: [] as PatientAllergyEntry[],
+    allergiesNotes: "", // Notes libres sur les allergies
     atcdMedicaux: "",
     atcdChirurgicaux: "",
     traitements: "",
     notes: "",
     // Nouveaux champs pour contexte enrichi ordonnance
-    pathologiesAssociees: [] as string[],
     symptomesActuels: [] as string[],
     autresBilans: {} as Record<string, number>,
+    // Terrain chronique (APCI & maladies chroniques)
+    chronicProfile: createEmptyChronicProfile() as PatientChronicProfile,
   });
-
-  // États locaux pour saisie pathologies/symptômes
-  const [newPathologie, setNewPathologie] = useState("");
-  const [newSymptome, setNewSymptome] = useState("");
 
   // États locaux pour autres bilans
   const [newBilanKey, setNewBilanKey] = useState("");
@@ -321,14 +326,17 @@ export function NewPatientForm({ userId }: { userId: string }) {
         </h3>
 
         <div style={{ display: "grid", gap: "20px", marginBottom: "32px" }}>
-          {/* Allergies */}
+          {/* Allergies - NOUVEAU COMPOSANT INTELLIGENT */}
           <div>
-            <label style={{ display: "block", fontWeight: "600", marginBottom: "8px", color: "#374151" }}>
-              ⚠️ Allergies
-            </label>
-            <textarea
-              name="allergies"
+            <SmartAllergySearch
               value={formData.allergies}
+              onChange={(allergies) => setFormData({ ...formData, allergies })}
+              showClinicalDetails={true}
+            />
+            {/* Notes optionnelles sur les allergies */}
+            <textarea
+              name="allergiesNotes"
+              value={formData.allergiesNotes}
               onChange={handleChange}
               rows={2}
               style={{
@@ -336,10 +344,11 @@ export function NewPatientForm({ userId }: { userId: string }) {
                 padding: "12px",
                 border: "1px solid #d1d5db",
                 borderRadius: "8px",
-                fontSize: "1rem",
+                fontSize: "0.9rem",
                 fontFamily: "inherit",
+                marginTop: "12px",
               }}
-              placeholder="Pénicilline, Arachides..."
+              placeholder="Notes sur les allergies (contexte, réactions détaillées...)"
             />
           </div>
 
@@ -447,207 +456,24 @@ export function NewPatientForm({ userId }: { userId: string }) {
         </h3>
 
         <div style={{ display: "grid", gap: "20px", marginBottom: "32px" }}>
-          {/* Pathologies associées */}
-          <div>
-            <label style={{ display: "block", fontWeight: "600", marginBottom: "8px", color: "#374151" }}>
-              🏥 Pathologies associées
-            </label>
-            <div style={{ marginBottom: "8px" }}>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input
-                  type="text"
-                  value={newPathologie}
-                  onChange={(e) => setNewPathologie(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      if (newPathologie.trim()) {
-                        setFormData({
-                          ...formData,
-                          pathologiesAssociees: [...formData.pathologiesAssociees, newPathologie.trim()],
-                        });
-                        setNewPathologie("");
-                      }
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "10px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
-                  placeholder="Ex: Diabète Type 2, Hypothyroïdie..."
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (newPathologie.trim()) {
-                      setFormData({
-                        ...formData,
-                        pathologiesAssociees: [...formData.pathologiesAssociees, newPathologie.trim()],
-                      });
-                      setNewPathologie("");
-                    }
-                  }}
-                  style={{
-                    padding: "10px 20px",
-                    background: "#10b981",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "0.9rem",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                  }}
-                >
-                  + Ajouter
-                </button>
-              </div>
-            </div>
-            {formData.pathologiesAssociees.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {formData.pathologiesAssociees.map((pathologie, idx) => (
-                  <span
-                    key={idx}
-                    style={{
-                      padding: "6px 12px",
-                      background: "#fef3c7",
-                      border: "1px solid #fbbf24",
-                      borderRadius: "6px",
-                      fontSize: "0.85rem",
-                      color: "#78350f",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    {pathologie}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({
-                          ...formData,
-                          pathologiesAssociees: formData.pathologiesAssociees.filter((_, i) => i !== idx),
-                        });
-                      }}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "#78350f",
-                        cursor: "pointer",
-                        padding: "0 4px",
-                        fontSize: "1rem",
-                      }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Symptômes actuels */}
-          <div>
-            <label style={{ display: "block", fontWeight: "600", marginBottom: "8px", color: "#374151" }}>
-              🔍 Symptômes actuels
-            </label>
-            <div style={{ marginBottom: "8px" }}>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input
-                  type="text"
-                  value={newSymptome}
-                  onChange={(e) => setNewSymptome(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      if (newSymptome.trim()) {
-                        setFormData({
-                          ...formData,
-                          symptomesActuels: [...formData.symptomesActuels, newSymptome.trim()],
-                        });
-                        setNewSymptome("");
-                      }
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "10px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                  }}
-                  placeholder="Ex: Fatigue chronique, Troubles digestifs..."
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (newSymptome.trim()) {
-                      setFormData({
-                        ...formData,
-                        symptomesActuels: [...formData.symptomesActuels, newSymptome.trim()],
-                      });
-                      setNewSymptome("");
-                    }
-                  }}
-                  style={{
-                    padding: "10px 20px",
-                    background: "#3b82f6",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "0.9rem",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                  }}
-                >
-                  + Ajouter
-                </button>
-              </div>
-            </div>
-            {formData.symptomesActuels.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {formData.symptomesActuels.map((symptome, idx) => (
-                  <span
-                    key={idx}
-                    style={{
-                      padding: "6px 12px",
-                      background: "#dbeafe",
-                      border: "1px solid #3b82f6",
-                      borderRadius: "6px",
-                      fontSize: "0.85rem",
-                      color: "#1e40af",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    {symptome}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({
-                          ...formData,
-                          symptomesActuels: formData.symptomesActuels.filter((_, i) => i !== idx),
-                        });
-                      }}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "#1e40af",
-                        cursor: "pointer",
-                        padding: "0 4px",
-                        fontSize: "1rem",
-                      }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Symptômes actuels - COMPOSANT INTELLIGENT */}
+          <SmartSymptomeSearch
+            selectedSymptomes={formData.symptomesActuels}
+            onAddSymptome={(symptome) => {
+              setFormData({
+                ...formData,
+                symptomesActuels: [...formData.symptomesActuels, symptome],
+              });
+            }}
+            onRemoveSymptome={(idx) => {
+              setFormData({
+                ...formData,
+                symptomesActuels: formData.symptomesActuels.filter((_, i) => i !== idx),
+              });
+            }}
+            label="Symptômes actuels"
+            placeholder="Tapez pour rechercher (ex: fatigue, douleur...)"
+          />
 
           {/* Autres bilans biologiques */}
           <div>
@@ -766,6 +592,60 @@ export function NewPatientForm({ userId }: { userId: string }) {
               </div>
             )}
           </div>
+        </div>
+
+        {/* SECTION 4 : Terrain chronique (APCI & maladies chroniques) */}
+        <h3
+          style={{
+            fontSize: "1.2rem",
+            fontWeight: "600",
+            color: "#1f2937",
+            marginBottom: "24px",
+            borderBottom: "2px solid #e5e7eb",
+            paddingBottom: "12px",
+          }}
+        >
+          🏥 Terrain chronique (APCI & maladies chroniques)
+        </h3>
+        <p
+          style={{
+            fontSize: "0.875rem",
+            color: "#6b7280",
+            marginBottom: "20px",
+            marginTop: "-16px",
+          }}
+        >
+          Liste des 24 affections APCI (vocabulaire CNAM) + autres maladies chroniques pour le terrain endobiogénique
+        </p>
+
+        <div style={{ display: "grid", gap: "24px", marginBottom: "32px" }}>
+          {/* Sélecteur APCI */}
+          <SmartApciSelector
+            value={formData.chronicProfile.apcis}
+            onChange={(apcis) => {
+              setFormData({
+                ...formData,
+                chronicProfile: {
+                  ...formData.chronicProfile,
+                  apcis,
+                },
+              });
+            }}
+          />
+
+          {/* Autres maladies chroniques (hors APCI) */}
+          <ChronicDiseaseTagSelector
+            value={formData.chronicProfile.otherDiseases}
+            onChange={(otherDiseases) => {
+              setFormData({
+                ...formData,
+                chronicProfile: {
+                  ...formData.chronicProfile,
+                  otherDiseases,
+                },
+              });
+            }}
+          />
         </div>
 
         {/* Boutons */}

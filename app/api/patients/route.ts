@@ -149,7 +149,8 @@ export async function POST(req: NextRequest) {
       sexe: body.sexe || null,
       telephone: body.telephone?.trim() || null,
       email: body.email?.trim() || null,
-      allergies: body.allergies?.trim() || null,
+      allergiesStructured: body.allergies || [], // PatientAllergyEntry[]
+      allergiesNotes: body.allergiesNotes?.trim() || null,
       atcdMedicaux: body.atcdMedicaux?.trim() || null,
       atcdChirurgicaux: body.atcdChirurgicaux?.trim() || null,
       traitements: body.traitements?.trim() || null,
@@ -160,6 +161,8 @@ export async function POST(req: NextRequest) {
       pathologiesAssociees: body.pathologiesAssociees || [],
       symptomesActuels: body.symptomesActuels || [],
       autresBilans: body.autresBilans || {},
+      // Terrain chronique (APCI & maladies chroniques)
+      chronicProfile: body.chronicProfile || { apcis: [], otherDiseases: [] },
     };
 
     // Si une analyse BdF est fournie, l'ajouter

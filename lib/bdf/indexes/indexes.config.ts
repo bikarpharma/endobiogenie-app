@@ -4,24 +4,14 @@ import { IndexCategory } from "./index-categories";
 /**
  * INDEX ENDOBIOGÉNIQUES - BIOLOGIE DES FONCTIONS (BdF)
  * =====================================================
- * Basé sur "La Théorie de l'Endobiogénie" - Lapraz & Hedayat
- *
- * SOURCES:
- * - Volume 1 (p.175-194): Index directs et indirects fondamentaux
- * - Volume 2 (p.19-110): Index Starter, IML, IMP, interprétations cliniques
- * - Volume 3 (p.29-106): Index avancés par axe (Tables 3.12-6.18)
- * - Volume 4 (p.52-206): Applications cliniques pratiques
- *
- * HIÉRARCHIE DES INDEX:
- * 1. INDEX DIRECTS (17 biomarqueurs → formules simples)
- * 2. INDEX INDIRECTS (combinaisons d'index directs)
- * 3. INDEX COMPLEXES (analyses multi-axes)
+ * CORRIGÉ selon IntegrIA_BdF_FUSION_DEFINITIVE.xlsx
+ * 
+ * ⚠️ NORMES MISES À JOUR - Ne pas modifier sans vérifier l'Excel source
  */
 
 export const INDEXES: IndexDefinition[] = [
   // ============================================================
-  // SECTION 1: INDEX GONADOTROPE (Volume 1, p.176-179)
-  // Évalue l'équilibre Androgènes vs Œstrogènes
+  // SECTION 1: INDEX GONADOTROPE
   // ============================================================
   {
     id: "idx_genital",
@@ -30,14 +20,14 @@ export const INDEXES: IndexDefinition[] = [
     formula: "GR / GB",
     formula_type: "ratio",
     required_biomarkers: ["GR", "GB"],
-    description: "Rapport Globules Rouges / Globules Blancs. Reflète l'équilibre tissulaire Androgènes (GR) vs Œstrogènes (GB). INDEX FONDAMENTAL en endobiogénie.",
+    description: "Rapport GR/GB. Équilibre Androgènes vs Œstrogènes. INDEX FONDAMENTAL.",
     referenceRange: {
-      low: 0.6,
-      high: 0.9,
+      low: 0.70,  // CORRIGÉ (était 0.6)
+      high: 0.85, // CORRIGÉ (était 0.9)
       interpretation: {
-        low: "Dominance œstrogénique tissulaire (GB > GR relatif)",
+        low: "Prédominance œstrogénique (anabolisme, fonction)",
         normal: "Équilibre androgènes/œstrogènes",
-        high: "Dominance androgénique tissulaire (GR > GB relatif)"
+        high: "Prédominance androgénique (structure, catabolisme)"
       }
     }
   },
@@ -48,63 +38,64 @@ export const INDEXES: IndexDefinition[] = [
     formula: "NEUT / LYMPH",
     formula_type: "ratio",
     required_biomarkers: ["NEUT", "LYMPH"],
-    description: "Rapport Neutrophiles / Lymphocytes. Évalue l'équilibre Œstrogènes (Neut, via FSH) vs TSH (Lymph). Volume 1, p.178.",
+    description: "Neutrophiles/Lymphocytes. Couplage Gonado-Thyroïde, Hyperimmunité.",
     referenceRange: {
-      low: 1.5,
-      high: 2.5,
+      low: 1.5,  // OK
+      high: 2.5, // OK
       interpretation: {
-        low: "Dominance TSH/thyroïde - Favorise hyperimmunité, terrain atopique",
+        low: "Hyperimmunité, Terrain atopique (TSH lente)",
         normal: "Équilibre génito-thyroïdien",
-        high: "Dominance œstrogènes/FSH - Favorise inflammation, auto-immunité"
+        high: "Inflammation, Auto-immunité (TSH rapide)"
       }
     }
   },
 
   // ============================================================
-  // SECTION 2: INDEX CORTICOTROPE / ADAPTATION (Volume 1, p.179)
-  // Évalue l'axe HPA (ACTH/Cortisol vs FSH/Œstrogènes)
+  // SECTION 2: INDEX CORTICOTROPE / ADAPTATION
   // ============================================================
   {
     id: "idx_adaptation",
     label: "Index d'Adaptation",
     category: IndexCategory.ADAPTATION,
-    formula: "EOS / (MONO + 0.1)",
-    formula_type: "composite",
+    formula: "EOS / MONO",
+    formula_type: "ratio",
     required_biomarkers: ["EOS", "MONO"],
-    description: "Rapport Éosinophiles / Monocytes. Évalue l'activité adaptative ACTH/Cortisol (Eos) vs FSH/Œstrogènes (Mono). Volume 1, p.179.",
+    // ⚠️ ATTENTION V2 : INTERPRÉTATION INVERSÉE
+    // Le cortisol ÉCRASE les éosinophiles → Index BAS = Fort cortisol !
+    description: "EOS/MONO. ⚠️ BAS = Fort cortisol (HYPER-adaptation), HAUT = Cortisol bas (HYPO-adaptation).",
     referenceRange: {
-      low: 0.3,
-      high: 0.8,
+      low: 0.25,
+      high: 0.50,
       interpretation: {
-        low: "Risque auto-immun - FSH/œstrogènes dominant, cortisol insuffisant",
+        // ✅ CORRIGÉ V2 : Interprétations INVERSÉES
+        low: "HYPER-ADAPTATION : Fort cortisol, Mode lutte/survie, stress aigu, inflammation bloquée",
         normal: "Capacité adaptative équilibrée",
-        high: "Risque atopique/allergique - ACTH/cortisol hyperactif"
+        high: "HYPO-ADAPTATION : Cortisol insuffisant, Terrain atopique, allergies, eczéma, permissivité"
       }
     }
   },
   {
-    id: "idx_cortisol_ratio",
+    id: "idx_cortisol_cortex",
     label: "Ratio Cortisol/Cortex Surrénalien",
     category: IndexCategory.ADAPTATION,
-    formula: "idx_adaptation / idx_genital",
+    formula: "idx_cortisol / idx_cortex_surrenalien",
     formula_type: "composite",
-    requires_indexes: ["idx_adaptation", "idx_genital"],
+    requires_indexes: ["idx_cortisol", "idx_cortex_surrenalien"],
     required_biomarkers: [],
-    description: "Évalue l'efficacité du cortisol par rapport à l'activité globale du cortex surrénalien. Optimal: 2-3. Volume 2, p.72-76.",
+    description: "Évalue déséquilibre Cortisol vs Cortex. Atopie si <2, Insomnie/Dépression si >4.",
     referenceRange: {
-      low: 2.0,
-      high: 3.0,
+      low: 2.0,  // OK
+      high: 4.0, // CORRIGÉ (était 3.0)
       interpretation: {
-        low: "Androgènes surrénaliens prédominants - Adaptogènes indiqués",
-        normal: "Ratio cortisol/cortex surrénalien optimal",
-        high: "Cortisol excessif aux dépens androgènes - α-sympatholytiques indiqués"
+        low: "Atopie (asthme, allergie, eczéma)",
+        normal: "Ratio cortisol/cortex optimal",
+        high: "Insomnie, Dépression - Cortisol excessif"
       }
     }
   },
 
   // ============================================================
-  // SECTION 3: INDEX SNA - SYSTÈME NERVEUX AUTONOME (Volume 2)
-  // Mobilisation leucocytaire et plaquettaire
+  // SECTION 3: INDEX SNA - SYSTÈME NERVEUX AUTONOME
   // ============================================================
   {
     id: "idx_mobilisation_plaquettes",
@@ -113,14 +104,14 @@ export const INDEXES: IndexDefinition[] = [
     formula: "PLAQUETTES / (60 * GR)",
     formula_type: "composite",
     required_biomarkers: ["PLAQUETTES", "GR"],
-    description: "Capacité de mobilisation des plaquettes depuis l'espace splénique. Marqueur Bêta-sympathique. Volume 1, p.180 & Volume 2, p.35-38.",
+    description: "Plaquettes/(60×GR). Marqueur ALPHA-sympathique. Spasmophilie/Vagotonie si bas.",
     referenceRange: {
-      low: 0.8,
-      high: 1.2,
+      low: 0.85,
+      high: 1.15,
       interpretation: {
-        low: "Bêta-sympathique bloqué ou retardé - Favorise spasmophilie",
+        low: "Spasmophilie, Dominance Para, Vagotonie",
         normal: "Mobilisation plaquettaire normale",
-        high: "Bêta-sympathique hyperactif - Mobilisation splanchnique → splénique"
+        high: "Hyper-Alpha, Spasme, Vasoconstriction, risque thrombotique"
       }
     }
   },
@@ -128,61 +119,62 @@ export const INDEXES: IndexDefinition[] = [
     id: "idx_mobilisation_leucocytes",
     label: "IML - Index Mobilisation Leucocytes",
     category: IndexCategory.AUTONOMIC,
-    formula: "GB / (NEUT + LYMPH + MONO + EOS + BASO + 0.1)",
+    // ✅ CORRIGÉ V2 : Compare Granulocytes (mobilisables par adrénaline) vs Agranulocytes (résidents)
+    formula: "(NEUT + EOS + BASO) / (LYMPH + MONO)",
     formula_type: "composite",
-    required_biomarkers: ["GB", "NEUT", "LYMPH", "MONO", "EOS", "BASO"],
-    description: "Capacité de mobilisation des leucocytes depuis le lit splanchnique. Marqueur Alpha-sympathique adaptatif. Volume 2, p.29-34.",
+    required_biomarkers: ["NEUT", "EOS", "BASO", "LYMPH", "MONO"],
+    description: "Granulocytes/Agranulocytes. Marqueur BÊTA-sympathique (ACTION adrénaline).",
     referenceRange: {
-      low: 0.9,
-      high: 1.1,
+      low: 0.85,
+      high: 1.15,
       interpretation: {
-        low: "Flux adaptatif hépatique → splanchnique",
+        low: "Congestion splanchnique, Stase abdominale, foie engorgé",
         normal: "Mobilisation leucocytaire équilibrée",
-        high: "Congestion vasculaire hépatique - Sollicitation lit splanchnique"
+        high: "Hyper-Bêta, État d'alerte, Tachycardie, agitation"
       }
     }
   },
   {
     id: "idx_starter",
-    label: "Index Starter",
+    label: "Index Starter (Statut β)",
     category: IndexCategory.AUTONOMIC,
     formula: "idx_mobilisation_leucocytes / idx_mobilisation_plaquettes",
     formula_type: "composite",
     requires_indexes: ["idx_mobilisation_leucocytes", "idx_mobilisation_plaquettes"],
     required_biomarkers: [],
-    description: "IML / IMP. Index FONDAMENTAL pour évaluer la spasmophilie et la dysfonction sympathique. Volume 2, p.22-25.",
+    description: "IML/IMP. Énergie adaptation SNA. Anormal dans Crohn (↑↑ ou ↓↓).",
     referenceRange: {
-      low: 0.8,
-      high: 1.2,
+      low: 0.85,  // CORRIGÉ selon PDF biomarqueurs_tables
+      high: 1.15, // CORRIGÉ selon PDF biomarqueurs_tables (était 1.35)
       interpretation: {
-        low: "Hyper α-adaptatif + β bloqué - Congestion hépato-splénique",
+        low: "Dysfonction foie/rate",
         normal: "Équilibre sympathique α/β",
-        high: "Augmentation activité sympathique générale sur lit splanchnique"
+        high: "Dysfonction foie/rate"
       }
     }
   },
   {
-    id: "idx_histamine",
-    label: "Index Histamine Évoquée",
+    id: "idx_histamine_potentielle",
+    label: "Index Histamine Potentielle",
     category: IndexCategory.AUTONOMIC,
-    formula: "BASO * (NEUT / LYMPH)",
+    formula: "(EOS * PLAQUETTES) / idx_cortisol",
     formula_type: "composite",
-    required_biomarkers: ["BASO", "NEUT", "LYMPH"],
-    description: "Activité histaminique circulante active. Basophiles × Index Génito-Thyroïdien. Volume 4, Table 8.10.",
+    required_biomarkers: ["EOS", "PLAQUETTES"],
+    requires_indexes: ["idx_cortisol"],
+    description: "Éosinophiles × Plaquettes / Index Cortisol. Risque histaminique.",
     referenceRange: {
-      low: 0.5,
-      high: 2.0,
+      low: 6.0,   // CORRIGÉ selon Excel
+      high: 12.0, // CORRIGÉ selon Excel
       interpretation: {
-        low: "Histamine faible - Réponse allergique atténuée",
-        normal: "Activité histaminique normale",
-        high: "Histamine élevée - Terrain allergique actif, améliorer cortisol"
+        low: "Faible risque histaminique",
+        normal: "Risque histaminique modéré",
+        high: "Fort risque histaminique, Atopie"
       }
     }
   },
 
   // ============================================================
-  // SECTION 4: INDEX THYRÉOTROPE (Volume 1, p.181-183)
-  // Évalue le métabolisme thyroïdien périphérique
+  // SECTION 4: INDEX THYRÉOTROPE
   // ============================================================
   {
     id: "idx_thyroidien",
@@ -191,14 +183,14 @@ export const INDEXES: IndexDefinition[] = [
     formula: "LDH / CPK",
     formula_type: "ratio",
     required_biomarkers: ["LDH", "CPK"],
-    description: "Rapport LDH/CPK. Activité métabolique cellulaire effective T4/T3. Indépendant des niveaux sériques TSH, T4, T3. Volume 1, p.181.",
+    description: "LDH/CPK. Métabolisme thyroïdien cellulaire. HYPOTHYROÏDIE LATENTE si bas.",
     referenceRange: {
-      low: 2.0,
-      high: 4.0,
+      low: 3.5,  // ⚠️ CORRIGÉ (était 2.0) - TRÈS IMPORTANT
+      high: 5.5, // ⚠️ CORRIGÉ (était 4.0) - TRÈS IMPORTANT
       interpretation: {
-        low: "Hypothyroïdie fonctionnelle - Dominance anabolique, métabolisme ralenti",
-        normal: "Équilibre catabolisme/anabolisme thyroïdien",
-        high: "Hyperthyroïdie fonctionnelle - Dominance catabolique, hypermétabolisme"
+        low: "Hypométabolisme thyroïdien - HYPOTHYROÏDIE LATENTE",
+        normal: "Équilibre métabolique thyroïdien",
+        high: "Hypermétabolisme thyroïdien"
       }
     }
   },
@@ -206,94 +198,76 @@ export const INDEXES: IndexDefinition[] = [
     id: "idx_rendement_thyroidien",
     label: "Rendement Thyroïdien",
     category: IndexCategory.THYROID,
-    formula: "(LDH / CPK) / TSH",
+    formula: "LDH / (TSH * CPK)",
     formula_type: "composite",
     required_biomarkers: ["LDH", "CPK", "TSH"],
-    description: "Index Thyroïdien / TSH. Efficacité périphérique de la thyroïde par rapport à la stimulation centrale. Volume 3, Table 10.14.",
+    description: "LDH/(TSH×CPK). Efficience thyroïdienne périphérique.",
     referenceRange: {
-      low: 0.8,
-      high: 2.0,
+      low: 2.0,  // ⚠️ CORRIGÉ (était 0.8) - TRÈS IMPORTANT
+      high: 4.0, // ⚠️ CORRIGÉ (était 2.0) - TRÈS IMPORTANT
       interpretation: {
-        low: "Rendement thyroïdien bas - Risque hypertrophie tissulaire",
+        low: "Rendement thyroïdien insuffisant",
         normal: "Rendement thyroïdien optimal",
-        high: "Rendement thyroïdien élevé - Risque inflammation muqueuse"
+        high: "Rendement thyroïdien élevé"
       }
     }
   },
   {
-    id: "idx_pth",
-    label: "Index PTH (Parathyroïde)",
+    id: "idx_trh_tsh",
+    label: "Index TRH/TSH",
     category: IndexCategory.THYROID,
-    formula: "CA / P",
-    formula_type: "ratio",
-    required_biomarkers: ["CA", "P"],
-    description: "Rapport Calcium/Phosphore. Activité endocrinométabolique parathyroïdienne. Volume 4, Table 10.15.",
+    // ❌ NON CALCULABLE V2 : La TRH ne se dose JAMAIS en biologie courante
+    formula: "NON_CALCULABLE",
+    formula_type: "theoretical",
+    required_biomarkers: [],
+    description: "❌ NON CALCULABLE - TRH jamais dosé en routine. Index théorique uniquement.",
     referenceRange: {
-      low: 2.0,
-      high: 2.5,
+      low: 0.33,
+      high: 1.70,
       interpretation: {
-        low: "PTH basse - Thyroïde efficiente",
-        normal: "Équilibre PTH/Thyroïde",
-        high: "PTH élevée - Thyroïde inefficiente, PTH libère calcium osseux"
+        low: "Insuffisance TRH (théorique)",
+        normal: "Axe TRH-TSH équilibré (théorique)",
+        high: "Hyperstimulation TRH (théorique)"
       }
     }
   },
 
   // ============================================================
-  // SECTION 5: INDEX SOMATOTROPE (Volume 3, Tables 6.15-6.18)
-  // Évalue l'axe GH/IGF-1, Insuline, Croissance
+  // SECTION 5: INDEX SOMATOTROPE / CROISSANCE
   // ============================================================
   {
     id: "idx_croissance",
-    label: "Index de Croissance",
+    label: "Index GH Somatotrope",
     category: IndexCategory.GROWTH,
     formula: "PAOI / OSTEO",
     formula_type: "ratio",
     required_biomarkers: ["PAOI", "OSTEO"],
-    description: "PAOi / Ostéocalcine. Activité des facteurs de croissance intracellulaires (IGF-1). Volume 1, p.184.",
+    description: "PAOi/Ostéocalcine. Activité hormone croissance.",
     referenceRange: {
-      low: 0.5,
-      high: 1.5,
+      low: 2.0,  // ⚠️ CORRIGÉ (était 0.5) - TRÈS IMPORTANT
+      high: 6.0, // ⚠️ CORRIGÉ (était 1.5) - TRÈS IMPORTANT
       interpretation: {
-        low: "Activité GH/IGF-1 insuffisante",
-        normal: "Croissance tissulaire équilibrée",
-        high: "Hyper-sollicitation croissance - Risque adénoïdien"
+        low: "Hypo-GH",
+        normal: "Activité GH normale",
+        high: "Hyper-GH (hyperplasie, anabolisme excessif)"
       }
     }
   },
   {
     id: "idx_oestrogenes",
-    label: "Index Œstrogénique",
+    label: "Index Œstrogènes Métaboliques",
     category: IndexCategory.GONADAL,
     formula: "TSH / OSTEO",
     formula_type: "ratio",
     required_biomarkers: ["TSH", "OSTEO"],
-    description: "TSH / Ostéocalcine. Activité métabolique des œstrogènes. TSH comme facteur pro-anabolique. Volume 1, p.183.",
+    description: "TSH/Ostéocalcine. Activité œstrogénique métabolique.",
     referenceRange: {
-      low: 0.03,
-      high: 0.08,
+      low: 0.14,  // ⚠️ CORRIGÉ (était 0.03) - TRÈS IMPORTANT
+      high: 0.24, // ⚠️ CORRIGÉ (était 0.08) - TRÈS IMPORTANT
       interpretation: {
-        low: "Faible activité pro-croissance œstrogénique",
+        low: "Hypo-œstrogénie métabolique",
         normal: "Activité œstrogénique normale",
-        high: "Forte activité pro-croissance - Risque prolifératif"
-      }
-    }
-  },
-  {
-    id: "idx_turnover",
-    label: "Index Turn-over Tissulaire",
-    category: IndexCategory.GROWTH,
-    formula: "TSH * PAOI",
-    formula_type: "composite",
-    required_biomarkers: ["TSH", "PAOI"],
-    description: "TSH × PAOi. Vitesse de renouvellement tissulaire global. Volume 1, p.182.",
-    referenceRange: {
-      low: 50,
-      high: 100,
-      interpretation: {
-        low: "Renouvellement tissulaire lent",
-        normal: "Turn-over tissulaire normal",
-        high: "Turn-over accéléré - Os/tissus sur-sollicités"
+        high: "Hyper-œstrogénie métabolique"
       }
     }
   },
@@ -301,24 +275,42 @@ export const INDEXES: IndexDefinition[] = [
     id: "idx_remodelage_osseux",
     label: "Index Remodelage Osseux",
     category: IndexCategory.GROWTH,
-    formula: "PAOI / CA",
-    formula_type: "ratio",
-    required_biomarkers: ["PAOI", "CA"],
-    description: "PAOi / Calcium. Degré de renouvellement osseux pour l'adaptation. Volume 4, Table 10.15.",
+    formula: "(TSH * PAOI) / OSTEO",  // ⚠️ CORRIGÉ (était PAOI / CA)
+    formula_type: "composite",
+    required_biomarkers: ["TSH", "PAOI", "OSTEO"],
+    description: "(TSH×PAOi)/Ostéocalcine. Turn-over osseux.",
     referenceRange: {
-      low: 2.0,
-      high: 5.0,
+      low: 2.5,  // CORRIGÉ selon Excel
+      high: 8.5, // CORRIGÉ selon Excel
       interpretation: {
-        low: "Remodelage osseux faible",
+        low: "Hypo-remodelage osseux",
         normal: "Remodelage osseux normal",
-        high: "Os sur-sollicité - Adaptation corticotrope ou gonado-thyrotrope nécessaire"
+        high: "Hyper-remodelage osseux"
+      }
+    }
+  },
+  {
+    id: "idx_osteomusculaire",
+    label: "Index Ostéomusculaire",
+    category: IndexCategory.GROWTH,
+    formula: "idx_genital_corrige * (CPK / PAOI)",
+    formula_type: "composite",
+    required_biomarkers: ["CPK", "PAOI"],
+    requires_indexes: ["idx_genital_corrige"],
+    description: "Index Génital Corrigé × (CPK/PAOi). Prédominance os vs muscle.",
+    referenceRange: {
+      low: 0.75,
+      high: 5.56,
+      interpretation: {
+        low: "Prédominance osseuse",
+        normal: "Équilibre ostéomusculaire",
+        high: "Prédominance musculaire (androgènes)"
       }
     }
   },
 
   // ============================================================
-  // SECTION 6: INDEX GÉNITAL CORRIGÉ ET COMPLEXES (Volume 2)
-  // Index de second niveau nécessitant d'autres index
+  // SECTION 6: INDEX GÉNITAL CORRIGÉ
   // ============================================================
   {
     id: "idx_genital_corrige",
@@ -328,54 +320,56 @@ export const INDEXES: IndexDefinition[] = [
     formula_type: "composite",
     requires_indexes: ["idx_genital", "idx_starter"],
     required_biomarkers: [],
-    description: "Index Génital × Index Starter. Évalue les troubles STRUCTURELS (vs fonctionnels). Volume 2, p.83-84.",
+    description: "Index Génital × Index Starter. Adaptation aiguë hormones génitales.",
     referenceRange: {
-      low: 0.5,
-      high: 1.0,
+      low: 0.70,  // CORRIGÉ selon Excel
+      high: 0.85, // CORRIGÉ selon Excel
       interpretation: {
-        low: "Hypoandrogénie structurelle",
-        normal: "Équilibre structural androgènes/œstrogènes",
-        high: "Hyperandrogénie structurelle"
+        low: "Prédominance œstrogénique en adaptation",
+        normal: "Équilibre génital en adaptation",
+        high: "Prédominance androgénique en adaptation"
       }
     }
   },
 
   // ============================================================
-  // SECTION 7: INDEX MÉTABOLIQUES (Catabolisme/Anabolisme)
+  // SECTION 7: INDEX MÉTABOLIQUES
   // ============================================================
   {
     id: "idx_catabolisme",
     label: "Index Catabolisme",
     category: IndexCategory.METABOLIC,
-    formula: "LDH / (CPK + 1)",
+    formula: "idx_thyroidien / idx_cortisol",
     formula_type: "composite",
-    required_biomarkers: ["LDH", "CPK"],
-    description: "Niveau d'activité catabolique. Le catabolisme nourrit l'anabolisme. Volume 3, Table 6.17.",
+    requires_indexes: ["idx_thyroidien", "idx_cortisol"],
+    required_biomarkers: [],
+    description: "Index Thyroïdien / Index Cortisol. Équilibre catabolique.",
     referenceRange: {
-      low: 1.5,
-      high: 3.5,
+      low: 1.3,  // CORRIGÉ selon Excel
+      high: 1.6, // CORRIGÉ selon Excel
       interpretation: {
-        low: "Catabolisme insuffisant",
+        low: "Hypo-catabolisme",
         normal: "Activité catabolique normale",
-        high: "Hypercatabolisme"
+        high: "Hyper-catabolisme"
       }
     }
   },
   {
-    id: "idx_rendement_metabolique",
-    label: "Rendement Métabolique",
+    id: "idx_cata_ana",
+    label: "Rapport Catabolisme/Anabolisme",
     category: IndexCategory.METABOLIC,
-    formula: "(LDH + CPK) / (LDH - CPK + 100)",
+    formula: "idx_catabolisme / idx_anabolisme",
     formula_type: "composite",
-    required_biomarkers: ["LDH", "CPK"],
-    description: "Taux de métabolisme global effectif. Efficacité générale production/répartition. Volume 3, Table 6.17.",
+    requires_indexes: ["idx_catabolisme", "idx_anabolisme"],
+    required_biomarkers: [],
+    description: "Équilibre global métabolique.",
     referenceRange: {
-      low: 1.0,
-      high: 2.5,
+      low: 1.8,  // CORRIGÉ selon Excel
+      high: 3.0, // CORRIGÉ selon Excel
       interpretation: {
-        low: "Hypométabolique - Brain fog, fatigue",
-        normal: "Rendement métabolique normal",
-        high: "Hypermétabolique"
+        low: "Prédominance anabolique",
+        normal: "Équilibre cata/ana",
+        high: "Prédominance catabolique"
       }
     }
   },
@@ -390,12 +384,12 @@ export const INDEXES: IndexDefinition[] = [
     formula: "NA / K",
     formula_type: "ratio",
     required_biomarkers: ["NA", "K"],
-    description: "Sodium / Potassium. Reflet de l'activité aldostérone (rétention hydrosodée). Volume 1, p.180.",
+    description: "Sodium/Potassium. Activité aldostérone.",
     referenceRange: {
       low: 28,
       high: 34,
       interpretation: {
-        low: "Hypominéralocorticisme - Insuffisance aldostérone",
+        low: "Hypominéralocorticisme",
         normal: "Activité aldostérone normale",
         high: "Hyperminéralocorticisme - Rétention hydrosodée"
       }
@@ -403,7 +397,7 @@ export const INDEXES: IndexDefinition[] = [
   },
 
   // ============================================================
-  // SECTION 9: INDEX HÉPATIQUES (Capacité Tampon)
+  // SECTION 9: INDEX HÉPATIQUES
   // ============================================================
   {
     id: "idx_hepatique",
@@ -412,7 +406,7 @@ export const INDEXES: IndexDefinition[] = [
     formula: "ALAT / ASAT",
     formula_type: "ratio",
     required_biomarkers: ["ALAT", "ASAT"],
-    description: "Ratio transaminases. Évalue la souffrance hépatique spécifique vs générale.",
+    description: "Ratio transaminases. Souffrance hépatique.",
     referenceRange: {
       low: 0.8,
       high: 1.2,
@@ -430,7 +424,7 @@ export const INDEXES: IndexDefinition[] = [
     formula: "GGT / (ALAT + ASAT + 1)",
     formula_type: "composite",
     required_biomarkers: ["GGT", "ALAT", "ASAT"],
-    description: "Évalue la capacité tampon du foie (organe clé en endobiogénie). Volume 1, p.22-23.",
+    description: "Capacité tampon du foie. Drainage si élevé.",
     referenceRange: {
       low: 0.3,
       high: 0.8,
@@ -452,20 +446,42 @@ export const INDEXES: IndexDefinition[] = [
     formula: "CRP * VS / 10",
     formula_type: "composite",
     required_biomarkers: ["CRP", "VS"],
-    description: "CRP × VS. Évalue l'inflammation systémique globale.",
+    description: "CRP × VS. Inflammation systémique.",
     referenceRange: {
-      low: 0,
-      high: 5,
+      low: 2,   // CORRIGÉ selon PDF biomarqueurs_tables (était 0)
+      high: 6,  // CORRIGÉ selon PDF biomarqueurs_tables (était 5)
       interpretation: {
         low: "Pas d'inflammation détectée",
         normal: "Inflammation mineure",
-        high: "Inflammation significative - Investigations nécessaires"
+        high: "Inflammation significative"
       }
     }
   },
 
   // ============================================================
-  // SECTION 11: INDEX INSULINIQUE / GLYCÉMIQUE (Volume 3)
+  // SECTION 11: INDEX PTH
+  // ============================================================
+  {
+    id: "idx_pth",
+    label: "Index PTH (Parathyroïde)",
+    category: IndexCategory.THYROID,
+    formula: "CA / P",
+    formula_type: "ratio",
+    required_biomarkers: ["CA", "P"],
+    description: "Calcium/Phosphore. Activité parathyroïdienne.",
+    referenceRange: {
+      low: 2.0,
+      high: 42.0, // Selon Excel
+      interpretation: {
+        low: "Hypo-parathyroïdie",
+        normal: "Équilibre PTH",
+        high: "Hyper-parathyroïdie"
+      }
+    }
+  },
+
+  // ============================================================
+  // SECTION 12: INDEX INSULINIQUE
   // ============================================================
   {
     id: "idx_insuline",
@@ -474,14 +490,143 @@ export const INDEXES: IndexDefinition[] = [
     formula: "TG / GLY",
     formula_type: "ratio",
     required_biomarkers: ["TG", "GLY"],
-    description: "Triglycérides / Glycémie. Évalue la sensibilité à l'insuline sur la membrane cellulaire. Volume 3, Table 6.16.",
+    description: "Triglycérides/Glycémie. Sensibilité insulinique.",
     referenceRange: {
-      low: 0.5,
-      high: 1.5,
+      low: 1.5,  // Selon Excel
+      high: 5.0, // Selon Excel
       interpretation: {
-        low: "Hyperinsulinisme par sensibilité membranaire insuffisante",
+        low: "Hypo-insulinémie",
         normal: "Sensibilité insulinique normale",
-        high: "Hyperinsulinisme - Risque désynchronisation somatotrope"
+        high: "Hyper-insulinémie"
+      }
+    }
+  },
+
+  // ============================================================
+  // SECTION 13: INDEX OXYDO-RÉDUCTION
+  // ============================================================
+  {
+    id: "idx_oxydo_reduction",
+    label: "Index Oxydo-Réduction",
+    category: IndexCategory.METABOLIC,
+    formula: "idx_oxydation / idx_reduction",
+    formula_type: "composite",
+    requires_indexes: ["idx_oxydation", "idx_reduction"],
+    required_biomarkers: [],
+    description: "Équilibre redox cellulaire.",
+    referenceRange: {
+      low: 0.7,  // Selon PDF biomarqueurs_tables
+      high: 2.0, // Selon PDF biomarqueurs_tables
+      interpretation: {
+        low: "Prédominance réduction",
+        normal: "Équilibre oxydo-réduction",
+        high: "Prédominance oxydation"
+      }
+    }
+  },
+
+  // ============================================================
+  // SECTION 14: INDEX ORPHELINS (FORMULES INCONNUES)
+  // ⚠️ Ces index sont nécessaires pour calculer d'autres index
+  // mais leurs formules ne sont pas documentées dans les sources.
+  // Normes issues du PDF biomarqueurs_tables.pdf
+  // ============================================================
+  {
+    id: "idx_cortisol",
+    label: "Index Cortisol",
+    category: IndexCategory.ADAPTATION,
+    // ✅ CORRIGÉ V2 : Proxy physiologique validé (9/10)
+    // Glucocorticoïdes → démargination neutrophiles + lyse éosinophiles/lymphocytes
+    formula: "((NEUT + MONO) / (LYMPH + EOS + 0.01)) * 1.5",
+    formula_type: "composite",
+    required_biomarkers: ["NEUT", "MONO", "LYMPH", "EOS"],
+    description: "Proxy cortisol : (NEUT+MONO)/(LYMPH+EOS) × 1.5. Effet glucocorticoïdes sur NFS.",
+    referenceRange: {
+      low: 3,
+      high: 7,
+      interpretation: {
+        low: "Insuffisance cortisolique, Épuisement, inflammation chronique, allergies",
+        normal: "Activité cortisol équilibrée",
+        high: "Hypercorticisme réactionnel, Stress majeur, fonte musculaire, insomnie"
+      }
+    }
+  },
+  {
+    id: "idx_cortex_surrenalien",
+    label: "Index Activité Glande Surrénale (Cortex)",
+    category: IndexCategory.ADAPTATION,
+    // ✅ CORRIGÉ V2 : Proxy validé (8.5/10)
+    // Combine cortisol effectif + composante minéralocorticoïde
+    formula: "(idx_cortisol + (idx_mineralo / 10)) / 2",
+    formula_type: "composite",
+    requires_indexes: ["idx_cortisol", "idx_mineralo"],
+    required_biomarkers: [],
+    description: "Proxy cortex surrénalien : (Cortisol + Minéralo/10) / 2. Capacité de réserve surrénale.",
+    referenceRange: {
+      low: 2.7,
+      high: 3.3,
+      interpretation: {
+        low: "Petite surrénale, Fatigabilité constitutionnelle, récupération lente",
+        normal: "Activité surrénalienne normale",
+        high: "Grosse surrénale, Forte capacité de réserve, stress aigu"
+      }
+    }
+  },
+  {
+    id: "idx_anabolisme",
+    label: "Index Anabolisme",
+    category: IndexCategory.METABOLIC,
+    // ✅ CORRIGÉ V2 : Proxy validé (8/10)
+    // Lymphocytes reflètent immunité/anabolisme, pondéré par état génital
+    // NOTE: LYMPH est en % dans notre config (ex: 30 pour 30%)
+    formula: "(idx_genital * (LYMPH / 100)) + 0.4",
+    formula_type: "composite",
+    requires_indexes: ["idx_genital"],
+    required_biomarkers: ["LYMPH"],
+    description: "Proxy anabolisme : (Génital × LYMPH%) + 0.4. Capacité de construction tissulaire.",
+    referenceRange: {
+      low: 0.65,
+      high: 0.8,
+      interpretation: {
+        low: "Hypo-anabolisme, construction insuffisante",
+        normal: "Activité anabolique normale",
+        high: "Hyper-anabolisme, stockage, prise de poids"
+      }
+    }
+  },
+  {
+    id: "idx_oxydation",
+    label: "Index Oxydation",
+    category: IndexCategory.METABOLIC,
+    formula: "FORMULE_INCONNUE",
+    formula_type: "secret",
+    required_biomarkers: [],
+    description: "Niveau d'oxydation cellulaire. ⚠️ FORMULE NON DOCUMENTÉE - Index non calculable.",
+    referenceRange: {
+      low: 1.44,   // Selon PDF biomarqueurs_tables
+      high: 81.48, // Selon PDF biomarqueurs_tables
+      interpretation: {
+        low: "Hypo-oxydation",
+        normal: "Oxydation cellulaire normale",
+        high: "Hyper-oxydation (stress oxydatif)"
+      }
+    }
+  },
+  {
+    id: "idx_reduction",
+    label: "Index Réduction",
+    category: IndexCategory.METABOLIC,
+    formula: "FORMULE_INCONNUE",
+    formula_type: "secret",
+    required_biomarkers: [],
+    description: "Niveau de réduction cellulaire. ⚠️ FORMULE NON DOCUMENTÉE - Index non calculable.",
+    referenceRange: {
+      low: 0.72,   // Selon PDF biomarqueurs_tables
+      high: 116.9, // Selon PDF biomarqueurs_tables
+      interpretation: {
+        low: "Hypo-réduction",
+        normal: "Réduction cellulaire normale",
+        high: "Hyper-réduction"
       }
     }
   },

@@ -198,6 +198,7 @@ export async function GET(req: NextRequest) {
         id: true,
         nom: true,
         prenom: true,
+        sexe: true,
         interrogatoire: true,
         userId: true,
       },
@@ -218,10 +219,12 @@ export async function GET(req: NextRequest) {
     }
 
     // 4. Retourner l'interrogatoire (peut être null si jamais rempli)
+    // Le sexe de la fiche patient est utilisé (non modifiable dans l'interrogatoire)
     return NextResponse.json({
       patientId: patient.id,
       nom: patient.nom,
       prenom: patient.prenom,
+      sexe: patient.sexe || "F", // Sexe de la fiche patient (fallback F)
       interrogatoire: patient.interrogatoire as InterrogatoireEndobiogenique | null,
     });
 

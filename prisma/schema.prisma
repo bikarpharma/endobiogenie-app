@@ -53,7 +53,6 @@ model Account {
   access_token      String?
   expires_at        Int?
   token_type        String?
-  scope             String?
   id_token          String?
   session_state     String?
 
@@ -122,7 +121,7 @@ model Message {
 
 // Table "patients" : dossiers patients
 model Patient {
-  id     String @id @default(cuid())
+  id     String  @id @default(cuid())
   userId String? // Praticien propriétaire (optionnel)
 
   // Informations patient
@@ -135,11 +134,13 @@ model Patient {
   email         String?
   notes         String?   @db.Text
 
-  // ATCD & Allergies (champs texte libres)
-  allergies        String? @db.Text
-  atcdMedicaux     String? @db.Text
-  atcdChirurgicaux String? @db.Text
-  traitements      String? @db.Text // Traitements en cours (legacy)
+  // ATCD & Allergies
+  allergies           String? @db.Text // Legacy - texte libre des allergies (gardé pour compatibilité)
+  allergiesStructured Json? // PatientAllergyEntry[] - Liste structurée des allergies
+  allergiesNotes      String? @db.Text // Notes libres sur les allergies
+  atcdMedicaux        String? @db.Text
+  atcdChirurgicaux    String? @db.Text
+  traitements         String? @db.Text // Traitements en cours (legacy)
 
   // Champs pour système d'ordonnance IA
   traitementActuel          String? @db.Text // Traitements actuels détaillés
@@ -153,6 +154,10 @@ model Patient {
   symptomesActuels     Json? // string[] - Symptômes rapportés par le patient
   autresBilans         Json? // { alat?: number, asat?: number, vitamineD?: number, ... } - Autres résultats biologiques
 
+  // === TERRAIN CHRONIQUE (APCI & MALADIES CHRONIQUES) ===
+  // PatientChronicProfile { apcis: PatientApciEntry[], otherDiseases: PatientChronicDiseaseEntry[] }
+  chronicProfile Json? // Profil chronique complet (APCI + autres maladies chroniques hors APCI)
+
   // === INTERROGATOIRE ENDOBIOGÉNIQUE COMPLET ===
   interrogatoire Json? // InterrogatoireEndobiogenique - 8 axes cliniques
 
@@ -165,8 +170,8 @@ model Patient {
   archivedAt DateTime?
 
   // Relations
-  user            User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  consultations   Consultation[]
+  user               User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultations      Consultation[]
   bdfAnalyses        BdfAnalysis[]
   anthropometries    Anthropometrie[]
   ordonnances        Ordonnance[]
@@ -252,8 +257,8 @@ model Consultation {
   bdfAnalysisId String?
 
   // Relations
-  patient        Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  bdfResults     BdfResult[]
+  patient         Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bdfResults      BdfResult[]
   bdfIndexResults BdfIndexResult[]
 
   createdAt DateTime @default(now())
@@ -269,13 +274,14 @@ model Ordonnance {
   patientId     String
   bdfAnalysisId String? // Lien optionnel vers l'analyse BdF source
 
-  // === STRUCTURE EN 3 VOLETS ===
+  // === STRUCTURE EN 4 VOLETS ===
   voletEndobiogenique Json @default("[]") // RecommandationTherapeutique[] - Endobiogénie
-  voletPhytoElargi    Json @default("[]") // RecommandationTherapeutique[] - Phyto/Gemmo/Aroma élargi
+  voletPhytoElargi    Json @default("[]") // RecommandationTherapeutique[] - Phyto/Gemmo élargi
+  voletAromatherapie  Json @default("[]") // PrescriptionHE[] - Huiles essentielles dédiées
   voletComplements    Json @default("[]") // RecommandationTherapeutique[] - Micro-nutrition ciblée
 
-  // Scope thérapeutique utilisé (pour affichage dynamique)
-  scope Json? // TherapeuticScope { planteMedicinale, gemmotherapie, aromatherapie, micronutrition }
+  // === CONTENU ADAPTÉ TUNISIE ===
+  adaptedContent Json? // PrescriptionOutput - Version adaptée au contexte tunisien
 
   // === MÉTADONNÉES ===
   syntheseClinique       String    @default("") @db.Text // Raisonnement détaillé (étape 1: axes perturbés, hypothèses)
@@ -288,6 +294,7 @@ model Ordonnance {
 
   // === CONVERSATION IA ===
   chatMessagesJson Json? // ChatMessage[] - Historique conversation avec l'IA (optionnel, legacy)
+  threadId         String? // Thread OpenAI Assistants API pour persistance de la conversation
 
   // Relations
   patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -326,12 +333,12 @@ model AxeInterpretation {
   axe       String // "neurovegetatif" | "adaptatif" | "thyroidien" | "gonadique" | "digestif" | "immuno" | "rythmes" | "axesdevie"
 
   // === RÉSULTAT DE L'INTERPRÉTATION IA ===
-  orientation      String @db.Text // Ex: "Profil hypersympathicotonique avec tendance hypercortisolique"
-  mecanismes       Json // string[] - Mécanismes fisiopatologiques identifiés
-  prudences        Json // string[] - Points de vigilance clinique
-  modulateurs      Json // string[] - Modulateurs génériques (ex: "Plantes régulatrices axe HHS")
-  resumeClinique   String @db.Text // Synthèse narrative pour le praticien
-  confiance        Float  @default(0.8) // Score de confiance de l'IA (0-1)
+  orientation    String @db.Text // Ex: "Profil hypersympathicotonique avec tendance hypercortisolique"
+  mecanismes     Json // string[] - Mécanismes fisiopatologiques identifiés
+  prudences      Json // string[] - Points de vigilance clinique
+  modulateurs    Json // string[] - Modulateurs génériques (ex: "Plantes régulatrices axe HHS")
+  resumeClinique String @db.Text // Synthèse narrative pour le praticien
+  confiance      Float  @default(0.8) // Score de confiance de l'IA (0-1)
 
   // Relations
   patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -353,22 +360,22 @@ model UnifiedSynthesis {
   content Json // Contenu de l'analyse au format UnifiedAnalysisOutput
 
   // Métadonnées
-  nombreAxesAnalyses       Int      @default(0) // Nombre d'axes utilisés pour la synthèse
-  inclusBiologieFonction   Boolean  @default(false) // Inclut données BdF dans l'analyse
-  confiance                Float    @default(0.8) // Score de confiance global (0-1)
-  modelUsed                String? // Modèle IA utilisé, ex: gpt-4o-2024-05-13
-  promptVersion            String? // Version du prompt, ex: v2.1-endobiogeny-expert
-  inputHash                String? // Hash des données d'entrée pour détecter les changements
-  executionTimeMs          Int? // Temps d'exécution en millisecondes
+  nombreAxesAnalyses     Int     @default(0) // Nombre d'axes utilisés pour la synthèse
+  inclusBiologieFonction Boolean @default(false) // Inclut données BdF dans l'analyse
+  confiance              Float   @default(0.8) // Score de confiance global (0-1)
+  modelUsed              String? // Modèle IA utilisé, ex: gpt-4o-2024-05-13
+  promptVersion          String? // Version du prompt, ex: v2.1-endobiogeny-expert
+  inputHash              String? // Hash des données d'entrée pour détecter les changements
+  executionTimeMs        Int? // Temps d'exécution en millisecondes
 
   // Versioning
-  version                  Int      @default(1) // Numéro de version de cette synthèse
-  supersededById           String? // ID de la version qui remplace celle-ci
-  isLatest                 Boolean  @default(true) // Indique si c'est la version la plus récente
+  version        Int     @default(1) // Numéro de version de cette synthèse
+  supersededById String? // ID de la version qui remplace celle-ci
+  isLatest       Boolean @default(true) // Indique si c'est la version la plus récente
 
   // Relations
-  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  supersededBy UnifiedSynthesis? @relation("VersionHistory", fields: [supersededById], references: [id], onDelete: SetNull)
+  patient          Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  supersededBy     UnifiedSynthesis?  @relation("VersionHistory", fields: [supersededById], references: [id], onDelete: SetNull)
   previousVersions UnifiedSynthesis[] @relation("VersionHistory")
 
   createdAt DateTime @default(now())
@@ -382,21 +389,21 @@ model UnifiedSynthesis {
 
 // Enum : types d'index BdF
 enum BdfIndexType {
-  DIRECT    // Index calculé directement depuis biomarqueurs (ex: ratio, product)
-  INDIRECT  // Index dérivé d'autres index
+  DIRECT // Index calculé directement depuis biomarqueurs (ex: ratio, product)
+  INDIRECT // Index dérivé d'autres index
   COMPOSITE // Index avec formule complexe
 }
 
 // Table "biomarkers" : biomarqueurs biologiques
 model Biomarker {
-  id          String  @id @default(cuid())
-  code        String  @unique // ex: "TSH", "LDH", "GR"
-  name        String
-  unit        String?
-  description String?
+  id           String   @id @default(cuid())
+  code         String   @unique // ex: "TSH", "LDH", "GR"
+  name         String
+  unit         String?
+  description  String?
   referenceMin Decimal? @db.Decimal(10, 3)
   referenceMax Decimal? @db.Decimal(10, 3)
-  category    String // ex: "thyroid", "adrenal", "ionogram", "enzyme", "tumor"
+  category     String // ex: "thyroid", "adrenal", "ionogram", "enzyme", "tumor"
 
   // Relations
   panels BdfPanelBiomarker[]
@@ -459,10 +466,10 @@ model BdfIndexDefinition {
 
 // Table "bdf_results" : valeurs biologiques d'une consultation
 model BdfResult {
-  id             String  @id @default(cuid())
+  id             String   @id @default(cuid())
   consultationId String
   biomarkerCode  String // Code du biomarqueur
-  value          Decimal @db.Decimal(10, 3)
+  value          Decimal  @db.Decimal(10, 3)
   unit           String?
   referenceMin   Decimal? @db.Decimal(10, 3)
   referenceMax   Decimal? @db.Decimal(10, 3)
@@ -506,30 +513,30 @@ model BdfIndexResult {
 
 /// Niveau de preuve pour les usages traditionnels
 enum EvidenceLevel {
-  TRADITION_ONLY    // Usage rapporté uniquement par la tradition
-  PRECLINICAL_DATA  // Données expérimentales (in vitro / in vivo)
+  TRADITION_ONLY // Usage rapporté uniquement par la tradition
+  PRECLINICAL_DATA // Données expérimentales (in vitro / in vivo)
   SOME_CLINICAL_DATA // Quelques données cliniques humaines
 }
 
 /// Type de source bibliographique
 enum SourceType {
-  BOOK            // Ouvrage de référence
-  THESIS          // Thèse universitaire
-  ARTICLE         // Article scientifique
+  BOOK // Ouvrage de référence
+  THESIS // Thèse universitaire
+  ARTICLE // Article scientifique
   FIELD_INTERVIEW // Enquête de terrain
-  REPORT          // Rapport institutionnel
+  REPORT // Rapport institutionnel
 }
 
 /// Plante documentaire du Phytodex (Tunisie / Maghreb)
 model PhytodexPlant {
-  id          Int      @id @default(autoincrement())
-  latinName   String   // Ex : Rosmarinus officinalis
-  family      String?  // Famille botanique (optionnel pour MVP)
+  id        Int     @id @default(autoincrement())
+  latinName String // Ex : Rosmarinus officinalis
+  family    String? // Famille botanique (optionnel pour MVP)
 
   // Noms vernaculaires
-  mainVernacularName   String?  // Nom français courant
-  arabicName           String?  // Nom en arabe (ex: شندقورة)
-  otherVernacularNames String?  // Liste séparée par virgules pour MVP
+  mainVernacularName   String? // Nom français courant
+  arabicName           String? // Nom en arabe (ex: شندقورة)
+  otherVernacularNames String? // Liste séparée par virgules pour MVP
 
   // Contexte géographique
   region String? // Ex : "Nord Tunisie", "Cap Bon", "Sud / zones arides"

@@ -1,24 +1,372 @@
 // ========================================
 // API CHAT ORDONNANCE - /api/ordonnances/[id]/chat
 // ========================================
-// POST : Chat contextuel avec l'ordonnance
+// POST : Chat contextuel avec l'ordonnance via OpenAI Assistants API
 // Permet au praticien de poser des questions, demander des modifications
+// Utilise l'Assistant configuré avec le VectorStore complet (26MB)
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { Agent, fileSearchTool, Runner } from "@openai/agents";
-import type { AgentInputItem } from "@openai/agents";
-import { VECTORSTORES } from "@/lib/ordonnance/constants";
+import { openai, ASSISTANT_ORDONNANCE_ID, ASSISTANT_DIAGNOSTIC_ID } from "@/lib/openai";
 import type {
   ChatMessage,
   RecommandationTherapeutique,
   FormeGalenique,
 } from "@/lib/ordonnance/types";
 import { v4 as uuidv4 } from "uuid";
+import { getTunisianProductsContext } from "@/lib/utils/tunisianAdapter";
+
+// ==========================================
+// DÉTECTION DU TYPE DE QUESTION
+// ==========================================
+
+type QuestionType = "diagnostic" | "ordonnance" | "mixte";
+
+/**
+ * Détecte si la question concerne le diagnostic (terrain, axes, BdF)
+ * ou l'ordonnance (plantes, posologies, modifications)
+ */
+function detectQuestionType(message: string): QuestionType {
+  const msgLower = message.toLowerCase();
+
+  // Mots-clés pour le diagnostic/terrain
+  const diagnosticKeywords = [
+    "terrain", "diagnostic", "bdf", "biologie des fonctions",
+    "axe", "corticotrope", "thyréotrope", "gonadotrope", "somatotrope",
+    "sna", "sympathique", "parasympathique", "vagal",
+    "index", "indice", "score", "perturbation",
+    "pourquoi ce terrain", "expliquer le terrain",
+    "comprendre", "analyser", "interpréter",
+    "déséquilibre", "mécanisme", "physiopathologie",
+    "spasmophilie", "hypercortisolisme", "hypothyroïdie",
+    "quel est le problème", "que montre", "signifie",
+  ];
+
+  // Mots-clés pour l'ordonnance/prescription
+  const ordonnanceKeywords = [
+    "plante", "ajouter", "retirer", "remplacer", "modifier",
+    "posologie", "dosage", "dose", "combien",
+    "eps", "mg", "he", "huile essentielle", "teinture",
+    "microsphère", "gélule", "gouttes",
+    "ordonnance", "prescription", "traitement",
+    "passiflore", "valériane", "cassis", "ribes", "tilleul",
+    "drainage", "émonctoire", "foie", "rein",
+    "alternative", "remplacer par", "à la place",
+    "contre-indication", "interaction", "allergie",
+    "durée", "combien de temps", "renouveler",
+  ];
+
+  // Compter les correspondances
+  let diagnosticScore = 0;
+  let ordonnanceScore = 0;
+
+  for (const kw of diagnosticKeywords) {
+    if (msgLower.includes(kw)) diagnosticScore++;
+  }
+
+  for (const kw of ordonnanceKeywords) {
+    if (msgLower.includes(kw)) ordonnanceScore++;
+  }
+
+  // Déterminer le type
+  if (diagnosticScore > ordonnanceScore && diagnosticScore >= 2) {
+    return "diagnostic";
+  } else if (ordonnanceScore > diagnosticScore && ordonnanceScore >= 1) {
+    return "ordonnance";
+  } else if (diagnosticScore > 0 && ordonnanceScore > 0) {
+    return "mixte";
+  }
+
+  // Par défaut: ordonnance (car c'est le contexte principal du chat)
+  return "ordonnance";
+}
+
+/**
+ * Sélectionne l'Assistant approprié selon le type de question
+ */
+function selectAssistant(questionType: QuestionType): { id: string; name: string } {
+  switch (questionType) {
+    case "diagnostic":
+      return { id: ASSISTANT_DIAGNOSTIC_ID, name: "Expert Diagnostic" };
+    case "ordonnance":
+      return { id: ASSISTANT_ORDONNANCE_ID, name: "Expert Ordonnance" };
+    case "mixte":
+      // Pour les questions mixtes, on utilise le dual-Assistant (voir callDualAssistants)
+      return { id: ASSISTANT_ORDONNANCE_ID, name: "Expert Ordonnance" };
+    default:
+      return { id: ASSISTANT_ORDONNANCE_ID, name: "Expert Ordonnance" };
+  }
+}
+
+// ==========================================
+// DUAL-ASSISTANT POUR QUESTIONS MIXTES
+// ==========================================
+
+interface AssistantResponse {
+  text: string;
+  assistantName: string;
+}
+
+/**
+ * Nettoie la réponse de l'Assistant en supprimant le JSON parasite au début/fin
+ * et en formatant correctement le texte
+ */
+function cleanAssistantResponse(response: string): string {
+  let cleaned = response;
+
+  // Supprimer les blocs JSON au début (```json ... ```)
+  cleaned = cleaned.replace(/^```json\s*\n?[\s\S]*?```\s*\n?/i, '');
+
+  // Supprimer les blocs JSON bruts au début { "reponse": ... }
+  cleaned = cleaned.replace(/^\s*\{\s*"reponse"\s*:\s*\{[\s\S]*?\}\s*\}\s*/i, '');
+
+  // Supprimer tout JSON orphelin au début
+  cleaned = cleaned.replace(/^\s*\{\s*"[^"]+"\s*:\s*[\s\S]*?\}\s*\n*/i, '');
+
+  // Supprimer les marqueurs de code résiduels
+  cleaned = cleaned.replace(/^```\w*\s*\n?/gm, '');
+  cleaned = cleaned.replace(/\n?```\s*$/gm, '');
+
+  // Nettoyer les espaces multiples et lignes vides excédentaires
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  cleaned = cleaned.trim();
+
+  return cleaned;
+}
+
+/**
+ * Exécute un Run sur un Assistant et attend la réponse
+ */
+async function runAssistantAndWait(
+  threadId: string,
+  assistantId: string,
+  assistantName: string,
+  maxAttempts: number = 45
+): Promise<AssistantResponse> {
+  // Créer le Run
+  const run = await openai.beta.threads.runs.create(threadId, {
+    assistant_id: assistantId,
+  });
+
+  // Polling pour attendre la complétion - intervalle 3s pour réduire les coûts API
+  const POLLING_INTERVAL_MS = 3000;
+  let runStatus = run;
+  let attempts = 0;
+
+  while (runStatus.status !== "completed" && runStatus.status !== "failed" && attempts < maxAttempts) {
+    await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
+    runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: threadId });
+    attempts++;
+  }
+
+  if (runStatus.status === "failed") {
+    throw new Error(`${assistantName} failed: ${runStatus.last_error?.message || "Unknown error"}`);
+  }
+
+  if (runStatus.status !== "completed") {
+    throw new Error(`${assistantName} timeout after ${maxAttempts}s`);
+  }
+
+  // Récupérer le dernier message
+  const messages = await openai.beta.threads.messages.list(threadId, {
+    order: "desc",
+    limit: 1,
+  });
+
+  const assistantMsg = messages.data[0];
+  let responseText = "";
+
+  if (assistantMsg && assistantMsg.role === "assistant") {
+    const textContent = assistantMsg.content.find((c) => c.type === "text");
+    if (textContent && textContent.type === "text") {
+      responseText = textContent.text.value;
+    }
+  }
+
+  return { text: responseText, assistantName };
+}
+
+/**
+ * Appelle les deux Assistants en parallèle pour les questions mixtes
+ * et fusionne leurs réponses avec contexte tunisien
+ */
+async function callDualAssistants(
+  contextPrompt: string,
+  userMessage: string
+): Promise<{ fusedResponse: string; diagnosticResponse: string; ordonnanceResponse: string }> {
+  console.log("🔀 Mode DUAL-ASSISTANT activé (question mixte)");
+
+  // Récupérer le contexte des produits tunisiens pour l'Expert Ordonnance
+  const tunisianContext = getTunisianProductsContext();
+
+  // Créer deux threads séparés (un pour chaque Assistant)
+  // Car on ne peut pas avoir deux Runs simultanés sur le même thread
+  const [threadDiagnostic, threadOrdonnance] = await Promise.all([
+    openai.beta.threads.create({
+      messages: [
+        {
+          role: "user",
+          content: `${contextPrompt}
+
+[INSTRUCTIONS]
+- Explique le MÉCANISME TERRAIN et la PHYSIOPATHOLOGIE endobiogénique
+- Connecte les axes (Corticotrope, Thyréotrope, Gonadotrope, Somatotrope, SNA)
+- Sois pédagogique mais concis (max 150 mots)
+- NE PAS générer de JSON, réponds en texte naturel`,
+        },
+      ],
+    }),
+    openai.beta.threads.create({
+      messages: [
+        {
+          role: "user",
+          content: `${contextPrompt}
+
+${tunisianContext}
+
+[INSTRUCTIONS]
+- Propose les MODIFICATIONS PRATIQUES de l'ordonnance
+- Utilise UNIQUEMENT les formes disponibles en Tunisie (voir liste ci-dessus)
+- Indique posologie tunisienne (Microsphères: 2-3 gél/jour, Macérat: 15 gttes/jour 5j/7)
+- Sois concis (max 150 mots)
+- NE PAS générer de JSON, réponds en texte naturel`,
+        },
+      ],
+    }),
+  ]);
+
+  console.log(`📝 Threads créés: Diagnostic=${threadDiagnostic.id.slice(0, 10)}... | Ordonnance=${threadOrdonnance.id.slice(0, 10)}...`);
+
+  // Appeler les deux Assistants en parallèle
+  const [diagnosticResult, ordonnanceResult] = await Promise.all([
+    runAssistantAndWait(threadDiagnostic.id, ASSISTANT_DIAGNOSTIC_ID, "Expert Diagnostic"),
+    runAssistantAndWait(threadOrdonnance.id, ASSISTANT_ORDONNANCE_ID, "Expert Ordonnance"),
+  ]);
+
+  // Nettoyer les réponses (supprimer JSON parasite)
+  const cleanedDiagnostic = cleanAssistantResponse(diagnosticResult.text);
+  const cleanedOrdonnance = cleanAssistantResponse(ordonnanceResult.text);
+
+  console.log(`✅ Expert Diagnostic: ${cleanedDiagnostic.length} caractères (nettoyé)`);
+  console.log(`✅ Expert Ordonnance: ${cleanedOrdonnance.length} caractères (nettoyé)`);
+
+  // Fusionner les réponses avec une mise en page claire
+  const fusedResponse = `### 🧬 Analyse du Terrain
+
+${cleanedDiagnostic}
+
+---
+
+### 💊 Recommandation Thérapeutique
+
+${cleanedOrdonnance}
+
+---
+*Réponse générée par IntegrIA (Dual-Expert Mode)*`;
+
+  return {
+    fusedResponse,
+    diagnosticResponse: cleanedDiagnostic,
+    ordonnanceResponse: cleanedOrdonnance,
+  };
+}
+
+/**
+ * Appelle un seul Assistant (mode standard pour questions non-mixtes)
+ * Gère la persistance du thread pour maintenir le contexte conversationnel
+ */
+async function callSingleAssistant(
+  ordonnance: any,
+  ordonnanceId: string,
+  contextPrompt: string,
+  assistant: { id: string; name: string }
+): Promise<string> {
+  // Récupérer ou créer le thread pour cette ordonnance
+  let threadId = ordonnance.threadId as string | null;
+
+  if (!threadId) {
+    // Créer un nouveau thread avec le contexte initial
+    const thread = await openai.beta.threads.create({
+      messages: [
+        {
+          role: "user",
+          content: `[CONTEXTE INITIAL - NE PAS RÉPONDRE]\n${contextPrompt}`,
+        },
+      ],
+    });
+    threadId = thread.id;
+
+    // Sauvegarder le threadId pour réutilisation
+    await prisma.ordonnance.update({
+      where: { id: ordonnanceId },
+      data: { threadId },
+    });
+
+    console.log(`📝 Nouveau thread créé: ${threadId}`);
+  } else {
+    // Thread existant - ajouter le message utilisateur
+    await openai.beta.threads.messages.create(threadId, {
+      role: "user",
+      content: contextPrompt,
+    });
+    console.log(`📝 Message ajouté au thread existant: ${threadId}`);
+  }
+
+  // Créer et exécuter le Run avec l'Assistant sélectionné
+  const run = await openai.beta.threads.runs.create(threadId, {
+    assistant_id: assistant.id,
+  });
+
+  console.log(`🚀 Run créé: ${run.id}`);
+
+  // Attendre la complétion du Run - intervalle 3s pour réduire les coûts API
+  const currentThreadId = threadId as string;
+  const POLLING_INTERVAL_MS = 3000;
+  let runStatus = run;
+  let attempts = 0;
+  const maxAttempts = 40; // 40 × 3s = 2 minutes max
+
+  while (runStatus.status !== "completed" && runStatus.status !== "failed" && attempts < maxAttempts) {
+    await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
+    runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: currentThreadId });
+    attempts++;
+
+    if (attempts % 5 === 0) {
+      console.log(`⏳ Run en cours... (${attempts * 3}s) - Status: ${runStatus.status}`);
+    }
+  }
+
+  if (runStatus.status === "failed") {
+    console.error("❌ Run failed:", runStatus.last_error);
+    throw new Error(`Assistant run failed: ${runStatus.last_error?.message || "Unknown error"}`);
+  }
+
+  if (runStatus.status !== "completed") {
+    throw new Error(`Run timeout after ${maxAttempts} seconds`);
+  }
+
+  // Récupérer les messages de réponse
+  const messages = await openai.beta.threads.messages.list(currentThreadId, {
+    order: "desc",
+    limit: 1,
+  });
+
+  const openaiAssistantMsg = messages.data[0];
+  let aiResponse = "Désolé, je n'ai pas pu générer de réponse.";
+
+  if (openaiAssistantMsg && openaiAssistantMsg.role === "assistant") {
+    const textContent = openaiAssistantMsg.content.find((c) => c.type === "text");
+    if (textContent && textContent.type === "text") {
+      aiResponse = textContent.text.value;
+    }
+  }
+
+  return aiResponse;
+}
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 90; // Augmenté pour dual-assistant
 
 type ChatRequest = {
   message: string;
@@ -285,126 +633,57 @@ export async function POST(
     console.log(`💬 Chat ordonnance ${ordonnanceId.slice(0, 8)} - Patient: ${patient.nom} ${patient.prenom}`);
 
     // ==========================================
-    // AGENT IA AVEC VECTORSTORES
+    // DÉTECTION TYPE DE QUESTION
     // ==========================================
-    // Créer file search tool avec max 2 vectorstores (limite OpenAI)
-    const fileSearch = fileSearchTool([
-      VECTORSTORES.endobiogenie,
-      VECTORSTORES.phyto,
-    ]);
+    const questionType = detectQuestionType(body.message);
 
-    const agent = new Agent({
-      name: "ordonnance-chat-agent",
-      model: "gpt-4o-mini",
-      instructions: `Tu es un ASSISTANT EXPERT EN ENDOBIOGÉNIE ET PHYTOTHÉRAPIE CLINIQUE.
-Tu aides un praticien à comprendre, ajuster et optimiser une ordonnance thérapeutique.
+    console.log(`🔍 Type de question détecté: ${questionType}`);
 
-HIÉRARCHIE THÉRAPEUTIQUE À RESPECTER :
-NIVEAU 1 — ENDOBIOGÉNIE (PRIORITÉ ABSOLUE)
-- Pivots endobiogéniques (vectorstore endobiogénie)
-- 3-4 substances maximum
-- Justification neuroendocrinienne obligatoire
+    let aiResponse = "Désolé, je n'ai pas pu générer de réponse.";
 
-NIVEAU 2 — EXTENSION (PHYTO / GEMMO / AROMA)
-- Complète (JAMAIS duplique) les pivots endobiogéniques
-- Renforce axes perturbés OU traite symptômes non couverts
-- Maximum 2-3 par discipline
+    // ==========================================
+    // DUAL-ASSISTANT POUR QUESTIONS MIXTES
+    // ==========================================
+    if (questionType === "mixte") {
+      console.log("🔀 Question MIXTE détectée → Appel des DEUX Assistants en parallèle");
 
-NIVEAU 3 — MICRONUTRITION
-- 0-3 compléments maximum
-- Uniquement si carence identifiée
-
-MODE DE DIALOGUE STRUCTURÉ :
-Tu fonctionnes en 2 ÉTAPES OBLIGATOIRES pour toute modification :
-
-ÉTAPE A — PROPOSITION DE MODIFICATION
-Quand le praticien demande un changement (ajouter/remplacer/retirer), tu DOIS :
-1. Analyser l'ordonnance actuelle (volets 1, 2, 3)
-2. Consulter les vectorstores pour justifier ta proposition
-3. Respecter ABSOLUMENT les CI du patient
-4. Respecter ABSOLUMENT le sexe du patient (M/F) :
-   - HOMME : JAMAIS substances œstrogéniques, phytoœstrogènes, macérats framboisier/sauge
-   - FEMME : éviter substances exclusivement androgéniques inappropriées
-5. Proposer un JSON PATCH au format RFC 6902
-
-FORMAT JSON PATCH (ÉTAPE A) :
-{
-  "modifications": [
-    {
-      "op": "add" | "replace" | "remove",
-      "path": "/voletEndobiogenique/0" | "/voletPhytoElargi/1" | "/voletComplements/0",
-      "value": {
-        "substance": "Nom exact",
-        "forme": "TM|EPS|MG|HE",
-        "posologie": "dose unitaire par prise (ex: 3 mL matin et soir)",
-        "duree": "21 jours",
-        "axeCible": "axe neuroendocrinien",
-        "mecanisme": "mécanisme précis",
-        "CI": [],
-        "interactions": []
+      try {
+        const dualResult = await callDualAssistants(contextPrompt, body.message);
+        aiResponse = dualResult.fusedResponse;
+        console.log(`✅ Réponse fusionnée générée (${aiResponse.length} caractères)`);
+      } catch (error: any) {
+        console.error("❌ Erreur dual-assistant:", error);
+        // Fallback: utiliser un seul Assistant
+        console.log("⚠️ Fallback vers Assistant unique (Ordonnance)");
+        const selectedAssistant = selectAssistant("ordonnance");
+        aiResponse = await callSingleAssistant(ordonnance, ordonnanceId, contextPrompt, selectedAssistant);
       }
+    } else {
+      // ==========================================
+      // SINGLE ASSISTANT (diagnostic ou ordonnance)
+      // ==========================================
+      const selectedAssistant = selectAssistant(questionType);
+      console.log(`🤖 Assistant sélectionné: ${selectedAssistant.name} (${selectedAssistant.id.slice(0, 15)}...)`);
+
+      // Ajouter contexte tunisien pour les questions d'ordonnance
+      let enrichedContextPrompt = contextPrompt;
+      if (questionType === "ordonnance") {
+        const tunisianContext = getTunisianProductsContext();
+        enrichedContextPrompt = `${contextPrompt}\n\n${tunisianContext}\n\n[INSTRUCTIONS]\n- Utilise UNIQUEMENT les formes disponibles en Tunisie\n- NE PAS générer de JSON, réponds en texte naturel`;
+      }
+
+      aiResponse = await callSingleAssistant(ordonnance, ordonnanceId, enrichedContextPrompt, selectedAssistant);
+      console.log(`✅ Réponse ${selectedAssistant.name} générée (${aiResponse.length} caractères)`);
     }
-  ],
-  "justification": "Pourquoi cette modification ? Sources vectorstores.",
-  "alertes": ["⚠️ Alerte CI si nécessaire"]
-}
-
-ÉTAPE B — ATTENTE CONFIRMATION
-Après avoir proposé le JSON PATCH, tu dois dire :
-"Voulez-vous que j'applique ces modifications ?"
-
-Le praticien répondra "oui" ou "non". Tu n'appliques JAMAIS sans confirmation explicite.
-
-RÈGLES DE POSOLOGIE ENDOBIOGÉNIQUE (CRUCIAL) :
-La posologie doit TOUJOURS être exprimée en DOSE UNITAIRE PAR PRISE (mL ou gouttes), JAMAIS en volume total.
-Équivalence : 1 mL = 20 gouttes
-
-Dosages standards ADULTES (TM/MG dilution D1) :
-- MODÉRATION : 1 à 3 mL, 1 à 3 fois/jour (ex: "2 mL matin et soir")
-- RÉGULATION : 3 à 5 mL, 2 à 4 fois/jour (ex: "4 mL matin, midi et soir")
-- CONTRÔLE : 4 à 15 mL, 2 à 4 fois/jour (ex: "5 mL trois fois par jour")
-
-INTERDIT : "60 mL" ou "80 mL" (volumes totaux, pas doses)
-CORRECT : "5 mL matin et soir"
-INCORRECT : "60 mL deux fois par jour"
-
-Si posologie incorrecte (> 15 mL par prise), signale l'erreur et corrige.
-
-MÉMOIRE CLINIQUE :
-À chaque échange, extrais et mémorise :
-- Préférences praticien (ex: "préfère EPS aux TM")
-- Observations cliniques (ex: "patient réagit mal à la valériane")
-- Ajustements réussis (ex: "rhodiola → meilleure adaptation stress")
-
-FORMAT : JSON { "memoire": ["observation 1", "observation 2"] }
-
-STYLE :
-- Français clair et pédagogique
-- Cite TOUJOURS sources vectorstores
-- Concis (3-5 phrases max) + JSON si pertinent
-- Ton professionnel respectueux`,
-      tools: [fileSearch],
-    });
 
     // ==========================================
-    // EXÉCUTION
+    // NETTOYAGE & PARSING
     // ==========================================
-    const runner = new Runner();
-    const result = await runner.run(agent, [
-      {
-        role: "user",
-        content: [{ type: "input_text", text: contextPrompt }],
-      },
-    ] as AgentInputItem[]);
+    // D'abord nettoyer le JSON parasite au début
+    const cleanedResponse = cleanAssistantResponse(aiResponse);
 
-    const aiResponse = result.finalOutput || "Désolé, je n'ai pas pu générer de réponse.";
-
-    console.log(`✅ Réponse IA générée (${aiResponse.length} caractères)`);
-
-    // ==========================================
-    // PARSER ACTIONS (si présentes)
-    // ==========================================
-    const { responseText, actions } = parseAIResponse(aiResponse);
+    // Puis parser les actions éventuelles (conserve le JSON PATCH pour les modifications)
+    const { responseText, actions } = parseAIResponse(cleanedResponse);
 
     // ==========================================
     // CRÉER MESSAGE CHAT
@@ -440,6 +719,16 @@ STYLE :
               CI: [],
               interactions: [],
               priorite: 2,
+              // 🆕 v3.1: Justification structurée obligatoire
+              justification: {
+                symptome_cible: a.justification?.split(' - ')?.[0] || "Non spécifié",
+                axe_endobiogenique: a.axeCible || "À déterminer",
+                mecanisme_action: a.mecanisme || "Action non documentée",
+                synergies: [],
+                justification_terrain: a.justification || "Voir terrain global",
+                justification_classique: a.justification || "Base traditionnelle",
+                explication_patient: "Cette plante soutient votre organisme",
+              },
             }
           : undefined,
         justification: a.justification || "",
@@ -466,7 +755,7 @@ STYLE :
     // ==========================================
     return NextResponse.json({
       message: assistantMessage,
-      suggestedActions: assistantMessage.actions || [],
+      suggestedActions: (assistantMessage as any).actions || [],
     });
   } catch (e: any) {
     console.error("❌ Erreur chat ordonnance:", e);

@@ -1,87 +1,80 @@
 // ========================================
 // TYPES - Module BdF (Biologie des Fonctions)
 // ========================================
-// Interfaces TypeScript pour les valeurs biologiques,
-// les index calculés et l'interprétation finale.
+// Version nettoyée - RagEnrichment et InterpretationPayload supprimés
+// Ces types étaient utilisés par le RAG obsolète (maintenant remplacé par Assistant)
 
 /**
  * Valeurs de laboratoire en entrée (toutes optionnelles)
+ * @deprecated Préférez Record<string, number | null> avec calculateAllIndexes()
  */
 export interface LabValues {
   // Globules
-  GR?: number; // Globules rouges (T/L)
-  GB?: number; // Globules blancs (G/L)
-  hemoglobine?: number; // Hémoglobine (g/dL) - nouveau
+  GR?: number;
+  GB?: number;
+  hemoglobine?: number;
 
   // Formule leucocytaire
-  neutrophiles?: number; // (G/L)
-  lymphocytes?: number; // (G/L)
-  eosinophiles?: number; // (G/L)
-  monocytes?: number; // (G/L)
-  plaquettes?: number; // (G/L)
+  neutrophiles?: number;
+  lymphocytes?: number;
+  eosinophiles?: number;
+  monocytes?: number;
+  plaquettes?: number;
 
   // Enzymes / Remodelage tissulaire
-  LDH?: number; // (UI/L)
-  CPK?: number; // (UI/L)
-  PAOi?: number; // Phosphatase alcaline osseuse (UI/L)
-  osteocalcine?: number; // Ostéocalcine (ng/mL)
+  LDH?: number;
+  CPK?: number;
+  PAOi?: number;
+  osteocalcine?: number;
 
   // Axe endocrinien central
-  TSH?: number; // (mUI/L)
+  TSH?: number;
 
   // Paramètres avancés du terrain
-  VS?: number; // Vitesse de sédimentation (mm/h)
-  calcium?: number; // Calcium total (Ca2+)
-  potassium?: number; // Potassium (K+)
+  VS?: number;
+  calcium?: number;
+  potassium?: number;
 }
 
 /**
  * Un index calculé avec sa valeur et son commentaire interprétatif
  */
 export interface IndexValue {
-  value: number | null; // null si calcul impossible (données manquantes)
-  comment: string; // Interprétation fonctionnelle
+  value: number | null;
+  comment: string;
 }
 
 /**
- * Ensemble des 8 index calculés
+ * Ensemble des 8 index calculés (ancien format)
+ * @deprecated Utilisez BdfResult de calculateIndexes.ts pour le nouveau format
  */
 export interface IndexResults {
   indexGenital: IndexValue;
   indexThyroidien: IndexValue;
-  gT: IndexValue; // génito-thyroïdien
+  gT: IndexValue;
   indexAdaptation: IndexValue;
   indexOestrogenique: IndexValue;
   turnover: IndexValue;
-  rendementThyroidien: IndexValue; // Nouveau : Rendement thyroïdien
-  remodelageOsseux: IndexValue; // Nouveau : Remodelage osseux
+  rendementThyroidien: IndexValue;
+  remodelageOsseux: IndexValue;
 }
 
 /**
- * Payload final renvoyé par l'API
- * @deprecated Utilisé uniquement pour la compatibilité. L'API retourne maintenant AnalyseResponse
- */
-export interface InterpretationPayload {
-  indexes: IndexResults;
-  summary: string; // Résumé fonctionnel global (1-2 phrases)
-  axesDominants: string[]; // Axes biologiques identifiés
-  noteTechnique: string; // Note de prudence clinique
-}
-
-/**
- * Réponse de l'API /api/bdf/analyse (version optimisée)
- * Retourne uniquement les index calculés (pas de résumé rapide)
+ * Réponse de l'API /api/bdf/analyse
  */
 export interface AnalyseResponse {
   indexes: IndexResults;
   noteTechnique: string;
 }
 
-/**
- * Enrichissement RAG endobiogénie
- */
-export interface RagEnrichment {
-  resumeFonctionnel: string; // Résumé fonctionnel approfondi via RAG
-  axesSollicites: string[]; // Axes neuroendocriniens sollicités via RAG
-  lectureEndobiogenique: string; // Lecture endobiogénique complète du terrain
-}
+// ============================================================
+// TYPES SUPPRIMÉS (RAG obsolète - remplacé par Assistant OpenAI)
+// ============================================================
+//
+// ❌ InterpretationPayload - Était utilisé par interpretResults.ts (supprimé)
+// ❌ RagEnrichment - Était utilisé par rag-enrichment/route.ts (supprimé)
+//
+// Ces types ne sont plus nécessaires car:
+// 1. L'interprétation est maintenant faite par calculateIndex.ts (status + interpretation)
+// 2. L'enrichissement est maintenant fait par l'Assistant OpenAI (synthesis/route.ts)
+// ============================================================

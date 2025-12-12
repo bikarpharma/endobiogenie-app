@@ -1,6 +1,7 @@
 "use client";
 
-import { AxeInterpretation, AXE_LABELS, AXE_EMOJIS } from "@/lib/interrogatoire/axeInterpretation";
+import { AXE_LABELS, AXE_EMOJIS } from "@/lib/interrogatoire/axeInterpretation";
+import type { AxeInterpretation } from "@/lib/interrogatoire/axeInterpretation";
 
 interface AxeInterpretationCardProps {
   interpretation: AxeInterpretation;
@@ -56,7 +57,7 @@ export function AxeInterpretationCard({ interpretation }: AxeInterpretationCardP
             fontWeight: "600",
           }}
         >
-          Confiance : {Math.round(interpretation.confiance * 100)}%
+          Confiance IA : {Math.round(interpretation.confiance * 100)}%
         </div>
       </div>
 

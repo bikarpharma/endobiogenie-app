@@ -10,7 +10,7 @@ import { OngletAnalyses } from "./OngletAnalyses";
 import { OngletConsultations } from "./OngletConsultations";
 import { OngletOrdonnancesIntelligent } from "../ordonnance/OngletOrdonnancesIntelligent";
 import { OngletSynthese } from "./OngletSynthese";
-import PatientVisualReport from "./PatientVisualReport";
+import PatientVisualReportPremium from "@/components/visual-report/PatientVisualReportPremium";
 
 type PatientData = {
   id: string;
@@ -268,7 +268,11 @@ export function PatientDetailClient({ patient }: { patient: PatientData }) {
           {activeTab === "synthese" && <OngletSynthese patient={patient} />}
           {activeTab === "ordonnances" && <OngletOrdonnancesIntelligent patient={patient} />}
           {activeTab === "rapport-visuel" && (
-            <PatientVisualReport patientName={`${patient.prenom} ${patient.nom}`} />
+            <PatientVisualReportPremium
+              patientId={patient.id}
+              patientName={`${patient.prenom} ${patient.nom}`}
+              onNavigateToSynthese={() => setActiveTab("synthese")}
+            />
           )}
         </div>
       </div>

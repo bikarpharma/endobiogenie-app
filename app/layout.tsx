@@ -18,7 +18,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 import "./globals.css";
 
 export const metadata = {
-  title: "IntergIA",
+  title: "IntegrIA",
   description: "Assistant RAG avec auth, historique et fiches plantes.",
 };
 
@@ -38,12 +38,9 @@ export default async function RootLayout({
           <div className="container header-inner">
             {/* Logo */}
             <div className="brand">
-              <Image src="/integria-logo.jpg" alt="IntergIA" width={50} height={50} style={{ borderRadius: "8px" }} />
+              <Image src="/integria-logo.jpg" alt="IntegrIA" width={50} height={50} style={{ borderRadius: "8px" }} />
               <Link href={session ? "/dashboard" : "/"}>
-                <div style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}>
-                  <strong>IntergIA</strong>
-                  <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>by Bikarpharma</span>
-                </div>
+                <strong>IntegrIA</strong>
               </Link>
             </div>
 
@@ -103,7 +100,7 @@ export default async function RootLayout({
         {/* ===== FOOTER ===== */}
         <footer className="site-footer">
           <div className="container footer-inner">
-            <span>© {new Date().getFullYear()} IntergIA</span>
+            <span>© {new Date().getFullYear()} IntegrIA</span>
           </div>
         </footer>
       </body>

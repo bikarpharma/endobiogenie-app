@@ -168,9 +168,12 @@ export function OrdonnancePanel({ ordonnance, loading }: OrdonnancePanelProps) {
           );
         })()}
 
-        {/* VOLET 4 - AROMATHÉRAPIE: Filtrer par type 'HE' */}
+        {/* VOLET 4 - AROMATHÉRAPIE: Utiliser voletAromatherapie dédié OU fallback sur voletPhytoElargi type='HE' */}
         {(() => {
-          const aromaRecommendations = ordonnance.voletPhytoElargi?.filter(rec => rec.type === 'HE') || [];
+          // Priorité: voletAromatherapie dédié, sinon fallback sur HE dans voletPhytoElargi
+          const aromaRecommendations = ordonnance.voletAromatherapie?.length
+            ? ordonnance.voletAromatherapie
+            : (ordonnance.voletPhytoElargi?.filter(rec => rec.type === 'HE') || []);
           return aromaRecommendations.length > 0 && (
             <VoletSection
               title="VOLET 4 - AROMATHÉRAPIE"

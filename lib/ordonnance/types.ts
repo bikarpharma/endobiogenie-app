@@ -7,6 +7,92 @@
 // + Contexte pédagogique (lien Index → Axe → Plante)
 
 import type { IndexResults, LabValues } from "@/lib/bdf/types";
+import type { VoieAromatherapie, NiveauConfiance } from './tunisianProtocols';
+
+// ========================================
+// JUSTIFICATION STRUCTURÉE (Guide Tunisie v1.0)
+// ========================================
+
+/**
+ * Interface de justification obligatoire pour chaque plante prescrite
+ * Tous les champs sans "?" sont OBLIGATOIRES
+ */
+export interface PlantJustification {
+  /** Symptôme SPÉCIFIQUE ciblé - ex: "Insomnie d'endormissement" */
+  symptome_cible: string;
+
+  /** Format "[Axe] - [Action]" - ex: "SNA - Alpha-sympatholytique" */
+  axe_endobiogenique: string;
+
+  /** Mécanisme pharmacologique précis - ex: "Action GABAergique, potentialise récepteurs GABA-A" */
+  mecanisme_action: string;
+
+  /** Synergies avec les AUTRES plantes de cette ordonnance */
+  synergies: string[];
+
+  /** Lien avec le diagnostic patient - ex: "Index Corticotrope élevé (1.4)" */
+  justification_terrain: string;
+
+  /** Base scientifique - ex: "Monographie HMPC/EMA, études cliniques" */
+  justification_classique: string;
+
+  /** Vulgarisation pour le patient */
+  explication_patient: string;
+
+  /** Précautions spécifiques (optionnel) */
+  precautions?: string[];
+
+  /** Niveau de confiance IA (optionnel, saisi par l'IA) */
+  confiance?: NiveauConfiance;
+}
+
+// ========================================
+// AROMATHÉRAPIE TUNISIE - 4 VOIES
+// ========================================
+
+/**
+ * Prescription d'huile essentielle avec voie d'administration tunisienne
+ */
+export interface AromatherapiePrescription {
+  /** Nom de l'HE */
+  huile_essentielle: string;
+
+  /** Nom latin */
+  name_latin: string;
+
+  /** Chémotype (si applicable) */
+  chemotype?: string;
+
+  /** Voie d'administration (Guide Tunisie) */
+  voie: VoieAromatherapie;
+
+  /** Posologie adaptée à la voie */
+  posologie: string;
+
+  /** Dilution si voie cutanée */
+  dilution?: string;
+
+  /** Huile végétale support si cutanée */
+  huile_vegetale?: string;
+
+  /** Zone d'application si cutanée */
+  zone_application?: string;
+
+  /** Durée du traitement */
+  duree: string;
+
+  /** Justification complète */
+  justification: PlantJustification;
+
+  /** Contre-indications spécifiques */
+  contre_indications?: string[];
+
+  /** Précautions d'emploi */
+  precautions_emploi?: string[];
+
+  /** Priorité (1=urgent, 3=fond) */
+  priorite: 1 | 2 | 3;
+}
 
 // ========================================
 // SCOPE THÉRAPEUTIQUE
@@ -93,7 +179,7 @@ export type ContextePedagogique = {
 
 /**
  * Recommandation thérapeutique complète
- * MODIFIÉ: Ajout du contexte pédagogique
+ * v2.0: Ajout PlantJustification + Voie aromathérapie
  */
 export type RecommandationTherapeutique = {
   id: string; // UUID pour tracking
@@ -108,8 +194,18 @@ export type RecommandationTherapeutique = {
   axeCible: string; // "soutien corticosurrénalien"
   mecanisme: string; // "adaptogène, régule cortisol"
 
-  // --- NOUVEAU: Contexte éducatif (Learning System) ---
+  // --- NOUVEAU v2.0: Justification structurée complète (OBLIGATOIRE) ---
+  justification: PlantJustification;
+
+  // --- Contexte éducatif (Learning System) ---
   pedagogie?: ContextePedagogique;
+
+  // --- Aromathérapie spécifique (si type='HE') ---
+  voieAroma?: VoieAromatherapie;  // Voie d'administration Tunisie
+  chemotype?: string;              // Chémotype HE
+  dilution?: string;               // Si voie cutanée
+  huileVegetale?: string;          // Support HV
+  zoneApplication?: string;        // Zone d'application
 
   sourceVectorstore: 'endobiogenie' | 'phyto' | 'gemmo' | 'aroma' | 'code';
   niveauPreuve: 1 | 2 | 3; // 1=canon endobiogénie, 2=élargi, 3=micro
@@ -167,16 +263,17 @@ export type AlerteTherapeutique = {
 // ========================================
 
 /**
- * Ordonnance finale structurée en 3 volets
+ * Ordonnance finale structurée en 4 volets
  */
 export type OrdonnanceStructuree = {
   id: string;
   patientId: string;
   bdfAnalysisId?: string; // Optionnel si créée sans BdF
 
-  // Les 3 volets
+  // Les 4 volets
   voletEndobiogenique: RecommandationTherapeutique[];
   voletPhytoElargi: RecommandationTherapeutique[];
+  voletAromatherapie?: RecommandationTherapeutique[]; // 🆕 Volet HE dédié
   voletComplements: RecommandationTherapeutique[];
 
   // Scope thérapeutique utilisé (pour affichage dynamique)

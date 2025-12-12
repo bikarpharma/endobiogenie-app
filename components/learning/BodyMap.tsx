@@ -1,11 +1,25 @@
 "use client";
 
 import React, { useState } from "react";
-import { BdfIndexes } from "@/lib/bdf/calculateIndexes";
+
+// Types pour les données BdF passées à BodyMap
+interface AxisData {
+  status: string;
+  value?: number;
+  interpretation?: string;
+}
+
+interface BodyMapBdfData {
+  adrenal: AxisData;
+  thyroid: AxisData;
+  metabolic: AxisData;
+  cardiac: AxisData;
+  gonadal?: AxisData;
+}
 
 interface BodyMapProps {
   scores: Record<string, number>;
-  bdf: BdfIndexes;
+  bdf: BodyMapBdfData;
   highlightedOrgan?: string | null;
 }
 
@@ -141,6 +155,133 @@ export default function BodyMap({ scores, bdf, highlightedOrgan }: BodyMapProps)
           glow: "none",
         };
 
+      // === NOUVEAUX ORGANES ===
+
+      case "Poumons":
+        // Lié à l'axe respiratoire et immunitaire
+        if (scores.immunitaire && scores.immunitaire > 65) {
+          return {
+            color: "#f59e0b",
+            status: "Fragilité immunitaire pulmonaire",
+            pulse: false,
+            glow: "drop-shadow(0 0 6px #f59e0b)",
+          };
+        }
+        if (scores.respiratoire && scores.respiratoire > 60) {
+          return {
+            color: "#ef4444",
+            status: "Terrain respiratoire perturbé",
+            pulse: true,
+            glow: "drop-shadow(0 0 8px #ef4444)",
+          };
+        }
+        return {
+          color: "#06b6d4",
+          status: "Fonction respiratoire normale",
+          pulse: false,
+          glow: "drop-shadow(0 0 4px #06b6d4)",
+        };
+
+      case "Reins":
+        // Lié à l'axe surrénalien et métabolique
+        if (bdf.adrenal.status === "EPUISEMENT") {
+          return {
+            color: "#3b82f6",
+            status: "Filtration réduite (épuisement surrénalien)",
+            pulse: false,
+            glow: "drop-shadow(0 0 6px #3b82f6)",
+          };
+        }
+        if (scores.urorenal && scores.urorenal > 60) {
+          return {
+            color: "#f97316",
+            status: "Terrain rénal à surveiller",
+            pulse: false,
+            glow: "drop-shadow(0 0 6px #f97316)",
+          };
+        }
+        return {
+          color: "#10b981",
+          status: "Fonction rénale normale",
+          pulse: false,
+          glow: "none",
+        };
+
+      case "Estomac":
+        // Lié à l'axe digestif
+        if (scores.digestif && scores.digestif > 70) {
+          return {
+            color: "#ef4444",
+            status: "Hypersécrétion / Inflammation",
+            pulse: true,
+            glow: "drop-shadow(0 0 8px #ef4444)",
+          };
+        }
+        if (scores.digestif && scores.digestif > 50) {
+          return {
+            color: "#f59e0b",
+            status: "Dyspepsie fonctionnelle",
+            pulse: false,
+            glow: "drop-shadow(0 0 6px #f59e0b)",
+          };
+        }
+        return {
+          color: "#10b981",
+          status: "Digestion gastrique normale",
+          pulse: false,
+          glow: "none",
+        };
+
+      case "Pancréas":
+        // Lié au métabolisme glucidique
+        if (bdf.metabolic.status === "RESISTANCE") {
+          return {
+            color: "#ef4444",
+            status: "Résistance insulinique",
+            pulse: true,
+            glow: "drop-shadow(0 0 8px #ef4444)",
+          };
+        }
+        if (scores.cardiovasculaire && scores.cardiovasculaire > 60) {
+          return {
+            color: "#f59e0b",
+            status: "Stress métabolique",
+            pulse: false,
+            glow: "drop-shadow(0 0 6px #f59e0b)",
+          };
+        }
+        return {
+          color: "#10b981",
+          status: "Fonction pancréatique normale",
+          pulse: false,
+          glow: "none",
+        };
+
+      case "Rate":
+        // Lié à l'immunité et au sang
+        if (scores.immunitaire && scores.immunitaire > 70) {
+          return {
+            color: "#ef4444",
+            status: "Suractivité immunitaire",
+            pulse: true,
+            glow: "drop-shadow(0 0 8px #ef4444)",
+          };
+        }
+        if (scores.immunitaire && scores.immunitaire > 50) {
+          return {
+            color: "#f59e0b",
+            status: "Immunité à renforcer",
+            pulse: false,
+            glow: "drop-shadow(0 0 6px #f59e0b)",
+          };
+        }
+        return {
+          color: "#8b5cf6",
+          status: "Fonction splénique normale",
+          pulse: false,
+          glow: "drop-shadow(0 0 4px #8b5cf6)",
+        };
+
       default:
         return {
           color: "#64748b",
@@ -168,15 +309,21 @@ export default function BodyMap({ scores, bdf, highlightedOrgan }: BodyMapProps)
     const normalizedHighlight = highlightedOrgan.toLowerCase().trim();
     const normalizedOrgan = organId.toLowerCase().trim();
 
-    // Mapping des IDs possibles
+    // Mapping des IDs possibles (incluant les nouveaux organes)
     const organMappings: Record<string, string[]> = {
-      foie: ["foie", "liver"],
-      surrénales: ["surrenales", "surrénales", "adrenal"],
-      intestins: ["intestins", "intestin", "intestines"],
-      cœur: ["cœur", "coeur", "heart", "cardiac"],
+      foie: ["foie", "liver", "hepatique"],
+      surrénales: ["surrenales", "surrénales", "adrenal", "surrenal"],
+      intestins: ["intestins", "intestin", "intestines", "colon"],
+      cœur: ["cœur", "coeur", "heart", "cardiac", "cardiaque"],
       thyroïde: ["thyroïde", "thyroide", "thyroid"],
-      cerveau: ["cerveau", "brain"],
-      gonades: ["gonades", "gonadal"],
+      cerveau: ["cerveau", "brain", "hypothalamus"],
+      gonades: ["gonades", "gonadal", "ovaires", "testicules"],
+      // Nouveaux organes
+      poumons: ["poumons", "poumon", "lungs", "lung", "pulmonaire", "respiratoire"],
+      reins: ["reins", "rein", "kidney", "kidneys", "renal", "urorenal"],
+      estomac: ["estomac", "stomach", "gastrique"],
+      pancréas: ["pancréas", "pancreas", "pancréatique", "insuline"],
+      rate: ["rate", "spleen", "splénique"],
     };
 
     // Vérifier si l'organe correspond
@@ -189,16 +336,36 @@ export default function BodyMap({ scores, bdf, highlightedOrgan }: BodyMapProps)
     return normalizedHighlight === normalizedOrgan;
   };
 
-  // --- DONNÉES DES ORGANES ---
+  // --- DONNÉES DES ORGANES (Étendu avec nouveaux organes) ---
   const organs = [
+    // === TÊTE ===
     { id: "Cerveau", cx: 150, cy: 50, r: 18, shape: "circle" },
-    { id: "Thyroïde", cx: 150, cy: 100, r: 10, shape: "ellipse", rx: 12, ry: 8 },
-    { id: "Cœur", cx: 150, cy: 180, r: 14, shape: "heart" },
-    { id: "Foie", cx: 180, cy: 230, r: 20, shape: "polygon", points: "180,210 200,230 190,250 160,245" },
-    { id: "Surrénales", cx: 120, cy: 220, r: 8, shape: "circle-left" },
-    { id: "Surrénales", cx: 180, cy: 220, r: 8, shape: "circle-right" },
-    { id: "Intestins", cx: 150, cy: 320, r: 30, shape: "path" },
-    { id: "Gonades", cx: 150, cy: 420, r: 12, shape: "ellipse", rx: 18, ry: 10 },
+
+    // === COU ===
+    { id: "Thyroïde", cx: 150, cy: 100, r: 10, shape: "ellipse", rx: 14, ry: 8 },
+
+    // === THORAX ===
+    { id: "Poumons", cx: 115, cy: 155, r: 15, shape: "lung-left" },   // Poumon gauche
+    { id: "Poumons", cx: 185, cy: 155, r: 15, shape: "lung-right" },  // Poumon droit
+    { id: "Cœur", cx: 150, cy: 175, r: 14, shape: "heart" },
+
+    // === ABDOMEN SUPÉRIEUR ===
+    { id: "Foie", cx: 118, cy: 220, r: 20, shape: "liver" },         // Foie (côté droit anatomique = gauche sur image)
+    { id: "Estomac", cx: 165, cy: 225, r: 14, shape: "stomach" },    // Estomac (côté gauche)
+    { id: "Rate", cx: 190, cy: 215, r: 10, shape: "spleen" },        // Rate (côté gauche)
+    { id: "Pancréas", cx: 150, cy: 250, r: 8, shape: "pancreas" },   // Pancréas (transversal)
+
+    // === ABDOMEN ===
+    { id: "Surrénales", cx: 130, cy: 265, r: 7, shape: "adrenal-left" },  // Surrénale gauche
+    { id: "Surrénales", cx: 170, cy: 265, r: 7, shape: "adrenal-right" }, // Surrénale droite
+    { id: "Reins", cx: 120, cy: 285, r: 12, shape: "kidney-left" },  // Rein gauche
+    { id: "Reins", cx: 180, cy: 285, r: 12, shape: "kidney-right" }, // Rein droit
+
+    // === ABDOMEN INFÉRIEUR ===
+    { id: "Intestins", cx: 150, cy: 330, r: 30, shape: "intestines" },
+
+    // === BASSIN ===
+    { id: "Gonades", cx: 150, cy: 400, r: 12, shape: "ellipse", rx: 18, ry: 10 },
   ];
 
   return (
@@ -235,24 +402,64 @@ export default function BodyMap({ scores, bdf, highlightedOrgan }: BodyMapProps)
           </filter>
         </defs>
 
-        {/* SILHOUETTE HUMAINE (Contour filaire) */}
-        <g stroke="#334155" strokeWidth="2" fill="url(#bodyGradient)" opacity="0.4">
-          {/* Tête */}
-          <ellipse cx="150" cy="50" rx="30" ry="35" />
+        {/* SILHOUETTE HUMAINE AMÉLIORÉE (Plus anatomique) */}
+        <g stroke="#334155" strokeWidth="1.5" fill="url(#bodyGradient)" opacity="0.35">
+          {/* Tête - forme plus réaliste */}
+          <ellipse cx="150" cy="45" rx="28" ry="32" />
+          {/* Mâchoire */}
+          <path d="M125,55 Q150,85 175,55" fill="none" strokeWidth="1" />
+
           {/* Cou */}
-          <rect x="140" y="80" width="20" height="25" rx="3" />
-          {/* Torse */}
-          <ellipse cx="150" cy="180" rx="55" ry="80" />
-          {/* Bras gauche */}
-          <rect x="85" y="120" width="15" height="120" rx="8" transform="rotate(-10 92 180)" />
+          <path d="M138,75 L138,105 Q150,110 162,105 L162,75" fill="url(#bodyGradient)" />
+
+          {/* Épaules et Torse - forme anatomique */}
+          <path d="M90,115 Q95,105 138,105 L162,105 Q205,105 210,115
+                   L210,125 Q185,130 185,180 L185,260
+                   Q185,280 170,290 L130,290
+                   Q115,280 115,260 L115,180
+                   Q115,130 90,125 Z" />
+
+          {/* Cage thoracique (suggestion) */}
+          <ellipse cx="150" cy="170" rx="42" ry="55" stroke="#475569" strokeWidth="0.5" fill="none" opacity="0.3" />
+
+          {/* Bras gauche - plus anatomique */}
+          <path d="M90,115 Q75,120 70,140 L65,200 Q60,220 65,240 L70,280 Q72,295 80,300"
+                fill="url(#bodyGradient)" strokeLinejoin="round" />
+          {/* Main gauche */}
+          <ellipse cx="82" cy="310" rx="8" ry="12" />
+
           {/* Bras droit */}
-          <rect x="200" y="120" width="15" height="120" rx="8" transform="rotate(10 208 180)" />
-          {/* Bassin */}
-          <ellipse cx="150" cy="320" rx="45" ry="60" />
+          <path d="M210,115 Q225,120 230,140 L235,200 Q240,220 235,240 L230,280 Q228,295 220,300"
+                fill="url(#bodyGradient)" strokeLinejoin="round" />
+          {/* Main droite */}
+          <ellipse cx="218" cy="310" rx="8" ry="12" />
+
+          {/* Bassin / Hanches */}
+          <path d="M115,290 Q100,310 105,350 L110,380
+                   Q115,400 130,410 L170,410
+                   Q185,400 190,380 L195,350
+                   Q200,310 185,290 Z" />
+
           {/* Jambe gauche */}
-          <rect x="120" y="360" width="20" height="200" rx="10" />
+          <path d="M110,380 Q105,400 108,450 L110,520 Q112,550 120,560" fill="url(#bodyGradient)" />
+          {/* Pied gauche */}
+          <ellipse cx="125" cy="568" rx="12" ry="6" />
+
           {/* Jambe droite */}
-          <rect x="160" y="360" width="20" height="200" rx="10" />
+          <path d="M190,380 Q195,400 192,450 L190,520 Q188,550 180,560" fill="url(#bodyGradient)" />
+          {/* Pied droit */}
+          <ellipse cx="175" cy="568" rx="12" ry="6" />
+        </g>
+
+        {/* Lignes anatomiques subtiles (structure interne) */}
+        <g stroke="#475569" strokeWidth="0.3" fill="none" opacity="0.2">
+          {/* Colonne vertébrale */}
+          <path d="M150,105 L150,380" strokeDasharray="4,4" />
+          {/* Côtes suggérées */}
+          <path d="M115,150 Q150,145 185,150" />
+          <path d="M115,165 Q150,160 185,165" />
+          <path d="M115,180 Q150,175 185,180" />
+          <path d="M118,195 Q150,190 182,195" />
         </g>
 
         {/* Ligne de scan animée */}
@@ -261,125 +468,190 @@ export default function BodyMap({ scores, bdf, highlightedOrgan }: BodyMapProps)
           <animate attributeName="y2" from="0" to="600" dur="3s" repeatCount="indefinite" />
         </line>
 
-        {/* ORGANES INTERACTIFS */}
+        {/* ORGANES INTERACTIFS - Rendu amélioré */}
         {organs.map((organ, idx) => {
           const state = getOrganState(organ.id);
           const isHovered = hoveredOrgan === organ.id;
           const isHighlighted = isOrganHighlighted(organ.id);
 
-          // Gestion des shapes multiples
-          if (organ.shape === "circle" || organ.shape === "circle-left" || organ.shape === "circle-right") {
+          // Props communes pour tous les organes
+          const commonProps = {
+            fill: state.color,
+            fillOpacity: isHovered || isHighlighted ? 1 : 0.7,
+            stroke: isHighlighted ? "#ffffff" : state.color,
+            strokeWidth: isHovered || isHighlighted ? 3 : 1.5,
+            filter: "url(#glow)",
+            style: {
+              filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
+              transform: isHighlighted ? "scale(1.05)" : "scale(1)",
+              transformOrigin: `${organ.cx}px ${organ.cy}px`
+            },
+            className: `cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`,
+            onMouseEnter: (e: React.MouseEvent<SVGElement>) => handleOrganHover(organ.id, e),
+            onMouseLeave: () => setHoveredOrgan(null)
+          };
+
+          // === CERVEAU ===
+          if (organ.shape === "circle") {
             return (
               <circle
                 key={`${organ.id}-${idx}`}
                 cx={organ.cx}
                 cy={organ.cy}
                 r={organ.r}
-                fill={state.color}
-                fillOpacity={isHovered || isHighlighted ? 1 : 0.7}
-                stroke={isHighlighted ? "#ffffff" : state.color}
-                strokeWidth={isHovered || isHighlighted ? 4 : 2}
-                filter="url(#glow)"
-                style={{
-                  filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
-                  transform: isHighlighted ? "scale(1.1)" : "scale(1)",
-                  transformOrigin: "center"
-                }}
-                className={`cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`}
-                onMouseEnter={(e) => handleOrganHover(organ.id, e)}
-                onMouseLeave={() => setHoveredOrgan(null)}
+                {...commonProps}
               />
             );
           }
 
+          // === THYROÏDE / GONADES (ellipse) ===
           if (organ.shape === "ellipse") {
             return (
               <ellipse
                 key={`${organ.id}-${idx}`}
                 cx={organ.cx}
                 cy={organ.cy}
-                rx={organ.rx}
-                ry={organ.ry}
-                fill={state.color}
-                fillOpacity={isHovered || isHighlighted ? 1 : 0.7}
-                stroke={isHighlighted ? "#ffffff" : state.color}
-                strokeWidth={isHovered || isHighlighted ? 4 : 2}
-                filter="url(#glow)"
-                style={{
-                  filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
-                  transform: isHighlighted ? "scale(1.1)" : "scale(1)",
-                  transformOrigin: "center"
-                }}
-                className={`cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`}
-                onMouseEnter={(e) => handleOrganHover(organ.id, e)}
-                onMouseLeave={() => setHoveredOrgan(null)}
+                rx={organ.rx || organ.r}
+                ry={organ.ry || organ.r * 0.6}
+                {...commonProps}
               />
             );
           }
 
+          // === CŒUR (forme de cœur anatomique) ===
           if (organ.shape === "heart") {
             return (
               <path
                 key={`${organ.id}-${idx}`}
-                d="M150,190 C150,175 135,165 125,165 C115,165 105,175 105,185 C105,200 150,215 150,215 C150,215 195,200 195,185 C195,175 185,165 175,165 C165,165 150,175 150,190 Z"
-                fill={state.color}
-                fillOpacity={isHovered || isHighlighted ? 1 : 0.7}
-                stroke={isHighlighted ? "#ffffff" : state.color}
-                strokeWidth={isHovered || isHighlighted ? 4 : 2}
-                filter="url(#glow)"
-                style={{
-                  filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
-                  transform: isHighlighted ? "scale(1.1)" : "scale(1)",
-                  transformOrigin: "center"
-                }}
-                className={`cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`}
-                onMouseEnter={(e) => handleOrganHover(organ.id, e)}
-                onMouseLeave={() => setHoveredOrgan(null)}
+                d="M150,185 C150,172 140,165 132,165 C122,165 115,175 115,183 C115,195 150,210 150,210 C150,210 185,195 185,183 C185,175 178,165 168,165 C160,165 150,172 150,185 Z"
+                {...commonProps}
               />
             );
           }
 
-          if (organ.shape === "polygon") {
-            return (
-              <polygon
-                key={`${organ.id}-${idx}`}
-                points={organ.points}
-                fill={state.color}
-                fillOpacity={isHovered || isHighlighted ? 1 : 0.7}
-                stroke={isHighlighted ? "#ffffff" : state.color}
-                strokeWidth={isHovered || isHighlighted ? 4 : 2}
-                filter="url(#glow)"
-                style={{
-                  filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
-                  transform: isHighlighted ? "scale(1.1)" : "scale(1)",
-                  transformOrigin: "center"
-                }}
-                className={`cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`}
-                onMouseEnter={(e) => handleOrganHover(organ.id, e)}
-                onMouseLeave={() => setHoveredOrgan(null)}
-              />
-            );
-          }
-
-          if (organ.shape === "path") {
-            // Intestins (forme sinueuse)
+          // === POUMON GAUCHE ===
+          if (organ.shape === "lung-left") {
             return (
               <path
                 key={`${organ.id}-${idx}`}
-                d="M130,300 Q120,320 130,340 T150,360 T170,340 Q180,320 170,300 Z"
-                fill={state.color}
-                fillOpacity={isHovered || isHighlighted ? 1 : 0.7}
-                stroke={isHighlighted ? "#ffffff" : state.color}
-                strokeWidth={isHovered || isHighlighted ? 4 : 2}
-                filter="url(#glow)"
-                style={{
-                  filter: isHighlighted ? `drop-shadow(0 0 12px ${state.color})` : state.glow,
-                  transform: isHighlighted ? "scale(1.1)" : "scale(1)",
-                  transformOrigin: "center"
-                }}
-                className={`cursor-pointer transition-all duration-300 ${state.pulse || isHighlighted ? "animate-pulse" : ""}`}
-                onMouseEnter={(e) => handleOrganHover(organ.id, e)}
-                onMouseLeave={() => setHoveredOrgan(null)}
+                d="M105,130 Q95,140 100,165 Q100,185 108,200 Q115,210 125,205 Q135,200 138,180 Q140,155 135,135 Q130,125 120,125 Q110,125 105,130 Z"
+                {...commonProps}
+              />
+            );
+          }
+
+          // === POUMON DROIT ===
+          if (organ.shape === "lung-right") {
+            return (
+              <path
+                key={`${organ.id}-${idx}`}
+                d="M195,130 Q205,140 200,165 Q200,185 192,200 Q185,210 175,205 Q165,200 162,180 Q160,155 165,135 Q170,125 180,125 Q190,125 195,130 Z"
+                {...commonProps}
+              />
+            );
+          }
+
+          // === FOIE (forme anatomique) ===
+          if (organ.shape === "liver") {
+            return (
+              <path
+                key={`${organ.id}-${idx}`}
+                d="M95,210 Q100,200 120,200 Q140,200 145,210 Q150,220 145,235 Q135,250 115,250 Q95,245 90,230 Q88,218 95,210 Z"
+                {...commonProps}
+              />
+            );
+          }
+
+          // === ESTOMAC (forme de J inversé) ===
+          if (organ.shape === "stomach") {
+            return (
+              <path
+                key={`${organ.id}-${idx}`}
+                d="M155,210 Q165,210 175,220 Q180,235 175,250 Q165,260 155,255 Q148,248 150,235 Q148,220 155,210 Z"
+                {...commonProps}
+              />
+            );
+          }
+
+          // === RATE (ovale) ===
+          if (organ.shape === "spleen") {
+            return (
+              <ellipse
+                key={`${organ.id}-${idx}`}
+                cx={organ.cx}
+                cy={organ.cy}
+                rx={12}
+                ry={8}
+                {...commonProps}
+              />
+            );
+          }
+
+          // === PANCRÉAS (forme allongée horizontale) ===
+          if (organ.shape === "pancreas") {
+            return (
+              <path
+                key={`${organ.id}-${idx}`}
+                d="M125,248 Q140,245 155,248 Q170,252 180,255 Q175,260 160,260 Q145,258 130,260 Q120,258 125,248 Z"
+                {...commonProps}
+              />
+            );
+          }
+
+          // === SURRÉNALE GAUCHE (petite forme triangulaire) ===
+          if (organ.shape === "adrenal-left") {
+            return (
+              <path
+                key={`${organ.id}-${idx}`}
+                d="M125,262 L135,262 L130,272 Z"
+                {...commonProps}
+              />
+            );
+          }
+
+          // === SURRÉNALE DROITE ===
+          if (organ.shape === "adrenal-right") {
+            return (
+              <path
+                key={`${organ.id}-${idx}`}
+                d="M165,262 L175,262 L170,272 Z"
+                {...commonProps}
+              />
+            );
+          }
+
+          // === REIN GAUCHE (forme de haricot) ===
+          if (organ.shape === "kidney-left") {
+            return (
+              <path
+                key={`${organ.id}-${idx}`}
+                d="M115,275 Q108,280 110,295 Q115,310 125,310 Q135,305 135,290 Q135,278 125,275 Q120,273 115,275 Z"
+                {...commonProps}
+              />
+            );
+          }
+
+          // === REIN DROIT ===
+          if (organ.shape === "kidney-right") {
+            return (
+              <path
+                key={`${organ.id}-${idx}`}
+                d="M185,275 Q192,280 190,295 Q185,310 175,310 Q165,305 165,290 Q165,278 175,275 Q180,273 185,275 Z"
+                {...commonProps}
+              />
+            );
+          }
+
+          // === INTESTINS (forme sinueuse améliorée) ===
+          if (organ.shape === "intestines") {
+            return (
+              <path
+                key={`${organ.id}-${idx}`}
+                d="M125,315 Q120,325 130,335 Q140,340 150,335 Q160,340 170,335 Q180,325 175,315
+                   Q170,325 160,320 Q150,325 140,320 Q130,325 125,315
+                   M130,340 Q135,355 150,360 Q165,355 170,340
+                   Q160,350 150,345 Q140,350 130,340 Z"
+                {...commonProps}
               />
             );
           }

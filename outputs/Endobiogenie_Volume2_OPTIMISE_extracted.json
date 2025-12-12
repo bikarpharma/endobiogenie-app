@@ -1,0 +1,244 @@
+{
+  "axes": [
+    {
+      "id": "axe_corticotrope",
+      "nom": "Axe corticotrope",
+      "description": "L'axe corticotrope est impliqué dans la régulation de l'adaptation, l'économie d'énergie et la douleur dans la maladie. Il est essentiel pour la réponse cortico-immune et la compensation gonadotrope.",
+      "hormones": [
+        "CRH",
+        "ACTH",
+        "cortisol",
+        "DHEA",
+        "aldostérone"
+      ],
+      "organes": [
+        "hypothalamus",
+        "hypophyse",
+        "cortex_surrénal"
+      ],
+      "fonction": "Régule l'adaptation et la réponse au stress."
+    },
+    {
+      "id": "axe_gonadotrope",
+      "nom": "Axe gonadotrope",
+      "description": "Un axe anabolisant qui maintient l'individu et propage l'espèce. Il assure la compétence générale de la maintenance des structures et des capacités de reproduction.",
+      "hormones": [
+        "GnRH",
+        "FSH",
+        "LH",
+        "œstrogènes",
+        "androgènes"
+      ],
+      "organes": [
+        "hypothalamus",
+        "hypophyse",
+        "gonades"
+      ],
+      "fonction": "Maintient la vie en initiant le métabolisme et assure la reproduction."
+    }
+  ],
+  "terrains": [
+    {
+      "id": "hyperestrogenisme",
+      "nom": "Hyper-œstrogénisme",
+      "description": "Présence excessive d'œstrogènes, souvent associée à une progestérone insuffisante pendant la phase lutéale tardive et au début de la phase menstruelle.",
+      "type": "sur_sollicitation",
+      "axe_lie": "axe_gonadotrope"
+    },
+    {
+      "id": "hyperandrogenisme_hyperluteal",
+      "nom": "Hyperandrogénisme hyperlutéal",
+      "description": "Excès d'androgènes pendant la phase lutéale, souvent lié à des ovaires polykystiques.",
+      "type": "sur_sollicitation",
+      "axe_lie": "axe_gonadotrope"
+    },
+    {
+      "id": "dysfonction_thyreotrope_centrale",
+      "nom": "Dysfonction thyréotrope centrale",
+      "description": "Dysfonctionnement de l'axe thyréotrope central, impliquant la TRH et la TSH.",
+      "type": "dysfonction",
+      "axe_lie": "axe_thyreotrope"
+    },
+    {
+      "id": "hyperprolactinemie",
+      "nom": "Hyperprolactinémie",
+      "description": "Impliquée dans une large gamme de troubles : hyperplasie, carcinogenèse avec métastases, hirsutisme, acné, maladie polykystique des ovaires, dysménorrhée, insomnie, états de désadaptation, etc.",
+      "type": "sur_sollicitation",
+      "axe_lie": "axe_somatotrope"
+    },
+    {
+      "id": "insuffisance_pl",
+      "nom": "Insuffisance de Prolactine",
+      "description": "Peut être associée à une dysménorrhée, une infertilité, un retard de croissance, des états de désadaptation et de dépression.",
+      "type": "insuffisance",
+      "axe_lie": "axe_somatotrope"
+    },
+    {
+      "id": "hyperinsulinisme",
+      "nom": "Hyperinsulinisme",
+      "description": "Favorise l'inflammation, la glycosylation inappropriée des protéines et des récepteurs, ainsi que d'autres effets délétères associés aux troubles hyperglycémiques, comme le diabète.",
+      "type": "sur_sollicitation",
+      "axe_lie": "axe_somatotrope"
+    },
+    {
+      "id": "predominance_catabolique",
+      "nom": "Prédominance catabolique",
+      "description": "Insuffisance anabolique de la prolifération de la muqueuse utérine.",
+      "type": "insuffisance",
+      "axe_lie": "axe_anabolisme_catabolisme"
+    },
+    {
+      "id": "anabolisme_reduit",
+      "nom": "Anabolisme réduit",
+      "description": "Entrave à la pulsatilité phasique des trophines centrales dans la phase folliculaire de l'endomètre.",
+      "type": "insuffisance",
+      "axe_lie": "axe_anabolisme_catabolisme"
+    },
+    {
+      "id": "catabolisme_accru",
+      "nom": "Catabolisme accru",
+      "description": "Oligoménorrhée avec cycle menstruel de 35 jours, insuffisance des facteurs calmants/sédatifs.",
+      "type": "sur_sollicitation",
+      "axe_lie": "axe_anabolisme_catabolisme"
+    },
+    {
+      "id": "interruption_metabolisme_thyroidien",
+      "nom": "Interruption du métabolisme thyroïdien périphérique",
+      "description": "Cycle menstruel raccourci en raison de l'incapacité à maintenir l'endomètre pendant la phase lutéale.",
+      "type": "dysfonction",
+      "axe_lie": "axe_thyroide"
+    },
+    {
+      "id": "desiquilibre_estroprogestatif",
+      "nom": "Déséquilibre œstroprogestatif",
+      "description": "Déséquilibre dans la phase lutéale du cycle menstruel.",
+      "type": "dysfonction",
+      "axe_lie": "axe_gonadotrope"
+    },
+    {
+      "id": "terrain_precritique",
+      "nom": "Terrain précritique",
+      "description": "Mentionné dans le contexte de divers troubles, y compris l'acné, l'amygdalite, et la métrorragie.",
+      "type": "dysfonction",
+      "axe_lie": "non_specifie"
+    },
+    {
+      "id": "incompetence_cortico_immune",
+      "nom": "Incompétence cortico-immune",
+      "description": "Mentionné dans le contexte de l'axe corticotrope.",
+      "type": "insuffisance",
+      "axe_lie": "axe_corticotrope"
+    },
+    {
+      "id": "terrain_critique",
+      "nom": "Terrain critique",
+      "description": "Mentionné dans le contexte de divers troubles, y compris l'acné et l'amygdalite.",
+      "type": "dysfonction",
+      "axe_lie": "non_specifie"
+    }
+  ],
+  "symptomes": [],
+  "plantes": [],
+  "indexBdF": [],
+  "emonctoires": [],
+  "relations": [
+    {
+      "type": "IMPLIQUE",
+      "from": "hyperestrogenisme",
+      "to": "axe_gonadotrope",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "hyperandrogenisme_hyperluteal",
+      "to": "axe_gonadotrope",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "dysfonction_thyreotrope_centrale",
+      "to": "axe_thyreotrope",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "hyperprolactinemie",
+      "to": "axe_somatotrope",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "insuffisance_pl",
+      "to": "axe_somatotrope",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "hyperinsulinisme",
+      "to": "axe_somatotrope",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "predominance_catabolique",
+      "to": "axe_anabolisme_catabolisme",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "anabolisme_reduit",
+      "to": "axe_anabolisme_catabolisme",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "catabolisme_accru",
+      "to": "axe_anabolisme_catabolisme",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "interruption_metabolisme_thyroidien",
+      "to": "axe_thyroide",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "desiquilibre_estroprogestatif",
+      "to": "axe_gonadotrope",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "terrain_precritique",
+      "to": "non_specifie",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "incompetence_cortico_immune",
+      "to": "axe_corticotrope",
+      "poids": 1,
+      "source": "Volume 1-2"
+    },
+    {
+      "type": "IMPLIQUE",
+      "from": "terrain_critique",
+      "to": "non_specifie",
+      "poids": 1,
+      "source": "Volume 1-2"
+    }
+  ]
+}

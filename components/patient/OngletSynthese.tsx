@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import { calculateAllIndexes } from "@/lib/bdf/calculateIndexes";
 import { calculateAxeScores } from "@/lib/interrogatoire/calculateAxeScores";
 import type { BdfResult } from "@/lib/bdf/calculateIndexes";
@@ -8,6 +8,13 @@ import type { AxeType } from "@/lib/interrogatoire/axeInterpretation";
 import type { InterrogatoireEndobiogenique } from "@/lib/interrogatoire/types";
 import type { UnifiedAnalysisOutput } from "@/types/clinical-engine";
 import { runUnifiedAnalysis } from "@/app/actions/clinical-pipeline";
+import type { BdfSynthesisResponse } from "@/app/api/bdf/synthesis/route";
+import { LocalSynthesisDisplay } from "./LocalSynthesisDisplay";
+import { calculateClinicalScoresV3, type ScoringResultV3 } from "@/lib/interrogatoire/clinicalScoringV3";
+
+// Temps estimé pour la génération avec 4 VectorStores IA (en secondes)
+// Endobiogénie + Phytothérapie + Aromathérapie + Gemmothérapie
+const ESTIMATED_GENERATION_TIME = 35;
 
 type PatientData = {
   id: string;
@@ -37,6 +44,11 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
   const [loadingData, setLoadingData] = useState(true);
   const [synthesis, setSynthesis] = useState<UnifiedAnalysisOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<number>(0);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const [bdfSynthesis, setBdfSynthesis] = useState<BdfSynthesisResponse | null>(null);
+  const [showBdfSynthesis, setShowBdfSynthesis] = useState(false);
+  const [scoringV3, setScoringV3] = useState<ScoringResultV3 | null>(null);
 
   // Charger les données au montage du composant
   useEffect(() => {
@@ -52,6 +64,21 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
           setInterrogatoireData(interrogatoire);
           const scores = calculateAxeScores(interrogatoire);
           setAxeScores(scores);
+
+          // Calcul ScoringV3 pour la synthèse locale
+          if (interrogatoire?.v2?.answersByAxis) {
+            try {
+              const patientSexe = (patient.sexe === "F" ? "F" : "H") as "H" | "F";
+              const scoringResult = calculateClinicalScoresV3(
+                interrogatoire.v2.answersByAxis,
+                patientSexe
+              );
+              setScoringV3(scoringResult);
+              console.log("[OngletSynthese] ScoringV3 calculé:", Object.keys(scoringResult.axes || {}));
+            } catch (err) {
+              console.error("[OngletSynthese] Erreur ScoringV3:", err);
+            }
+          }
         }
 
         // Charger les données BdF et calculer les indexes
@@ -64,6 +91,19 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
               setBdfData(result);
             } catch (error) {
               console.error("Erreur calcul BdF:", error);
+            }
+          }
+
+          // Vérifier si une synthèse BdF existe déjà
+          if (lastBdfAnalysis.summary) {
+            try {
+              const parsed = JSON.parse(lastBdfAnalysis.summary);
+              if (parsed.synthesisVS) {
+                setBdfSynthesis(parsed.synthesisVS);
+                console.log("[OngletSynthese] Synthèse BdF existante trouvée");
+              }
+            } catch {
+              // summary n'est pas au format synthèse VS
             }
           }
         }
@@ -94,9 +134,46 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
   const hasBdf = bdfData !== null;
   const hasAnyData = hasInterrogatoire || hasBdf;
 
+  // Calculer la complétude des données (basé sur les axes remplis et BdF)
+  const calculateCompletude = (): number => {
+    let score = 0;
+    let total = 0;
+
+    // BdF compte pour 40%
+    total += 40;
+    if (hasBdf) score += 40;
+
+    // Interrogatoire compte pour 60% (basé sur les axes remplis)
+    total += 60;
+    if (hasInterrogatoire && interrogatoireData?.v2?.answersByAxis) {
+      const allAxes = ["neuro", "adaptatif", "thyro", "gonado", "somato", "digestif", "cardioMetabo", "dermato", "immuno"];
+      const filledAxes = Object.entries(interrogatoireData.v2.answersByAxis)
+        .filter(([_, answers]) => answers && Object.keys(answers as object).length > 0)
+        .length;
+      score += Math.round((filledAxes / allAxes.length) * 60);
+    }
+
+    return Math.round((score / total) * 100);
+  };
+
+  const completudeScore = calculateCompletude();
+
   // Générer la synthèse avec le nouveau pipeline unifié
   const handleGenerateSynthesis = () => {
     setError(null);
+
+    // Démarrer le countdown
+    setCountdown(ESTIMATED_GENERATION_TIME);
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          // Ne pas arrêter l'intervalle ici, on continue à 0 jusqu'à la fin réelle
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     startTransition(async () => {
       try {
         const result = await runUnifiedAnalysis(patient.id);
@@ -104,17 +181,34 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
       } catch (err: any) {
         console.error("Erreur génération synthèse:", err);
         setError(err.message || "Une erreur est survenue lors de la génération");
+      } finally {
+        // Arrêter le countdown
+        if (countdownRef.current) {
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
+        }
+        setCountdown(0);
       }
     });
   };
 
-  // Fonctions utilitaires pour les couleurs
-  const getTerrainColor = (type: string) => {
-    switch (type) {
-      case 'Alpha': return { bg: '#fff7ed', border: '#f97316', text: '#9a3412' };
-      case 'Beta': return { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' };
-      case 'Gamma': return { bg: '#faf5ff', border: '#a855f7', text: '#6b21a8' };
-      case 'Delta': return { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' };
+  // Cleanup du countdown au démontage
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
+    };
+  }, []);
+
+  // Fonctions utilitaires pour les couleurs basées sur l'axe dominant
+  const getTerrainColor = (axeDominant: string) => {
+    switch (axeDominant) {
+      case 'Corticotrope': return { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' };
+      case 'Thyréotrope': return { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' };
+      case 'Gonadotrope': return { bg: '#fdf2f8', border: '#ec4899', text: '#9d174d' };
+      case 'Somatotrope': return { bg: '#fff7ed', border: '#f97316', text: '#9a3412' };
+      case 'Mixte': return { bg: '#faf5ff', border: '#a855f7', text: '#6b21a8' };
       default: return { bg: '#f9fafb', border: '#9ca3af', text: '#374151' };
     }
   };
@@ -185,42 +279,78 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
 
               {hasInterrogatoire ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {axeScores.map((score, idx) => (
-                    <div key={idx} style={{
+                  {axeScores.length > 0 ? (
+                    axeScores.map((score, idx) => (
+                      <div key={idx} style={{
+                        background: "white",
+                        borderRadius: "10px",
+                        padding: "12px 16px",
+                        border: `2px solid ${score.status === 'critical' ? '#ef4444' : score.status === 'warning' ? '#f59e0b' : '#22c55e'}`,
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontWeight: "600", color: "#374151" }}>{score.axe}</span>
+                          <span style={{
+                            padding: "4px 12px",
+                            borderRadius: "20px",
+                            fontSize: "0.85rem",
+                            fontWeight: "600",
+                            background: score.status === 'critical' ? '#fee2e2' : score.status === 'warning' ? '#fef3c7' : '#dcfce7',
+                            color: score.status === 'critical' ? '#991b1b' : score.status === 'warning' ? '#92400e' : '#166534',
+                          }}>
+                            {score.score}%
+                          </span>
+                        </div>
+                        <div style={{
+                          marginTop: "8px",
+                          height: "6px",
+                          background: "#e5e7eb",
+                          borderRadius: "3px",
+                          overflow: "hidden",
+                        }}>
+                          <div style={{
+                            width: `${score.score}%`,
+                            height: "100%",
+                            borderRadius: "3px",
+                            background: score.status === 'critical' ? '#ef4444' : score.status === 'warning' ? '#f59e0b' : '#22c55e',
+                          }} />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    // Interrogatoire existe mais pas de scores calculés - afficher les axes remplis
+                    <div style={{
                       background: "white",
                       borderRadius: "10px",
-                      padding: "12px 16px",
-                      border: `2px solid ${score.status === 'critical' ? '#ef4444' : score.status === 'warning' ? '#f59e0b' : '#22c55e'}`,
+                      padding: "16px",
+                      border: "2px solid #22c55e",
                     }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontWeight: "600", color: "#374151" }}>{score.axe}</span>
-                        <span style={{
-                          padding: "4px 12px",
-                          borderRadius: "20px",
-                          fontSize: "0.85rem",
-                          fontWeight: "600",
-                          background: score.status === 'critical' ? '#fee2e2' : score.status === 'warning' ? '#fef3c7' : '#dcfce7',
-                          color: score.status === 'critical' ? '#991b1b' : score.status === 'warning' ? '#92400e' : '#166534',
-                        }}>
-                          {score.score}%
-                        </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                        <span style={{ fontSize: "1.2rem" }}>✅</span>
+                        <span style={{ fontWeight: "600", color: "#166534" }}>Interrogatoire disponible</span>
                       </div>
-                      <div style={{
-                        marginTop: "8px",
-                        height: "6px",
-                        background: "#e5e7eb",
-                        borderRadius: "3px",
-                        overflow: "hidden",
-                      }}>
-                        <div style={{
-                          width: `${score.score}%`,
-                          height: "100%",
-                          borderRadius: "3px",
-                          background: score.status === 'critical' ? '#ef4444' : score.status === 'warning' ? '#f59e0b' : '#22c55e',
-                        }} />
-                      </div>
+                      {interrogatoireData?.v2?.answersByAxis && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          {Object.entries(interrogatoireData.v2.answersByAxis)
+                            .filter(([_, answers]) => answers && Object.keys(answers as object).length > 0)
+                            .map(([axe, _]) => (
+                              <span key={axe} style={{
+                                padding: "4px 10px",
+                                borderRadius: "12px",
+                                fontSize: "0.8rem",
+                                background: "#dcfce7",
+                                color: "#166534",
+                                fontWeight: "500",
+                              }}>
+                                {axe}
+                              </span>
+                            ))}
+                        </div>
+                      )}
+                      <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "12px" }}>
+                        Les scores par axe seront calculés lors de la synthese
+                      </p>
                     </div>
-                  ))}
+                  )}
                 </div>
               ) : (
                 <div style={{
@@ -257,7 +387,9 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
 
               {hasBdf && bdfData ? (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  {Object.entries(bdfData.indexes || {}).slice(0, 6).map(([key, data]: [string, any], idx) => (
+                  {Object.entries(bdfData.indexes || {})
+                    .filter(([_, data]: [string, any]) => data?.value != null && !isNaN(data.value))
+                    .map(([key, data]: [string, any], idx) => (
                     <div key={idx} style={{
                       background: "white",
                       borderRadius: "10px",
@@ -278,10 +410,24 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
                         fontWeight: "700",
                         color: "#1e40af",
                       }}>
-                        {data?.value?.toFixed(2) || 'N/A'}
+                        {data.value.toFixed(2)}
                       </div>
                     </div>
                   ))}
+                  {Object.entries(bdfData.indexes || {})
+                    .filter(([_, data]: [string, any]) => data?.value != null && !isNaN(data.value))
+                    .length === 0 && (
+                    <div style={{
+                      gridColumn: "1 / -1",
+                      background: "white",
+                      borderRadius: "10px",
+                      padding: "16px",
+                      textAlign: "center",
+                      color: "#6b7280",
+                    }}>
+                      <p>Index non calculables (données insuffisantes)</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div style={{
@@ -298,7 +444,205 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
             </div>
           </div>
 
-          {/* ===== BOUTON GÉNÉRATION ===== */}
+          {/* ===== SYNTHÈSE BdF EXISTANTE (si générée depuis Analyses) ===== */}
+          {bdfSynthesis && (
+            <div style={{
+              background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
+              borderRadius: "16px",
+              border: "2px solid #10b981",
+              padding: "20px",
+              marginBottom: "24px",
+            }}>
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: showBdfSynthesis ? "16px" : "0",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span style={{ fontSize: "1.5rem" }}>✅</span>
+                  <div>
+                    <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#065f46", margin: 0 }}>
+                      Synthèse BdF disponible
+                    </h3>
+                    <p style={{ fontSize: "0.85rem", color: "#047857", margin: "4px 0 0 0" }}>
+                      Générée depuis l'onglet Analyses - Prête pour la synthèse unifiée
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowBdfSynthesis(!showBdfSynthesis)}
+                  style={{
+                    padding: "10px 20px",
+                    background: showBdfSynthesis ? "#6b7280" : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "0.9rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  {showBdfSynthesis ? "Masquer" : "👁️ Voir Synthèse BdF"}
+                </button>
+              </div>
+
+              {/* Contenu de la synthèse BdF (dépliable) */}
+              {showBdfSynthesis && (
+                <div style={{
+                  background: "white",
+                  borderRadius: "12px",
+                  padding: "20px",
+                  border: "1px solid #a7f3d0",
+                }}>
+                  {/* Terrain - Détection des anciennes synthèses invalides */}
+                  <div style={{ marginBottom: "16px" }}>
+                    {/* Avertissement si ancienne synthèse avec type Alpha/Beta/Gamma/Delta */}
+                    {(bdfSynthesis.terrain as any).type && !bdfSynthesis.terrain.axeDominant && (
+                      <div style={{
+                        background: "#fef2f2",
+                        border: "2px solid #ef4444",
+                        borderRadius: "8px",
+                        padding: "12px",
+                        marginBottom: "12px",
+                      }}>
+                        <strong style={{ color: "#dc2626" }}>⚠️ Ancienne synthèse invalide détectée</strong>
+                        <p style={{ fontSize: "0.85rem", color: "#b91c1c", margin: "8px 0 0 0" }}>
+                          Cette synthèse utilise la classification "{(bdfSynthesis.terrain as any).type}" qui n'existe pas en endobiogénie.
+                          Veuillez régénérer la synthèse BdF depuis l'onglet Analyses.
+                        </p>
+                      </div>
+                    )}
+                    <h4 style={{ fontSize: "1rem", fontWeight: "600", color: "#065f46", marginBottom: "8px" }}>
+                      🌿 Terrain: {bdfSynthesis.terrain.axeDominant
+                        ? `Axe ${bdfSynthesis.terrain.axeDominant} - ${bdfSynthesis.terrain.profilSNA || ""}`
+                        : (bdfSynthesis.terrain as any).type
+                          ? `⚠️ "${(bdfSynthesis.terrain as any).type}" (invalide - régénérer)`
+                          : "Non déterminé"}
+                    </h4>
+                    <p style={{ fontSize: "0.9rem", color: "#047857" }}>
+                      {bdfSynthesis.terrain.description || bdfSynthesis.terrain.justification}
+                    </p>
+                  </div>
+
+                  {/* Axes Endocriniens */}
+                  <div style={{ marginBottom: "16px" }}>
+                    <h4 style={{ fontSize: "1rem", fontWeight: "600", color: "#92400e", marginBottom: "8px" }}>
+                      ⚙️ Axes Endocriniens
+                    </h4>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
+                      {bdfSynthesis.axesEndocriniens.map((axe, idx) => (
+                        <div key={idx} style={{
+                          padding: "10px",
+                          background: "#fef3c7",
+                          borderRadius: "8px",
+                          border: "1px solid #fbbf24",
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <strong style={{ color: "#92400e" }}>{axe.axis}</strong>
+                            <span style={{
+                              padding: "2px 8px",
+                              borderRadius: "12px",
+                              fontSize: "0.75rem",
+                              fontWeight: "600",
+                              background: axe.status === "Hyper" ? "#fee2e2" : axe.status === "Hypo" ? "#e0e7ff" : "#d1fae5",
+                              color: axe.status === "Hyper" ? "#dc2626" : axe.status === "Hypo" ? "#4338ca" : "#059669",
+                            }}>
+                              {axe.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Neuro-végétatif */}
+                  <div style={{ marginBottom: "16px" }}>
+                    <h4 style={{ fontSize: "1rem", fontWeight: "600", color: "#5b21b6", marginBottom: "8px" }}>
+                      🧠 Neuro-végétatif: {bdfSynthesis.neuroVegetatifBio.status}
+                    </h4>
+                    <p style={{ fontSize: "0.85rem", color: "#6d28d9" }}>
+                      Dominance: {bdfSynthesis.neuroVegetatifBio.dominance}
+                    </p>
+                  </div>
+
+                  {/* Drainage */}
+                  <div style={{ marginBottom: "16px" }}>
+                    <h4 style={{ fontSize: "1rem", fontWeight: "600", color: "#0e7490", marginBottom: "8px" }}>
+                      💧 Drainage - Priorité: {bdfSynthesis.drainage.priorite}
+                    </h4>
+                    <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                      <span style={{
+                        padding: "4px 12px",
+                        background: bdfSynthesis.drainage.necessite ? "#fee2e2" : "#d1fae5",
+                        color: bdfSynthesis.drainage.necessite ? "#dc2626" : "#059669",
+                        borderRadius: "12px",
+                        fontSize: "0.85rem",
+                        fontWeight: "600",
+                      }}>
+                        {bdfSynthesis.drainage.necessite ? "Drainage nécessaire" : "Drainage non nécessaire"}
+                      </span>
+                      <span style={{
+                        padding: "4px 12px",
+                        background: "#e0e7ff",
+                        color: "#4338ca",
+                        borderRadius: "12px",
+                        fontSize: "0.85rem",
+                      }}>
+                        Capacité tampon: {bdfSynthesis.drainage.capaciteTampon}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Spasmophilie */}
+                  {bdfSynthesis.spasmophilie?.detectee && (
+                    <div style={{
+                      padding: "12px",
+                      background: "#fef2f2",
+                      borderRadius: "8px",
+                      border: "1px solid #fca5a5",
+                    }}>
+                      <h4 style={{ fontSize: "0.95rem", fontWeight: "600", color: "#b91c1c", marginBottom: "4px" }}>
+                        ⚡ Spasmophilie Type {bdfSynthesis.spasmophilie.type}: {bdfSynthesis.spasmophilie.nom}
+                      </h4>
+                      <p style={{ fontSize: "0.85rem", color: "#dc2626", margin: 0 }}>
+                        {bdfSynthesis.spasmophilie.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Message d'info */}
+                  <div style={{
+                    marginTop: "16px",
+                    padding: "12px",
+                    background: "#eff6ff",
+                    borderRadius: "8px",
+                    border: "1px solid #bfdbfe",
+                  }}>
+                    <p style={{ fontSize: "0.85rem", color: "#1e40af", margin: 0 }}>
+                      💡 Cette synthèse BdF sera automatiquement intégrée dans la synthèse unifiée pour économiser des tokens API.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== SYNTHÈSE LOCALE (GRATUIT) ===== */}
+          {hasAnyData && !synthesis && (
+            <div style={{ marginBottom: "24px" }}>
+              <LocalSynthesisDisplay
+                bdfResult={bdfData}
+                scoringResult={scoringV3}
+                patientSexe={(patient.sexe === "F" ? "F" : "H") as "H" | "F"}
+              />
+            </div>
+          )}
+
+          {/* ===== BOUTON GÉNÉRATION IA (OPTIONNEL) ===== */}
           <div style={{
             background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
             borderRadius: "16px",
@@ -343,13 +687,90 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
               ) : (
                 <>
                   <span style={{ fontSize: "1.3rem" }}>🧠</span>
-                  GÉNÉRER SYNTHÈSE UNIFIÉE
+                  SYNTHÈSE IA APPROFONDIE
+                  <span style={{
+                    fontSize: "0.7rem",
+                    background: "rgba(255,255,255,0.2)",
+                    padding: "2px 8px",
+                    borderRadius: "10px",
+                    marginLeft: "8px"
+                  }}>
+                    Optionnel
+                  </span>
                 </>
               )}
             </button>
+
+            {/* Indicateur de countdown pendant la génération */}
+            {isPending && (
+              <div style={{
+                marginTop: "16px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "12px",
+              }}>
+                {/* Barre de progression */}
+                <div style={{
+                  width: "300px",
+                  height: "8px",
+                  background: "#e5e7eb",
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                }}>
+                  <div style={{
+                    width: `${Math.max(0, (1 - countdown / ESTIMATED_GENERATION_TIME) * 100)}%`,
+                    height: "100%",
+                    background: "linear-gradient(90deg, #8b5cf6 0%, #6366f1 100%)",
+                    borderRadius: "4px",
+                    transition: "width 1s linear",
+                  }} />
+                </div>
+
+                {/* Temps restant avec sablier */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 16px",
+                  background: "rgba(139, 92, 246, 0.1)",
+                  borderRadius: "20px",
+                }}>
+                  <span style={{ fontSize: "1.2rem", animation: "pulse 1s ease-in-out infinite" }}>
+                    ⏳
+                  </span>
+                  <span style={{ color: "#6366f1", fontWeight: "600" }}>
+                    {countdown > 0 ? `~${countdown}s restantes` : "Finalisation..."}
+                  </span>
+                </div>
+
+                {/* Message informatif */}
+                <p style={{
+                  fontSize: "0.85rem",
+                  color: "#6b7280",
+                  textAlign: "center",
+                  maxWidth: "400px",
+                }}>
+                  Analyse par 4 bases documentaires IA : Endobiogénie, Phytothérapie, Gemmothérapie, Aromathérapie
+                </p>
+              </div>
+            )}
+
+            <style>{`
+              @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+              }
+            `}</style>
             {!hasAnyData && (
               <p style={{ color: "#6b7280", marginTop: "12px", fontSize: "0.9rem" }}>
                 Remplissez l'interrogatoire ou saisissez une BdF pour générer la synthèse
+              </p>
+            )}
+            {hasAnyData && !isPending && (
+              <p style={{ color: "#6b7280", marginTop: "12px", fontSize: "0.85rem", maxWidth: "500px", margin: "12px auto 0" }}>
+                La synthèse locale (ci-dessus) est gratuite et instantanée.
+                L'IA approfondit l'analyse avec des recommandations thérapeutiques personnalisées.
               </p>
             )}
           </div>
@@ -379,15 +800,15 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
 
               {/* TERRAIN ENDOBIOGÉNIQUE */}
               <div style={{
-                background: `linear-gradient(135deg, ${getTerrainColor(synthesis.terrain?.type || '').bg} 0%, white 100%)`,
+                background: `linear-gradient(135deg, ${getTerrainColor(synthesis.terrain?.axeDominant || '').bg} 0%, white 100%)`,
                 borderRadius: "16px",
-                border: `3px solid ${getTerrainColor(synthesis.terrain?.type || '').border}`,
+                border: `3px solid ${getTerrainColor(synthesis.terrain?.axeDominant || '').border}`,
                 padding: "24px",
               }}>
                 <h3 style={{
                   fontSize: "1.2rem",
                   fontWeight: "700",
-                  color: getTerrainColor(synthesis.terrain?.type || '').text,
+                  color: getTerrainColor(synthesis.terrain?.axeDominant || '').text,
                   marginBottom: "16px",
                   display: "flex",
                   alignItems: "center",
@@ -396,20 +817,39 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
                   🏔️ Terrain Endobiogénique
                 </h3>
                 <div style={{ display: "flex", alignItems: "start", gap: "16px" }}>
-                  <span style={{
-                    padding: "12px 24px",
-                    borderRadius: "12px",
-                    fontSize: "1.5rem",
-                    fontWeight: "800",
-                    background: getTerrainColor(synthesis.terrain?.type || '').border,
-                    color: "white",
-                  }}>
-                    {synthesis.terrain?.type || 'N/A'}
-                  </span>
-                  <div>
-                    <p style={{ color: "#374151", lineHeight: "1.6" }}>
-                      {synthesis.terrain?.justification}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <span style={{
+                      padding: "10px 20px",
+                      borderRadius: "12px",
+                      fontSize: "1.1rem",
+                      fontWeight: "700",
+                      background: getTerrainColor(synthesis.terrain?.axeDominant || '').border,
+                      color: "white",
+                      textAlign: "center",
+                    }}>
+                      Axe {synthesis.terrain?.axeDominant || 'N/A'}
+                    </span>
+                    <span style={{
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      fontSize: "0.9rem",
+                      fontWeight: "600",
+                      background: "#f3f4f6",
+                      color: "#374151",
+                      textAlign: "center",
+                    }}>
+                      {synthesis.terrain?.profilSNA || 'N/A'}
+                    </span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ color: "#374151", lineHeight: "1.6", marginBottom: "8px" }}>
+                      {synthesis.terrain?.description || synthesis.terrain?.justification}
                     </p>
+                    {synthesis.terrain?.justification && synthesis.terrain?.description && (
+                      <p style={{ color: "#6b7280", fontSize: "0.9rem", lineHeight: "1.5" }}>
+                        {synthesis.terrain.justification}
+                      </p>
+                    )}
                     {synthesis.terrain?.pedagogicalHint && (
                       <p style={{
                         marginTop: "12px",
@@ -573,18 +1013,43 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
                     gap: "8px",
                   }}>
                     🚿 Analyse du Drainage
-                    <span style={{
-                      marginLeft: "auto",
-                      padding: "4px 12px",
-                      borderRadius: "20px",
-                      fontSize: "0.8rem",
-                      fontWeight: "600",
-                      background: synthesis.drainage.necessite ? '#fef2f2' : '#f0fdf4',
-                      color: synthesis.drainage.necessite ? '#dc2626' : '#16a34a',
-                      border: `1px solid ${synthesis.drainage.necessite ? '#fca5a5' : '#86efac'}`,
-                    }}>
-                      {synthesis.drainage.necessite ? `Priorité ${synthesis.drainage.priorite}` : 'Non nécessaire'}
-                    </span>
+                    {(() => {
+                      // Normaliser la priorité (peut être string ou objet)
+                      const prioriteRaw = synthesis.drainage.priorite;
+                      const priorite = typeof prioriteRaw === 'string' ? prioriteRaw.toLowerCase() : 'basse';
+                      const isUrgent = priorite.includes('urgent') || priorite.includes('haute') || priorite.includes('high');
+                      const isMoyenne = priorite.includes('moyen') || priorite.includes('moder') || priorite.includes('medium');
+
+                      return (
+                        <span style={{
+                          marginLeft: "auto",
+                          padding: "4px 12px",
+                          borderRadius: "20px",
+                          fontSize: "0.8rem",
+                          fontWeight: "600",
+                          background: !synthesis.drainage.necessite ? '#f0fdf4'
+                            : isUrgent ? '#fef2f2'
+                            : isMoyenne ? '#fef3c7'
+                            : '#ecfdf5',
+                          color: !synthesis.drainage.necessite ? '#16a34a'
+                            : isUrgent ? '#dc2626'
+                            : isMoyenne ? '#d97706'
+                            : '#059669',
+                          border: `1px solid ${!synthesis.drainage.necessite ? '#86efac'
+                            : isUrgent ? '#fca5a5'
+                            : isMoyenne ? '#fcd34d'
+                            : '#6ee7b7'}`,
+                        }}>
+                          {!synthesis.drainage.necessite
+                            ? 'Non nécessaire'
+                            : isUrgent
+                              ? '⚠️ Priorité Haute'
+                              : isMoyenne
+                                ? 'Priorité Moyenne'
+                                : 'Recommandé'}
+                        </span>
+                      );
+                    })()}
                   </h3>
 
                   {synthesis.drainage.necessite && (
@@ -597,68 +1062,112 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
                         marginBottom: "16px",
                         border: "1px solid #a7f3d0",
                       }}>
-                        <p style={{ color: "#374151", lineHeight: "1.6", marginBottom: "8px" }}>
-                          {synthesis.drainage.strategieDrainage}
-                        </p>
-                        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                          <span style={{ fontSize: "0.85rem", color: "#059669", fontWeight: "600" }}>
-                            Durée totale: {synthesis.drainage.dureeTotale}
-                          </span>
-                        </div>
+                        {/* Formater strategieDrainage qui peut être string ou objet - nettoyer [object Object] */}
+                        {synthesis.drainage.strategieDrainage && (
+                          <p style={{ color: "#374151", lineHeight: "1.6", marginBottom: "8px" }}>
+                            {(() => {
+                              const raw = synthesis.drainage.strategieDrainage;
+                              if (typeof raw === 'string') {
+                                // Nettoyer toute trace de [object Object]
+                                const cleaned = raw.replace(/\[object Object\]/g, '').replace(/,\s*,/g, ',').replace(/:\s*,/g, ': ').trim();
+                                return cleaned || "Drainage hépatique et rénal recommandé";
+                              }
+                              return (raw as any)?.description || (raw as any)?.text || "Drainage hépatique et rénal recommandé";
+                            })()}
+                          </p>
+                        )}
+                        {synthesis.drainage.dureeTotale && (
+                          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                            <span style={{ fontSize: "0.85rem", color: "#059669", fontWeight: "600" }}>
+                              Durée: {typeof synthesis.drainage.dureeTotale === 'string'
+                                ? synthesis.drainage.dureeTotale
+                                : "2-3 semaines"}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Émonctoires */}
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px", marginBottom: "16px" }}>
                         {synthesis.drainage.emonctoires
-                          .filter(e => e.statut === 'Surchargé')
-                          .sort((a, b) => a.prioriteDrainage - b.prioriteDrainage)
-                          .map((emonctoire, idx) => (
-                            <div key={idx} style={{
-                              background: "white",
-                              borderRadius: "10px",
-                              padding: "14px",
-                              border: "2px solid #fca5a5",
-                            }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                                <span style={{ fontWeight: "700", color: "#374151", display: "flex", alignItems: "center", gap: "6px" }}>
-                                  {emonctoire.organe === 'Foie' && '🫀'}
-                                  {emonctoire.organe === 'Reins' && '💧'}
-                                  {emonctoire.organe === 'Intestins' && '🌀'}
-                                  {emonctoire.organe === 'Peau' && '🧴'}
-                                  {emonctoire.organe === 'Poumons' && '🌬️'}
-                                  {emonctoire.organe}
-                                </span>
-                                <span style={{
-                                  padding: "2px 8px",
-                                  borderRadius: "12px",
-                                  fontSize: "0.7rem",
-                                  fontWeight: "600",
-                                  background: "#fee2e2",
-                                  color: "#991b1b",
-                                }}>
-                                  Priorité {emonctoire.prioriteDrainage}
-                                </span>
-                              </div>
-                              {emonctoire.signesCliniques.length > 0 && (
-                                <p style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: "8px" }}>
-                                  {emonctoire.signesCliniques.join(', ')}
-                                </p>
-                              )}
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                                {emonctoire.plantesRecommandees.map((plante, i) => (
-                                  <span key={i} style={{
-                                    padding: "2px 8px",
-                                    borderRadius: "10px",
-                                    fontSize: "0.75rem",
-                                    background: "#d1fae5",
-                                    color: "#047857",
-                                  }}>
-                                    {plante}
+                          .filter((e: any) => e.statut === 'sature' || e.statut === 'sollicite' || e.statut === 'Surchargé')
+                          .sort((a: any, b: any) => (b.score || 0) - (a.score || 0))
+                          .map((emonctoire: any, idx: number) => {
+                            // Normaliser le nom de l'organe (peut être en minuscules ou majuscules)
+                            const organeRaw = emonctoire.organe || emonctoire.nom || emonctoire.name || "Émonctoire";
+                            const organeName = typeof organeRaw === 'string' ? organeRaw : String(organeRaw);
+                            const organeNormalized = organeName.toLowerCase();
+
+                            // Obtenir les indicateurs (peuvent être dans différents champs)
+                            const indicateurs = emonctoire.indicateurs || emonctoire.signesCliniques || emonctoire.signes || [];
+                            const indicateursArray = Array.isArray(indicateurs) ? indicateurs : [];
+
+                            // Obtenir les plantes (peuvent être dans différents champs)
+                            const plantes = emonctoire.plantesRecommandees || emonctoire.plantes || [];
+                            const plantesArray = Array.isArray(plantes) ? plantes : [];
+
+                            return (
+                              <div key={idx} style={{
+                                background: "white",
+                                borderRadius: "10px",
+                                padding: "14px",
+                                border: "2px solid #fca5a5",
+                              }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                                  <span style={{ fontWeight: "700", color: "#374151", display: "flex", alignItems: "center", gap: "6px" }}>
+                                    {organeNormalized.includes('foie') && '🫀'}
+                                    {organeNormalized.includes('rein') && '💧'}
+                                    {organeNormalized.includes('intestin') && '🌀'}
+                                    {organeNormalized.includes('peau') && '🧴'}
+                                    {organeNormalized.includes('poumon') && '🌬️'}
+                                    {organeNormalized.includes('lymphe') && '💜'}
+                                    <span className="capitalize">{organeName}</span>
                                   </span>
-                                ))}
+                                  {(emonctoire.score || emonctoire.prioriteDrainage) && (
+                                    <span style={{
+                                      padding: "2px 8px",
+                                      borderRadius: "12px",
+                                      fontSize: "0.7rem",
+                                      fontWeight: "600",
+                                      background: "#fee2e2",
+                                      color: "#991b1b",
+                                    }}>
+                                      {emonctoire.score ? `Score ${emonctoire.score}` : `Priorité ${emonctoire.prioriteDrainage}`}
+                                    </span>
+                                  )}
+                                </div>
+                                {indicateursArray.length > 0 && (
+                                  <p style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: "8px" }}>
+                                    {indicateursArray.map((ind: any) => typeof ind === 'string' ? ind : ind?.label || ind?.nom || String(ind)).join(', ')}
+                                  </p>
+                                )}
+                                {plantesArray.length > 0 && (
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                                    {plantesArray.map((plante: any, i: number) => (
+                                      <span key={i} style={{
+                                        padding: "2px 8px",
+                                        borderRadius: "10px",
+                                        fontSize: "0.75rem",
+                                        background: "#d1fae5",
+                                        color: "#047857",
+                                      }}>
+                                        {typeof plante === 'string' ? plante : plante?.nom || plante?.name || String(plante)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {emonctoire.strategieDrainage && (
+                                  <p style={{ fontSize: "0.75rem", color: "#059669", marginTop: "8px", fontStyle: "italic" }}>
+                                    {typeof emonctoire.strategieDrainage === 'string'
+                                      ? emonctoire.strategieDrainage.replace(/\[object Object\]/g, '').trim()
+                                      : (emonctoire.strategieDrainage as any)?.description
+                                        || (emonctoire.strategieDrainage as any)?.text
+                                        || ""}
+                                  </p>
+                                )}
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                       </div>
 
                       {/* Précautions */}
@@ -1400,37 +1909,104 @@ export function OngletSynthese({ patient }: { patient: PatientData }) {
               {/* MÉTADONNÉES */}
               {synthesis.meta && (
                 <div style={{
-                  textAlign: "right",
-                  color: "#9ca3af",
-                  fontSize: "0.8rem",
-                  padding: "8px",
+                  background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+                  borderRadius: "12px",
+                  border: "1px solid #e2e8f0",
+                  padding: "16px",
+                  marginTop: "16px",
                 }}>
-                  Généré par {synthesis.meta.modelUsed} en {synthesis.meta.processingTime}ms
-                  • Confiance: {Math.round((synthesis.meta.confidenceScore || 0) * 100)}%
-                  <div style={{ marginTop: "4px", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                  {/* Ligne 1: Métriques de confiance */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <div style={{ display: "flex", gap: "16px" }}>
+                      {/* Complétude des données (taux de remplissage) */}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "6px 12px",
+                        background: "#dbeafe",
+                        borderRadius: "8px",
+                      }}>
+                        <span style={{ fontSize: "0.8rem", color: "#1e40af", fontWeight: "500" }}>Complétude données</span>
+                        <span style={{
+                          padding: "2px 8px",
+                          background: completudeScore >= 70 ? "#22c55e" : completudeScore >= 40 ? "#3b82f6" : "#f59e0b",
+                          color: "white",
+                          borderRadius: "4px",
+                          fontSize: "0.85rem",
+                          fontWeight: "700",
+                        }}>
+                          {completudeScore}%
+                        </span>
+                      </div>
+                      {/* Confiance IA */}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "6px 12px",
+                        background: (synthesis.meta.confidenceScore || 0) >= 0.7 ? "#dcfce7" :
+                                   (synthesis.meta.confidenceScore || 0) >= 0.4 ? "#fef3c7" : "#fee2e2",
+                        borderRadius: "8px",
+                      }}>
+                        <span style={{
+                          fontSize: "0.8rem",
+                          color: (synthesis.meta.confidenceScore || 0) >= 0.7 ? "#166534" :
+                                 (synthesis.meta.confidenceScore || 0) >= 0.4 ? "#92400e" : "#991b1b",
+                          fontWeight: "500"
+                        }}>Confiance IA</span>
+                        <span style={{
+                          padding: "2px 8px",
+                          background: (synthesis.meta.confidenceScore || 0) >= 0.7 ? "#22c55e" :
+                                      (synthesis.meta.confidenceScore || 0) >= 0.4 ? "#f59e0b" : "#ef4444",
+                          color: "white",
+                          borderRadius: "4px",
+                          fontSize: "0.85rem",
+                          fontWeight: "700",
+                        }}>
+                          {Math.round((synthesis.meta.confidenceScore || 0) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                      {synthesis.meta.modelUsed} • {synthesis.meta.processingTime}ms
+                    </div>
+                  </div>
+
+                  {/* Ligne 2: Données utilisées */}
+                  <div style={{ display: "flex", justifyContent: "flex-start", gap: "8px", flexWrap: "wrap" }}>
                     <span style={{
-                      padding: "2px 8px",
+                      padding: "4px 10px",
                       borderRadius: "10px",
+                      fontSize: "0.8rem",
+                      fontWeight: "500",
                       background: synthesis.meta.dataUsed?.biology ? '#dcfce7' : '#f3f4f6',
                       color: synthesis.meta.dataUsed?.biology ? '#166534' : '#6b7280',
+                      border: synthesis.meta.dataUsed?.biology ? '1px solid #86efac' : '1px solid #e5e7eb',
                     }}>
-                      BdF {synthesis.meta.dataUsed?.biology ? '✓' : '✗'}
+                      {synthesis.meta.dataUsed?.biology ? '✓' : '✗'} BdF
                     </span>
                     <span style={{
-                      padding: "2px 8px",
+                      padding: "4px 10px",
                       borderRadius: "10px",
+                      fontSize: "0.8rem",
+                      fontWeight: "500",
                       background: synthesis.meta.dataUsed?.anamnesis ? '#dcfce7' : '#f3f4f6',
                       color: synthesis.meta.dataUsed?.anamnesis ? '#166534' : '#6b7280',
+                      border: synthesis.meta.dataUsed?.anamnesis ? '1px solid #86efac' : '1px solid #e5e7eb',
                     }}>
-                      Anamnèse {synthesis.meta.dataUsed?.anamnesis ? '✓' : '✗'}
+                      {synthesis.meta.dataUsed?.anamnesis ? '✓' : '✗'} Anamnèse
                     </span>
                     <span style={{
-                      padding: "2px 8px",
+                      padding: "4px 10px",
                       borderRadius: "10px",
+                      fontSize: "0.8rem",
+                      fontWeight: "500",
                       background: synthesis.meta.dataUsed?.interrogatoire ? '#dcfce7' : '#f3f4f6',
                       color: synthesis.meta.dataUsed?.interrogatoire ? '#166534' : '#6b7280',
+                      border: synthesis.meta.dataUsed?.interrogatoire ? '1px solid #86efac' : '1px solid #e5e7eb',
                     }}>
-                      Interrogatoire {synthesis.meta.dataUsed?.interrogatoire ? '✓' : '✗'}
+                      {synthesis.meta.dataUsed?.interrogatoire ? '✓' : '✗'} Interrogatoire
                     </span>
                   </div>
                 </div>

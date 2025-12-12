@@ -1,8 +1,9 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { PANELS } from "@/lib/bdf/panels/panels.config";
 import { INDEXES } from "@/lib/bdf/indexes/indexes.config";
-import type { BdfResult, IndexStatus } from "@/lib/bdf/calculateIndexes";
+import type { BdfResult } from "@/lib/bdf/calculateIndexes";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -84,7 +85,7 @@ const COLOR_CLASSES: Record<string, {
 };
 
 // Helper pour les variants de badges de status
-const getStatusBadge = (status: IndexStatus) => {
+const getStatusBadge = (status: string | undefined) => {
   switch (status) {
     case "low":
       return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">BAS</Badge>;
@@ -106,7 +107,64 @@ interface BdfResultsViewProps {
 }
 
 export default function BdfResultsView({ result }: BdfResultsViewProps) {
-  if (!result) {
+  // Normaliser les indexes : gérer le format tableau (legacy) et objet (nouveau)
+  const normalizedIndexes = React.useMemo(() => {
+    if (!result?.indexes) return {};
+
+    const rawIndexes = result.indexes;
+
+    // Si c'est un tableau (format legacy), le convertir en objet par id
+    if (Array.isArray(rawIndexes)) {
+      console.log('[BdfResultsView] Format legacy détecté (tableau), conversion en objet');
+      const obj: Record<string, any> = {};
+      rawIndexes.forEach((idx: any) => {
+        if (idx && idx.id) {
+          obj[idx.id] = {
+            value: idx.value ?? idx.valeur ?? null,
+            status: idx.status || 'unknown',
+            biomarkersMissing: idx.biomarkersMissing || [],
+            interpretation: idx.interpretation
+          };
+        }
+      });
+      return obj;
+    }
+
+    // Si c'est un objet avec des clés numériques (0, 1, 2...), c'est aussi le format legacy
+    const keys = Object.keys(rawIndexes);
+    if (keys.length > 0 && keys.every(k => !isNaN(Number(k)))) {
+      console.log('[BdfResultsView] Format legacy détecté (objet avec clés numériques), conversion');
+      const obj: Record<string, any> = {};
+      Object.values(rawIndexes).forEach((idx: any) => {
+        if (idx && idx.id) {
+          obj[idx.id] = {
+            value: idx.value ?? idx.valeur ?? null,
+            status: idx.status || 'unknown',
+            biomarkersMissing: idx.biomarkersMissing || [],
+            interpretation: idx.interpretation
+          };
+        }
+      });
+      return obj;
+    }
+
+    // Format normal (objet avec clés = id des index)
+    return rawIndexes;
+  }, [result?.indexes]);
+
+  // Mémoïser le résultat normalisé pour éviter les re-renders inutiles
+  const normalizedResult = useMemo(() => {
+    return result ? { ...result, indexes: normalizedIndexes } : null;
+  }, [result, normalizedIndexes]);
+
+  // Mémoïser le mapping des définitions d'index par ID pour un accès rapide
+  const indexDefMap = useMemo(() => {
+    const map: Record<string, typeof INDEXES[0]> = {};
+    INDEXES.forEach(idx => { map[idx.id] = idx; });
+    return map;
+  }, []);
+
+  if (!normalizedResult) {
     return (
       <Card className="mt-8 border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -114,6 +172,21 @@ export default function BdfResultsView({ result }: BdfResultsViewProps) {
           <CardTitle className="mb-2">Aucun résultat disponible</CardTitle>
           <CardDescription>
             Remplissez le formulaire et cliquez sur "Calculer les index" pour voir les 7 panels endobiogéniques
+          </CardDescription>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Vérifier si les index sont vides ou mal formés
+  if (!normalizedResult.indexes || Object.keys(normalizedResult.indexes).length === 0) {
+    return (
+      <Card className="mt-8 border-dashed border-orange-300 bg-orange-50">
+        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+          <AlertCircle className="h-16 w-16 text-orange-500 mb-4" />
+          <CardTitle className="mb-2 text-orange-700">Données d'index manquantes</CardTitle>
+          <CardDescription className="text-orange-600">
+            Les index calculés ne sont pas disponibles. Veuillez recalculer l'analyse BdF.
           </CardDescription>
         </CardContent>
       </Card>
@@ -132,7 +205,7 @@ export default function BdfResultsView({ result }: BdfResultsViewProps) {
             </h2>
             <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              Les 7 axes endobiogéniques • {Object.keys(result.indexes).length} index calculés
+              Les 7 axes endobiogéniques • {Object.keys(normalizedResult.indexes).length} index calculés
             </p>
           </div>
           <Card className="w-fit">
@@ -142,7 +215,7 @@ export default function BdfResultsView({ result }: BdfResultsViewProps) {
                 Calculé le
               </div>
               <div className="text-sm font-semibold text-foreground mt-1">
-                {new Date(result.metadata.calculatedAt).toLocaleString('fr-FR')}
+                {new Date(normalizedResult.metadata.calculatedAt).toLocaleString('fr-FR')}
               </div>
             </CardContent>
           </Card>
@@ -176,16 +249,56 @@ export default function BdfResultsView({ result }: BdfResultsViewProps) {
                 <CardContent className="p-6 space-y-6">
                   {panel.indexes.length > 0 ? (
                     panel.indexes.map((indexId) => {
-                      const indexDef = INDEXES.find((i) => i.id === indexId);
-                      const calculated = result.indexes[indexId];
+                      // Utiliser le map mémoïsé au lieu de find() O(n)
+                      const indexDef = indexDefMap[indexId];
+                      const rawCalculated = normalizedResult.indexes[indexId];
 
                       if (!indexDef) return null;
 
+                      // Normaliser la structure - gérer les cas où la valeur est stockée différemment
+                      // Format attendu: {value, status, biomarkersMissing, interpretation}
+                      // Format possible depuis DB: {value, status} ou juste un nombre
+                      let calculated: {
+                        value: number | null;
+                        status?: string;
+                        biomarkersMissing?: string[];
+                        interpretation?: string;
+                      } | null = null;
+
+                      if (rawCalculated !== null && rawCalculated !== undefined) {
+                        if (typeof rawCalculated === 'number') {
+                          // Si c'est juste un nombre, créer l'objet
+                          calculated = { value: rawCalculated };
+                        } else if (typeof rawCalculated === 'object') {
+                          // C'est un objet - extraire la valeur
+                          const rawValue = (rawCalculated as any).value ?? (rawCalculated as any).valeur;
+                          calculated = {
+                            value: typeof rawValue === 'number' ? rawValue : null,
+                            status: (rawCalculated as any).status,
+                            biomarkersMissing: (rawCalculated as any).biomarkersMissing || [],
+                            interpretation: (rawCalculated as any).interpretation
+                          };
+                        }
+                      }
+
                       const hasValue = calculated?.value !== null && calculated?.value !== undefined;
+
+                      // Si on a une valeur mais pas de status, le calculer à partir des normes
+                      if (hasValue && calculated && !calculated.status && indexDef.referenceRange) {
+                        const val = calculated.value as number;
+                        const { low, high } = indexDef.referenceRange;
+                        if (val < low) {
+                          calculated.status = 'low';
+                        } else if (val > high) {
+                          calculated.status = 'high';
+                        } else {
+                          calculated.status = 'normal';
+                        }
+                      }
                       const displayValue = hasValue
-                        ? typeof calculated.value === 'number'
-                          ? calculated.value.toFixed(2)
-                          : calculated.value
+                        ? typeof calculated!.value === 'number'
+                          ? calculated!.value.toFixed(2)
+                          : String(calculated!.value)
                         : "—";
 
                       // Déterminer le pourcentage de progression (0-100)
@@ -198,8 +311,62 @@ export default function BdfResultsView({ result }: BdfResultsViewProps) {
                         progressValue = Math.min(100, Math.max(0, normalizedValue * 100));
                       }
 
+                      // Générer une interprétation brève selon l'index et son statut
+                      const getShortInterpretation = (): string | null => {
+                        if (!hasValue) return null;
+                        if (calculated.interpretation) return calculated.interpretation;
+
+                        const val = calculated.value as number;
+                        const ref = indexDef.referenceRange;
+                        if (!ref) return null;
+
+                        if (val < ref.low) {
+                          switch (indexId) {
+                            case 'idx_thyroidien': return 'Hypothyroïdie périphérique latente';
+                            case 'idx_adaptation': return 'Épuisement corticotrope';
+                            case 'idx_genital': return 'Insuffisance gonadotrope';
+                            case 'idx_mobilisation_plaquettes': return 'Spasmophilie probable';
+                            case 'idx_mobilisation_leucocytes': return 'Tonus sympathique bas';
+                            case 'idx_starter': return 'Démarrage métabolique lent';
+                            case 'idx_croissance': return 'Axe somatotrope ralenti';
+                            case 'idx_rendement_thyroidien': return 'Rendement périphérique faible';
+                            case 'idx_capacite_tampon': return 'Capacité tampon épuisée - Drainage urgent';
+                            case 'idx_cortisol_cortex': return 'Insuffisance cortico-surrénalienne';
+                            case 'idx_mineralo': return 'Hypoaldostéronisme fonctionnel';
+                            case 'idx_oestrogenes': return 'Hypo-oestrogénie relative';
+                            case 'idx_genito_thyroidien': return 'Dominance thyroïdienne';
+                            case 'idx_histamine_potentielle': return 'Histamine basse';
+                            case 'idx_remodelage_osseux': return 'Turn-over osseux ralenti';
+                            case 'idx_insuline': return 'Sensibilité insulinique altérée';
+                            default: return 'Valeur basse - Axe en insuffisance';
+                          }
+                        } else if (val > ref.high) {
+                          switch (indexId) {
+                            case 'idx_thyroidien': return 'Hypermétabolisme relatif';
+                            case 'idx_adaptation': return 'Sur-sollicitation corticotrope';
+                            case 'idx_genital': return 'Hyperoestrogénie relative';
+                            case 'idx_inflammation': return 'Terrain inflammatoire actif';
+                            case 'idx_histamine_potentielle': return 'Terrain histaminique - Allergies';
+                            case 'idx_catabolisme': return 'Catabolisme accéléré';
+                            case 'idx_cortisol_cortex': return 'Hypercorticisme fonctionnel';
+                            case 'idx_mineralo': return 'Hyperaldostéronisme';
+                            case 'idx_oestrogenes': return 'Hyperoestrogénie';
+                            case 'idx_genito_thyroidien': return 'Dominance gonadique';
+                            case 'idx_starter': return 'Hypersympathicotonie au démarrage';
+                            case 'idx_mobilisation_plaquettes': return 'Mobilisation plaquettaire élevée';
+                            case 'idx_mobilisation_leucocytes': return 'Hypersympathicotonie';
+                            case 'idx_remodelage_osseux': return 'Turn-over osseux accéléré';
+                            case 'idx_cata_ana': return 'Déséquilibre catabolique';
+                            default: return 'Valeur haute - Axe en sur-sollicitation';
+                          }
+                        }
+                        return 'Dans les normes';
+                      };
+
+                      const shortInterp = getShortInterpretation();
+
                       return (
-                        <div key={indexId} className="space-y-3">
+                        <div key={indexId} className="space-y-2 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                           {/* LABEL + VALEUR + BADGE STATUS */}
                           <div className="flex justify-between items-start gap-3">
                             <Tooltip>
@@ -211,59 +378,60 @@ export default function BdfResultsView({ result }: BdfResultsViewProps) {
                                   </span>
                                 </div>
                               </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="font-mono text-xs mb-2">{indexDef.formula}</p>
+                              <TooltipContent className="max-w-xs p-3">
+                                <p className="font-bold mb-1">{indexDef.label}</p>
+                                <p className="font-mono text-xs mb-2 bg-slate-800 p-1 rounded">{indexDef.formula}</p>
                                 {indexDef.referenceRange && (
                                   <p className="text-xs">
-                                    Plage normale: {indexDef.referenceRange.low} - {indexDef.referenceRange.high}
+                                    📊 Plage normale: <strong>{indexDef.referenceRange.low} - {indexDef.referenceRange.high}</strong>
                                   </p>
                                 )}
                               </TooltipContent>
                             </Tooltip>
 
                             <div className="flex items-center gap-2">
-                              <span className={`text-2xl font-bold tabular-nums ${hasValue ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              <span className={`text-2xl font-bold tabular-nums ${
+                                !hasValue ? 'text-muted-foreground' :
+                                calculated.status === 'low' ? 'text-blue-600' :
+                                calculated.status === 'high' ? 'text-red-600' :
+                                'text-green-600'
+                              }`}>
                                 {displayValue}
                               </span>
                               {hasValue && calculated.status && getStatusBadge(calculated.status)}
                             </div>
                           </div>
 
-                          {/* BARRE DE PROGRESSION SHADCN */}
-                          <div className="space-y-1">
+                          {/* INTERPRÉTATION BRÈVE TOUJOURS VISIBLE */}
+                          {hasValue && shortInterp && (
+                            <p className={`text-xs italic pl-6 ${
+                              calculated.status === 'low' ? 'text-blue-600' :
+                              calculated.status === 'high' ? 'text-red-600' :
+                              'text-green-600'
+                            }`}>
+                              → {shortInterp}
+                            </p>
+                          )}
+
+                          {/* BARRE DE PROGRESSION */}
+                          <div className="space-y-1 pl-6">
                             <Progress
                               value={progressValue}
-                              className="h-3"
-                              // Couleur dynamique selon le status
-                              style={{
-                                background: calculated?.status === "low" ? "hsl(var(--chart-1))" :
-                                           calculated?.status === "high" ? "hsl(var(--destructive))" :
-                                           "hsl(var(--muted))"
-                              }}
+                              className="h-2"
                             />
                             {indexDef.referenceRange && (
-                              <div className="flex justify-between text-xs text-muted-foreground">
+                              <div className="flex justify-between text-[10px] text-muted-foreground">
                                 <span>{indexDef.referenceRange.low}</span>
                                 <span>{indexDef.referenceRange.high}</span>
                               </div>
                             )}
                           </div>
 
-                          {/* INTERPRÉTATION CLINIQUE AVEC TOOLTIP */}
-                          {calculated?.interpretation && (
-                            <Alert className="bg-muted/50 border-muted">
-                              <AlertCircle className="h-4 w-4" />
-                              <AlertDescription className="text-xs italic">
-                                {calculated.interpretation}
-                              </AlertDescription>
-                            </Alert>
-                          )}
-
                           {/* ALERTE BIOMARQUEURS MANQUANTS */}
                           {calculated?.biomarkersMissing && calculated.biomarkersMissing.length > 0 && (
-                            <Alert variant="destructive" className="bg-orange-50 border-orange-300 text-orange-800">
-                              <AlertCircle className="h-4 w-4" />
-                              <AlertDescription className="text-xs">
+                            <Alert variant="destructive" className="bg-orange-50 border-orange-300 text-orange-800 py-1 ml-6">
+                              <AlertCircle className="h-3 w-3" />
+                              <AlertDescription className="text-[10px]">
                                 Manque: {calculated.biomarkersMissing.join(", ")}
                               </AlertDescription>
                             </Alert>

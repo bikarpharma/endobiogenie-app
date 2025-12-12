@@ -10,7 +10,7 @@
 import type { LabValues } from "@/lib/bdf/types";
 import type { InterpretationPayload } from "@/lib/bdf/types";
 import { buildLabPayloadFromMessage, hasLabValues } from "./labExtractor";
-import { retrieveEndobiogenieContext } from "./vectorStoreRetrieval";
+import { searchForAxisInterpretation } from "@/lib/ordonnance/ragSearch";
 
 /**
  * Analyse enrichie d'un message contenant des valeurs biologiques
@@ -54,9 +54,10 @@ export async function analyseBiologie(message: string): Promise<string> {
     const ragQuery = buildRagQuery(interpretation);
 
     // ========================================
-    // ÉTAPE 4 : RÉCUPÉRATION CONTEXTE ENDO
+    // ÉTAPE 4 : RÉCUPÉRATION CONTEXTE ENDO (via Agent SDK)
     // ========================================
-    const contextPassages = await retrieveEndobiogenieContext(ragQuery);
+    const ragContext = await searchForAxisInterpretation("terrain", ragQuery);
+    const contextPassages = ragContext ? [ragContext] : [];
 
     // ========================================
     // ÉTAPE 5 : GÉNÉRATION RÉPONSE ENRICHIE

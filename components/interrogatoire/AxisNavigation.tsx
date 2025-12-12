@@ -37,15 +37,8 @@ export function AxisNavigation({ activeKey, onChange }: AxisNavigationProps) {
   };
 
   return (
-    <nav className="w-64 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 overflow-y-auto">
-      {/* Header de la sidebar */}
-      <div className="sticky top-0 z-10 bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-5 border-b border-slate-600">
-        <h2 className="text-white font-bold text-base flex items-center gap-2">
-          <span className="text-xl">🩺</span>
-          Interrogatoire Endobiogénique
-        </h2>
-        <p className="text-slate-300 text-xs mt-1">Analyse par axes fonctionnels</p>
-      </div>
+    <nav className="w-full bg-white rounded-xl overflow-y-auto max-h-[60vh]">
+      {/* Header supprimé - déjà présent dans la page parent */}
 
       {/* Navigation par blocs */}
       <div className="py-4">
@@ -53,24 +46,19 @@ export function AxisNavigation({ activeKey, onChange }: AxisNavigationProps) {
           const axesInBloc = AXES_DEFINITION.filter(axis => axis.bloc === bloc.key);
 
           return (
-            <div key={bloc.key} className="mb-8">
-              {/* En-tête du bloc */}
-              <div className={`px-4 py-4 mx-2 rounded-lg ${getBlocHeaderStyle(bloc.key)} shadow-md`}>
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">{bloc.icon}</span>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-bold uppercase tracking-wide">
-                      {bloc.label}
-                    </h3>
-                    <p className="text-xs opacity-90 mt-1">
-                      {bloc.description}
-                    </p>
-                  </div>
+            <div key={bloc.key} className="mb-4">
+              {/* En-tête du bloc - compact */}
+              <div className={`px-3 py-2 mx-2 rounded-lg ${getBlocHeaderStyle(bloc.key)} shadow-sm`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{bloc.icon}</span>
+                  <h3 className="text-xs font-bold uppercase tracking-wide">
+                    {bloc.label}
+                  </h3>
                 </div>
               </div>
 
               {/* Axes du bloc */}
-              <div className="mt-3 space-y-2">
+              <div className="mt-2 space-y-1 px-2">
                 {axesInBloc.map((axis) => {
                   const isActive = axis.key === activeKey;
                   return (
@@ -79,28 +67,20 @@ export function AxisNavigation({ activeKey, onChange }: AxisNavigationProps) {
                       type="button"
                       onClick={() => onChange(axis.key)}
                       className={`
-                        flex items-center w-full px-4 py-3 mx-2 text-sm font-medium rounded-lg transition-all duration-200
+                        flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
                         ${
                           isActive
                             ? getActiveAxisStyle(axis.bloc)
                             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                         }
                       `}
-                      style={{ width: "calc(100% - 1rem)" }}
                     >
-                      <span className="text-lg mr-3">{axis.icon}</span>
-                      <div className="flex-1 text-left min-w-0">
-                        <div className={`text-sm font-semibold ${isActive ? "" : "text-slate-700"}`}>
-                          {axis.label}
-                        </div>
-                        <div className={`text-xs mt-0.5 line-clamp-1 ${
-                          isActive ? "opacity-80" : "text-slate-500"
-                        }`}>
-                          {axis.description}
-                        </div>
-                      </div>
+                      <span className="text-base mr-2">{axis.icon}</span>
+                      <span className={`text-xs font-semibold truncate ${isActive ? "" : "text-slate-700"}`}>
+                        {axis.label}
+                      </span>
                       {isActive && (
-                        <span className="ml-2 text-sm">▸</span>
+                        <span className="ml-auto text-xs">▸</span>
                       )}
                     </button>
                   );
@@ -111,12 +91,6 @@ export function AxisNavigation({ activeKey, onChange }: AxisNavigationProps) {
         })}
       </div>
 
-      {/* Footer de la sidebar */}
-      <div className="sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent px-4 py-4 border-t border-slate-100">
-        <div className="text-xs text-slate-500 text-center">
-          <p className="text-[10px] mt-1 text-slate-400">Endobiogénie Clinique</p>
-        </div>
-      </div>
     </nav>
   );
 }

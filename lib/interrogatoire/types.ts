@@ -14,14 +14,19 @@ export interface QuestionConfig {
   options?: string[];
   mapping?: Record<string, number>;
   scaleLabels?: string[]; // Labels pour les échelles (scale_1_5)
-
-  // ===== SCORING V2 =====
-  weight?: number; // Poids de la question (1-3) pour le calcul du score
-  tags?: string[]; // Tags pour catégoriser (ex: ["hypo_global", "hypo_metabolisme"])
+  
+  // === NOUVEAUX CHAMPS POUR LE SCORING ===
+  priority?: 1 | 2 | 3;           // 1 = Essentiel, 2 = Important, 3 = Optionnel
+  weight?: 1 | 2 | 3;             // Poids dans le calcul du score (1 = mineur, 3 = majeur)
+  tags?: string[];                // Catégorisation (ex: ["hypo_global", "pack_essentiel"])
   scoreDirection?: "hypo" | "hyper" | "neutral"; // Direction du score
 
-  // ===== PRIORISATION =====
-  priority?: 1 | 2 | 3; // 1=Essentiel (mode rapide), 2=Important (mode standard), 3=Optionnel (mode complet)
+  // === CHAMPS ADDITIONNELS POUR LES CONFIGS ===
+  conditionalDisplay?: {          // Affichage conditionnel basé sur une autre question
+    dependsOn: string;
+    showWhen: string | string[] | boolean;
+  };
+  physiopathologie?: string;      // Explication physiopathologique de la question
 }
 
 // ---------------------------------------------------------------------------

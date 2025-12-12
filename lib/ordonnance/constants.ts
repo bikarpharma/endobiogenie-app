@@ -13,9 +13,9 @@ export const VECTORSTORES = {
 } as const;
 
 /**
- * Modèle IA optimisé pour rapidité + qualité
+ * Modèle IA premium pour qualité maximale
  */
-export const AI_MODEL = "gpt-4o-mini" as const;
+export const AI_MODEL = "gpt-4.1" as const;
 
 /**
  * PLANTES ENDOBIOGÉNIQUES PAR AXE (Version complète)
@@ -205,6 +205,13 @@ export const PLANTES_PAR_AXE = {
       plantes: ["Echinacea purpurea", "Astragalus membranaceus"],
       bourgeons: ["Rosa canina MG"],
       mecanisme: "Immunostimulant, adaptogène immunitaire"
+    },
+    terrain_histaminique: {
+      // Spasmophilie Type 8 - Terrain allergique avec hyper-réactivité
+      // IMPORTANT: Ce terrain nécessite Ribes nigrum + Plantago en priorité
+      plantes: ["Plantago lanceolata", "Desmodium adscendens", "Urtica dioica (feuilles)"],
+      bourgeons: ["Ribes nigrum MG", "Rosa canina MG", "Cedrus libani MG"],
+      mecanisme: "Antihistaminique naturel, stabilisateur mastocytes, cortisol-like"
     }
   }
 } as const;
@@ -359,3 +366,258 @@ export const SYSTEM_MESSAGES = {
   alerteCI: "⚠️ Contre-indication détectée",
   alerteInteraction: "⚠️ Interaction médicamenteuse détectée",
 } as const;
+
+/**
+ * LISTE BLANCHE DES BOURGEONS VALIDES EN GEMMOTHÉRAPIE
+ * =====================================================
+ * Source: RAG/gemmo/gemmotherapie-complete.json (46 bourgeons uniques)
+ *
+ * IMPORTANT: Seules ces plantes peuvent avoir type="gemmo" et forme="MG"
+ * Toute autre plante avec forme="MG" est une ERREUR de l'IA
+ *
+ * Utilisé par therapeuticReasoning.ts pour valider les recommandations
+ */
+export const BOURGEONS_VALIDES = {
+  // Liste des noms latins valides (lowercase pour matching)
+  nomsLatins: [
+    "betula pubescens",      // Bouleau pubescent
+    "ribes nigrum",          // Cassis
+    "vaccinium vitis-idaea", // Airelle
+    "prunus amygdalus",      // Amandier
+    "cercis siliquastrum",   // Arbre de Judée
+    "hippophae rhamnoides",  // Argousier
+    "crataegus",             // Aubépine (genre)
+    "crataegus monogyna",    // Aubépine monogyne
+    "crataegus oxyacantha",  // Aubépine épineuse
+    "alnus glutinosa",       // Aulne glutineux
+    "calluna vulgaris",      // Bruyère
+    "cedrus",                // Cèdre (genre)
+    "cedrus libani",         // Cèdre du Liban
+    "carpinus betulus",      // Charme
+    "quercus",               // Chêne (genre)
+    "quercus robur",         // Chêne pédonculé
+    "quercus pedunculata",   // Chêne pédonculé (syn.)
+    "citrus limon",          // Citronnier
+    "cornus sanguinea",      // Cornouiller sanguin
+    "rosa canina",           // Églantier
+    "acer campestre",        // Érable champêtre
+    "ficus carica",          // Figuier
+    "rubus idaeus",          // Framboisier
+    "fraxinus excelsior",    // Frêne
+    "juniperus communis",    // Genévrier
+    "ginkgo biloba",         // Ginkgo
+    "fagus sylvatica",       // Hêtre
+    "syringa vulgaris",      // Lilas
+    "zea mays",              // Maïs (radicelles)
+    "aesculus hippocastanum",// Marronnier
+    "vaccinium myrtillus",   // Myrtillier
+    "corylus avellana",      // Noisetier
+    "juglans regia",         // Noyer
+    "olea europaea",         // Olivier
+    "ulmus campestris",      // Orme
+    "populus nigra",         // Peuplier noir
+    "pinus",                 // Pin (genre)
+    "pinus sylvestris",      // Pin sylvestre
+    "platanus orientalis",   // Platane
+    "malus communis",        // Pommier
+    "malus domestica",       // Pommier (syn.)
+    "rosmarinus officinalis",// Romarin
+    "salvia rosmarinus",     // Romarin (nouveau nom)
+    "rubus fruticosus",      // Ronce
+    "abies pectinata",       // Sapin pectiné
+    "abies alba",            // Sapin blanc (syn.)
+    "salix alba",            // Saule blanc
+    "secale cereale",        // Seigle (radicelles)
+    "sequoia gigantea",      // Séquoia
+    "sequoiadendron giganteum", // Séquoia (syn.)
+    "sorbus domestica",      // Sorbier
+    "tamarix gallica",       // Tamaris
+    "tilia tomentosa",       // Tilleul argenté
+    "tilia cordata",         // Tilleul à petites feuilles
+    "vitis vinifera",        // Vigne
+    "ampelopsis veitchii",   // Vigne vierge
+    "viburnum lantana",      // Viorne
+  ],
+
+  // Noms français pour affichage et matching alternatif
+  nomsFrancais: [
+    "bouleau", "cassis", "airelle", "amandier", "arbre de judée",
+    "argousier", "aubépine", "aulne", "bruyère", "cèdre",
+    "charme", "chêne", "citronnier", "cornouiller", "églantier",
+    "érable", "figuier", "framboisier", "frêne", "genévrier",
+    "ginkgo", "hêtre", "lilas", "maïs", "marronnier",
+    "myrtillier", "noisetier", "noyer", "olivier", "orme",
+    "peuplier", "pin", "platane", "pommier", "romarin",
+    "ronce", "sapin", "saule", "seigle", "séquoia",
+    "sorbier", "tamaris", "tilleul", "vigne", "vigne vierge", "viorne"
+  ]
+};
+
+/**
+ * Vérifie si une substance est un bourgeon valide
+ * @param substance - Nom latin ou français de la substance
+ * @returns true si c'est un bourgeon valide, false sinon
+ */
+export function isValidBourgeon(substance: string): boolean {
+  const normalized = substance.toLowerCase().trim();
+
+  // Vérifier dans les noms latins
+  if (BOURGEONS_VALIDES.nomsLatins.some(nom =>
+    normalized.includes(nom) || nom.includes(normalized)
+  )) {
+    return true;
+  }
+
+  // Vérifier dans les noms français
+  if (BOURGEONS_VALIDES.nomsFrancais.some(nom =>
+    normalized.includes(nom) || nom.includes(normalized)
+  )) {
+    return true;
+  }
+
+  return false;
+}
+
+// ========================================
+// FILTRAGE PAR SEXE - SÉCURITÉ MÉDICALE
+// ========================================
+//
+// PROBLÈME: L'IA peut recommander des plantes spécifiques au sexe opposé
+// Ex: Framboisier (Rubus idaeus) pour la fonction ovarienne → INTERDIT chez l'homme
+//
+// SOLUTION: Double couche de protection (Option A + B)
+// - Option A: Blacklist ici dans constants.ts
+// - Option B: Filtrage dans therapeuticReasoning.ts
+
+/**
+ * PLANTES RÉSERVÉES AUX FEMMES - INTERDITES CHEZ L'HOMME
+ * ======================================================
+ * Ces plantes agissent sur le système hormonal féminin:
+ * - Fonction ovarienne
+ * - Cycle menstruel
+ * - Ménopause
+ * - Progestérone-like
+ */
+export const PLANTES_FEMMES_ONLY = [
+  // Gemmothérapie
+  "rubus idaeus",           // Framboisier - fonction ovarienne, cycle menstruel
+  "vaccinium vitis-idaea",  // Airelle rouge - régulation hormonale féminine
+
+  // Phytothérapie
+  "vitex agnus-castus",     // Gattilier - régulation cycle, mastodynies, SPM
+  "alchemilla vulgaris",    // Alchémille - progestérone-like, ménorragies
+  "cimicifuga racemosa",    // Actée à grappes noires - ménopause
+  "actaea racemosa",        // Actée à grappes noires (syn.)
+  "trifolium pratense",     // Trèfle rouge - phytoestrogènes
+  "salvia officinalis",     // Sauge officinale - bouffées de chaleur, ménopause
+  "angelica sinensis",      // Angélique chinoise (Dong Quai) - tonique utérin
+  "glycine max",            // Soja (isoflavones) - phytoestrogènes
+  "medicago sativa",        // Luzerne - phytoestrogènes (à forte dose)
+  "achillea millefolium",   // Achillée millefeuille - troubles menstruels
+  "capsella bursa-pastoris",// Bourse à pasteur - hémorragies utérines
+  "artemisia vulgaris",     // Armoise commune - emménagogue
+  "leonurus cardiaca",      // Agripaume - SPM (usage féminin principal)
+] as const;
+
+/**
+ * PLANTES RÉSERVÉES AUX HOMMES - INTERDITES CHEZ LA FEMME
+ * =======================================================
+ * Ces plantes agissent sur le système hormonal masculin:
+ * - Prostate
+ * - Testostérone
+ * - 5-alpha-réductase
+ */
+export const PLANTES_HOMMES_ONLY = [
+  // Gemmothérapie
+  "sequoia gigantea",         // Séquoia - fonction prostatique, vitalité masculine
+  "sequoiadendron giganteum", // Séquoia (syn.)
+
+  // Phytothérapie
+  "serenoa repens",           // Palmier nain (Saw palmetto) - HBP, inhibiteur 5α-réductase
+  "sabal serrulata",          // Palmier nain (syn.)
+  "pygeum africanum",         // Prunier d'Afrique - HBP
+  "prunus africana",          // Prunier d'Afrique (syn.)
+  "epilobium parviflorum",    // Épilobe à petites fleurs - prostate
+  "epilobium angustifolium",  // Épilobe en épi - prostate
+  "urtica dioica",            // Ortie racine - HBP (racine seulement, pas feuilles)
+  "cucurbita pepo",           // Courge (pépins) - prostate
+  "tribulus terrestris",      // Tribule - testostérone, libido masculine
+  "lepidium meyenii",         // Maca - vitalité masculine
+  "eurycoma longifolia",      // Tongkat Ali - testostérone
+  "turnera diffusa",          // Damiana - aphrodisiaque masculin
+  "panax ginseng",            // Ginseng asiatique - vitalité masculine (CI femme enceinte)
+] as const;
+
+/**
+ * Type pour le sexe du patient
+ */
+export type SexePatient = "M" | "F" | "H";
+
+/**
+ * Vérifie si une substance est appropriée pour le sexe du patient
+ *
+ * @param substance - Nom latin ou français de la substance
+ * @param sexe - Sexe du patient ("M" ou "H" = Homme, "F" = Femme)
+ * @returns { appropriate: boolean, reason?: string }
+ *
+ * IMPORTANT: Cette fonction est la PREMIÈRE LIGNE DE DÉFENSE (Option A)
+ */
+export function isPlanteSexeAppropriate(
+  substance: string,
+  sexe: SexePatient
+): { appropriate: boolean; reason?: string } {
+  const normalized = substance.toLowerCase().trim();
+  const isHomme = sexe === "M" || sexe === "H";
+
+  // Vérifier si c'est une plante réservée aux femmes
+  for (const planteFemme of PLANTES_FEMMES_ONLY) {
+    if (normalized.includes(planteFemme) || planteFemme.includes(normalized)) {
+      if (isHomme) {
+        return {
+          appropriate: false,
+          reason: `${substance} est réservé aux femmes (fonction hormonale féminine)`
+        };
+      }
+    }
+  }
+
+  // Vérifier si c'est une plante réservée aux hommes
+  for (const planteHomme of PLANTES_HOMMES_ONLY) {
+    if (normalized.includes(planteHomme) || planteHomme.includes(normalized)) {
+      if (!isHomme) {
+        return {
+          appropriate: false,
+          reason: `${substance} est réservé aux hommes (fonction prostatique/testostérone)`
+        };
+      }
+    }
+  }
+
+  return { appropriate: true };
+}
+
+/**
+ * Filtre une liste de substances pour un sexe donné
+ *
+ * @param substances - Liste de noms de substances
+ * @param sexe - Sexe du patient
+ * @returns Liste filtrée avec les substances inappropriées retirées
+ */
+export function filterSubstancesBySexe(
+  substances: string[],
+  sexe: SexePatient
+): { filtered: string[]; removed: Array<{ substance: string; reason: string }> } {
+  const filtered: string[] = [];
+  const removed: Array<{ substance: string; reason: string }> = [];
+
+  for (const substance of substances) {
+    const check = isPlanteSexeAppropriate(substance, sexe);
+    if (check.appropriate) {
+      filtered.push(substance);
+    } else {
+      removed.push({ substance, reason: check.reason || "Inapproprié pour ce sexe" });
+    }
+  }
+
+  return { filtered, removed };
+}

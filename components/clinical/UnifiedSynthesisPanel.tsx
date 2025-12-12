@@ -10,7 +10,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Brain, Activity, Heart, Zap, AlertTriangle, CheckCircle, Info, RefreshCw, Target, Leaf, Droplets, Wind, Utensils, ShieldAlert } from 'lucide-react'
 import type { UnifiedAnalysisOutput } from '@/types/clinical-engine'
 import { runUnifiedAnalysis } from '@/app/actions/clinical-pipeline'
-import type { UnifiedSynthesis, JsonValue } from '@prisma/client'
+import type { UnifiedSynthesis } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 
 interface UnifiedSynthesisPanelProps {
   patientId: string
@@ -44,13 +45,14 @@ export function UnifiedSynthesisPanel({ patientId, initialData }: UnifiedSynthes
     return 'bg-gray-100 text-gray-800 border-gray-300'
   }
 
-  // Couleur du terrain
-  const getTerrainColor = (type: string) => {
-    switch (type) {
-      case 'Alpha': return 'bg-orange-100 text-orange-800 border-orange-400'
-      case 'Beta': return 'bg-blue-100 text-blue-800 border-blue-400'
-      case 'Gamma': return 'bg-purple-100 text-purple-800 border-purple-400'
-      case 'Delta': return 'bg-red-100 text-red-800 border-red-400'
+  // Couleur du terrain basée sur l'axe dominant (PAS Alpha/Beta/Gamma/Delta - ça n'existe pas en endobiogénie !)
+  const getTerrainColor = (axeDominant: string) => {
+    switch (axeDominant) {
+      case 'Corticotrope': return 'bg-red-100 text-red-800 border-red-400'
+      case 'Thyréotrope': return 'bg-blue-100 text-blue-800 border-blue-400'
+      case 'Gonadotrope': return 'bg-pink-100 text-pink-800 border-pink-400'
+      case 'Somatotrope': return 'bg-orange-100 text-orange-800 border-orange-400'
+      case 'Mixte': return 'bg-purple-100 text-purple-800 border-purple-400'
       default: return 'bg-gray-100 text-gray-800 border-gray-400'
     }
   }
@@ -143,21 +145,29 @@ export function UnifiedSynthesisPanel({ patientId, initialData }: UnifiedSynthes
               </CardHeader>
               <CardContent>
                 <div className="flex items-start gap-4">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge
-                        className={`text-xl px-6 py-3 cursor-help border-2 ${getTerrainColor(synthesis.terrain.type)}`}
-                      >
-                        {synthesis.terrain.type}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-sm p-4">
-                      <p className="font-semibold mb-2">💡 Explication pédagogique :</p>
-                      <p className="text-sm">{synthesis.terrain.pedagogicalHint}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <div className="flex flex-col gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          className={`text-lg px-4 py-2 cursor-help border-2 ${getTerrainColor(synthesis.terrain.axeDominant)}`}
+                        >
+                          Axe {synthesis.terrain.axeDominant}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm p-4">
+                        <p className="font-semibold mb-2">💡 Explication pédagogique :</p>
+                        <p className="text-sm">{synthesis.terrain.pedagogicalHint}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Badge variant="outline" className="text-sm px-3 py-1">
+                      {synthesis.terrain.profilSNA}
+                    </Badge>
+                  </div>
                   <div className="flex-1">
-                    <p className="text-slate-700">{synthesis.terrain.justification}</p>
+                    <p className="text-slate-700 mb-2">{synthesis.terrain.description || synthesis.terrain.justification}</p>
+                    {synthesis.terrain.description && synthesis.terrain.justification && (
+                      <p className="text-slate-500 text-sm">{synthesis.terrain.justification}</p>
+                    )}
                   </div>
                 </div>
               </CardContent>

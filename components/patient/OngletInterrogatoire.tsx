@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { InterrogatoireEndobiogenique } from "@/lib/interrogatoire/types";
 import type { AxeType, AxeInterpretation } from "@/lib/interrogatoire/axeInterpretation";
@@ -274,6 +274,50 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
   // État pour le tooltip actif
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
+  // État pour les axes dépliés (tous fermés par défaut)
+  const [expandedAxes, setExpandedAxes] = useState<Set<string>>(new Set());
+
+  // Toggle pour déplier/replier un axe
+  const toggleAxeExpanded = (axe: string) => {
+    setExpandedAxes(prev => {
+      const next = new Set(prev);
+      if (next.has(axe)) {
+        next.delete(axe);
+      } else {
+        next.add(axe);
+      }
+      return next;
+    });
+  };
+
+  // Fonction pour afficher les étoiles colorées (1-5)
+  const renderStars = (value: number): React.ReactNode => {
+    const colors = [
+      "#22c55e", // 1 - Vert
+      "#84cc16", // 2 - Vert clair
+      "#eab308", // 3 - Jaune
+      "#f97316", // 4 - Orange
+      "#ef4444", // 5 - Rouge
+    ];
+    const color = colors[Math.min(value - 1, 4)] || colors[2];
+
+    return (
+      <span style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span
+            key={star}
+            style={{
+              color: star <= value ? color : "#e5e7eb",
+              fontSize: "0.9rem",
+            }}
+          >
+            ★
+          </span>
+        ))}
+      </span>
+    );
+  };
+
   // Fonction pour afficher un axe avec bouton d'interprétation
   const renderAxe = (titre: string, axe: AxeType, data: Record<string, any> | undefined, icon?: string) => {
     if (!data || Object.keys(data).length === 0) return null;
@@ -282,6 +326,7 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
     const tooltipInfo = AXES_TOOLTIPS[tooltipKey];
     const colors = axeColors[axe] || { gradient: "linear-gradient(135deg, #6b7280, #4b5563)", border: "#6b7280", glow: "rgba(107, 114, 128, 0.3)" };
     const isTooltipActive = activeTooltip === axe;
+    const isExpanded = expandedAxes.has(axe);
 
     return (
       <div style={{
@@ -302,7 +347,7 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            cursor: tooltipInfo ? "pointer" : "default"
+            cursor: "pointer"
           }}
           onClick={() => tooltipInfo && setActiveTooltip(isTooltipActive ? null : axe)}
         >
@@ -341,17 +386,36 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            {/* Badge nombre de réponses */}
-            <span style={{
-              background: "rgba(255,255,255,0.25)",
-              padding: "4px 10px",
-              borderRadius: "12px",
-              fontSize: "0.8rem",
-              color: "white",
-              fontWeight: "600"
-            }}>
+            {/* Bouton pour déplier/replier les réponses */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleAxeExpanded(axe);
+              }}
+              style={{
+                background: "rgba(255,255,255,0.25)",
+                padding: "6px 12px",
+                borderRadius: "12px",
+                fontSize: "0.8rem",
+                color: "white",
+                fontWeight: "600",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.2s"
+              }}
+            >
+              <span style={{
+                transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                transition: "transform 0.2s",
+                display: "inline-block"
+              }}>
+                ▶
+              </span>
               {Object.keys(data).length} réponses
-            </span>
+            </button>
 
             {/* Bouton d'interprétation pour cet axe */}
             {interrogatoire && (
@@ -434,42 +498,49 @@ export function OngletInterrogatoire({ patient }: { patient: PatientData }) {
           </div>
         )}
 
-        {/* Données de l'axe */}
-        <div style={{ padding: "16px 20px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "10px" }}>
-            {Object.entries(data).map(([key, value]) => {
-              const formattedValue = formatValue(value);
-              const isPositive = value === "oui" || value === true || value === "souvent" || value === "toujours";
-              const isNegative = value === "non" || value === false || value === "jamais";
+        {/* Données de l'axe - Pliable */}
+        {isExpanded && (
+          <div style={{ padding: "16px 20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "10px" }}>
+              {Object.entries(data).map(([key, value]) => {
+                const isNumeric1to5 = typeof value === "number" && value >= 1 && value <= 5;
+                const formattedValue = formatValue(value);
+                const isPositive = value === "oui" || value === true || value === "souvent" || value === "toujours";
+                const isNegative = value === "non" || value === false || value === "jamais";
 
-              return (
-                <div key={key} style={{
-                  padding: "10px 14px",
-                  background: isPositive ? "rgba(16, 185, 129, 0.08)" : isNegative ? "#f9fafb" : "#f9fafb",
-                  border: isPositive ? "1px solid rgba(16, 185, 129, 0.2)" : "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  fontSize: "0.9rem",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
-                }}>
-                  <span style={{ color: "#4b5563", fontWeight: "500" }}>
-                    {key.replace(/_/g, ' ')}
-                  </span>
-                  <span style={{
-                    color: isPositive ? "#059669" : isNegative ? "#9ca3af" : "#1f2937",
-                    fontWeight: isPositive ? "600" : "400",
-                    padding: isPositive ? "2px 8px" : "0",
-                    background: isPositive ? "rgba(16, 185, 129, 0.15)" : "transparent",
-                    borderRadius: "4px"
+                return (
+                  <div key={key} style={{
+                    padding: "10px 14px",
+                    background: isPositive ? "rgba(16, 185, 129, 0.08)" : isNegative ? "#f9fafb" : "#f9fafb",
+                    border: isPositive ? "1px solid rgba(16, 185, 129, 0.2)" : "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "0.9rem",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
                   }}>
-                    {formattedValue}
-                  </span>
-                </div>
-              );
-            })}
+                    <span style={{ color: "#4b5563", fontWeight: "500" }}>
+                      {key.replace(/_/g, ' ')}
+                    </span>
+                    {isNumeric1to5 ? (
+                      renderStars(value as number)
+                    ) : (
+                      <span style={{
+                        color: isPositive ? "#059669" : isNegative ? "#9ca3af" : "#1f2937",
+                        fontWeight: isPositive ? "600" : "400",
+                        padding: isPositive ? "2px 8px" : "0",
+                        background: isPositive ? "rgba(16, 185, 129, 0.15)" : "transparent",
+                        borderRadius: "4px"
+                      }}>
+                        {formattedValue}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };

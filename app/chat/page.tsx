@@ -16,9 +16,5 @@ export default async function ChatPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  return (
-    <div style={{ paddingTop: "20px" }}>
-      <ChatInterface />
-    </div>
-  );
+  return <ChatInterface />;
 }

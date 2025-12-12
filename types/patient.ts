@@ -8,7 +8,7 @@ import type { BdfAnalysis } from "./bdf";
 
 export interface Patient {
   id: string;
-  userId: string;
+  userId: string | null;
 
   // Informations patient
   numeroPatient: string; // PAT-001, PAT-002, etc.

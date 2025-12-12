@@ -116,13 +116,26 @@ export interface TherapeuticStrategy {
   objectifsCourtTerme: string[];
   objectifsMoyenTerme: string[];
   precautions: string[];
-  pedagogicalHint: string;
+  pedagogicalHint?: string;
+  // NOUVEAU: Champs enrichis depuis VectorStore
+  hierarchieTraitement?: string;
+  surveillanceSuggeree?: string[];
+}
+
+export interface MicronutritionItem {
+  nom: string;
+  type: string;
+  forme: string;
+  posologie: string;
+  duree: string;
+  indication: string;
 }
 
 export interface SuggestedPrescription {
   phytotherapie: TherapeuticPlant[];
   gemmotherapie: GemmotherapyBud[];
   aromatherapie: Aromatherapy[];
+  micronutrition?: MicronutritionItem[];
   conseilsHygiene: string[];
   conseilsAlimentaires: string[];
 }
@@ -132,7 +145,11 @@ export interface EndocrineAxis {
   status: 'Hyper' | 'Hypo' | 'Normo' | 'Dysfonctionnel';
   biomarkers: string[];
   mechanism: string;
-  pedagogicalHint: string;
+  pedagogicalHint?: string;
+  // NOUVEAU: Champs enrichis depuis VectorStore
+  score?: number;
+  clinicalSigns?: string[];
+  therapeuticImplication?: string;
 }
 
 export interface ClinicalConcordance {
@@ -154,12 +171,24 @@ export interface Emonctoire {
 
 export interface DrainageAnalysis {
   necessite: boolean;
-  priorite: 'Haute' | 'Moyenne' | 'Basse';
-  emonctoires: Emonctoire[];
+  priorite: 'Urgente' | 'Haute' | 'Moyenne' | 'Basse';
+  emonctoires: EmonctoireVS[];
   strategieDrainage: string;
   dureeTotale: string;
   precautions: string[];
-  pedagogicalHint: string;
+  pedagogicalHint?: string;
+  // NOUVEAU: Champs enrichis depuis VectorStore
+  capaciteTampon?: number;
+  justification?: string;
+}
+
+// NOUVEAU: Type émonctoire enrichi depuis VectorStore
+export interface EmonctoireVS {
+  organe: 'foie' | 'rein' | 'lymphe' | 'intestin' | 'peau';
+  statut: 'sature' | 'sollicite' | 'normal';
+  score: number;
+  indicateurs: string[];
+  strategieDrainage?: string;
 }
 
 // ============== TYPES SPASMOPHILIE ==============
@@ -180,14 +209,21 @@ export interface SupplementationSpasmophilie {
 export interface SpasmophilieAnalysis {
   score: number; // 0-100
   severite: 'Absent' | 'Léger' | 'Modéré' | 'Sévère';
-  signesBiologiques: SigneBiologiqueSpasmophilie[];
+  signesBiologiques: SigneBiologiqueSpasmophilie[] | string[];
   signesCliniques: string[];
   facteursAggravants: string[];
   terrainAssocié: string;
-  supplementation: SupplementationSpasmophilie;
+  supplementation: SupplementationSpasmophilie | Record<string, unknown>;
   plantesAntiSpasmophiliques: string[];
   conseilsSpecifiques: string[];
-  pedagogicalHint: string;
+  pedagogicalHint?: string;
+  // NOUVEAU: Champs enrichis depuis VectorStore
+  type?: number;
+  nom?: string;
+  description?: string;
+  mecanisme?: string;
+  indexCles?: string[];
+  strategieTherapeutique?: string;
 }
 
 // ============== TYPES PRESCRIPTION ENRICHIS ==============
@@ -234,15 +270,25 @@ export interface UnifiedAnalysisOutput {
   };
 
   terrain: {
-    type: 'Alpha' | 'Beta' | 'Gamma' | 'Delta' | 'Mixed';
+    // IMPORTANT: Il n'existe PAS de classification Alpha/Beta/Gamma/Delta en endobiogénie !
+    // Le terrain est décrit par l'axe dominant et le profil SNA
+    description: string;
+    axeDominant: 'Corticotrope' | 'Thyréotrope' | 'Gonadotrope' | 'Somatotrope' | 'Mixte';
+    profilSNA: 'Sympathicotonique' | 'Vagotonique' | 'Amphotonique' | 'Dystonique';
     justification: string;
-    pedagogicalHint: string;
+    pedagogicalHint?: string;
+    // Champs enrichis depuis VectorStore
+    mecanismesCles?: string[];
+    facteursPredisposants?: string[];
   };
 
   neuroVegetative: {
-    status: 'Sympathicotonia' | 'Parasympathicotonia' | 'Amphotonia' | 'Eutonia';
+    status: 'Sympathicotonia' | 'Parasympathicotonia' | 'Amphotonia' | 'Eutonia' | 'Dystonia';
     dominance: 'Relative' | 'Absolute';
     explanation: string;
+    // NOUVEAU: Champs enrichis depuis VectorStore
+    signesCliniques?: string[];
+    mecanismePhysiopath?: string;
   };
 
   endocrineAxes: EndocrineAxis[];
@@ -258,13 +304,17 @@ export interface UnifiedAnalysisOutput {
   clinicalSynthesis: {
     summary: string;
     concordanceScore: number;
-    discordances: string[];
+    discordances: string[] | Array<{ axe: string; severite: string; description: string; hypotheses?: string[] }>;
     mecanismesPhysiopathologiques: string[];
+    // NOUVEAU: Champs enrichis depuis VectorStore
+    correlationBdfInterrogatoire?: string;
+    pronosticFonctionnel?: string;
   };
 
   therapeuticStrategy: TherapeuticStrategy;
 
-  suggestedPrescription: SuggestedPrescription | SuggestedPrescriptionEnriched;
+  // DÉSACTIVÉ: prescription déplacée vers onglet Ordonnance pour éviter double appel VectorStore
+  suggestedPrescription?: SuggestedPrescription | SuggestedPrescriptionEnriched | undefined;
 
   warnings: string[];
 }

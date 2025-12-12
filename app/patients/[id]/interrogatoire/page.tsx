@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  AXES_DEFINITION,
-  AxisKey,
-} from "@/lib/interrogatoire/config";
+import { AXES_DEFINITION } from "@/lib/interrogatoire/config";
+import type { AxisKey } from "@/lib/interrogatoire/config";
 import { AxisNavigation } from "@/components/interrogatoire/AxisNavigation";
 import { AxisForm } from "@/components/interrogatoire/AxisForm";
 import { AxisSummary } from "@/components/interrogatoire/AxisSummary";
 import { ClinicalScoresCard } from "@/components/interrogatoire/ClinicalScoresCard";
+import { SyntheseUnifiee } from "@/components/interrogatoire/SyntheseUnifiee";
 import CorticotropeTrigger from "@/components/learning/CorticotropeTrigger";
 
 type Sexe = "F" | "H";
@@ -27,11 +26,12 @@ export default function InterrogatoirePage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [patient, setPatient] = useState<{ nom?: string; prenom?: string } | null>(
+  const [patient, setPatient] = useState<{ nom?: string; prenom?: string; sexe?: Sexe } | null>(
     null
   );
 
-  const [sexe, setSexe] = useState<Sexe>("F");
+  // Le sexe vient de la fiche patient (non modifiable ici)
+  const sexe: Sexe = patient?.sexe || "F";
   const [activeAxis, setActiveAxis] = useState<AxisKey>("historique");
   const [answersByAxis, setAnswersByAxis] = useState<AnswersByAxis>({} as AnswersByAxis);
 
@@ -44,18 +44,20 @@ export default function InterrogatoirePage() {
         const res = await fetch(`/api/interrogatoire/update?patientId=${patientId}`);
         const data = await res.json();
 
-        // Infos patient
-        setPatient({ nom: data.nom, prenom: data.prenom });
+        // Infos patient (incluant le sexe de la fiche)
+        setPatient({
+          nom: data.nom,
+          prenom: data.prenom,
+          sexe: (data.sexe === "H" ? "H" : "F") as Sexe
+        });
 
         const interro = data.interrogatoire;
 
         if (interro?.v2?.answersByAxis) {
           // Données V2 déjà présentes
-          setSexe((interro.sexe as Sexe) || "F");
           setAnswersByAxis(interro.v2.answersByAxis as AnswersByAxis);
         } else {
           // Pas encore de V2 : initialisation vide
-          setSexe((interro?.sexe as Sexe) || "F");
           const empty: AnswersByAxis = {} as AnswersByAxis;
           AXES_DEFINITION.forEach((axis) => {
             empty[axis.key] = {};
@@ -172,31 +174,18 @@ export default function InterrogatoirePage() {
 
         {/* Sexe + Navigation */}
         <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-12 md:col-span-4 lg:col-span-3 space-y-4">
-            {/* Sexe */}
+          <div className="col-span-12 md:col-span-4 lg:col-span-3 space-y-4 md:sticky md:top-4 md:self-start md:max-h-[calc(100vh-2rem)] md:overflow-y-auto">
+            {/* Sexe du patient (lecture seule, défini dans la fiche) */}
             <div className="bg-white rounded-xl shadow-sm border p-4">
-              <div className="text-sm font-semibold text-gray-700 mb-2">
-                Sexe du patient
-              </div>
-              <div className="flex flex-col gap-2 text-sm">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    className="w-4 h-4 text-blue-600"
-                    checked={sexe === "F"}
-                    onChange={() => setSexe("F")}
-                  />
-                  <span>Femme</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    className="w-4 h-4 text-blue-600"
-                    checked={sexe === "H"}
-                    onChange={() => setSexe("H")}
-                  />
-                  <span>Homme</span>
-                </label>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-700">Sexe du patient</span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  sexe === "F"
+                    ? "bg-pink-100 text-pink-700"
+                    : "bg-blue-100 text-blue-700"
+                }`}>
+                  {sexe === "F" ? "👩 Femme" : "👨 Homme"}
+                </span>
               </div>
             </div>
 
@@ -205,8 +194,8 @@ export default function InterrogatoirePage() {
               <AxisNavigation activeKey={activeAxis} onChange={setActiveAxis} />
             </div>
 
-            {/* Scores Cliniques en temps réel */}
-            <ClinicalScoresCard answersByAxis={answersByAxis} sexe={sexe} />
+            {/* Synthèse rapide locale - % complétion + score axe en cours */}
+            <ClinicalScoresCard answersByAxis={answersByAxis} sexe={sexe} currentAxis={activeAxis} />
           </div>
 
           {/* Contenu axe */}
@@ -255,26 +244,39 @@ export default function InterrogatoirePage() {
                 >
                   ← Axe précédent
                 </button>
-                {currentAxisIndex < AXES_DEFINITION.length - 1 ? (
-                  <button
-                    type="button"
-                    onClick={goNextAxis}
-                    className="px-3 py-1.5 rounded-md text-sm border border-blue-500 text-blue-700 hover:bg-blue-50"
-                  >
-                    Axe suivant →
-                  </button>
-                ) : (
+                <div className="flex items-center gap-2">
+                  {/* Bouton Sauvegarder - toujours visible */}
                   <button
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
                     className="px-4 py-1.5 rounded-md text-sm border border-green-600 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
                   >
-                    {saving ? "Sauvegarde..." : "💾 Sauvegarder l'interrogatoire"}
+                    {saving ? "Sauvegarde..." : "💾 Sauvegarder"}
                   </button>
-                )}
+                  {/* Bouton Axe suivant - sauf sur le dernier axe */}
+                  {currentAxisIndex < AXES_DEFINITION.length - 1 && (
+                    <button
+                      type="button"
+                      onClick={goNextAxis}
+                      className="px-3 py-1.5 rounded-md text-sm border border-blue-500 text-blue-700 hover:bg-blue-50"
+                    >
+                      Axe suivant →
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+
+            {/* Synthèse IA - En bas de page, après le formulaire */}
+            <SyntheseUnifiee
+              patientId={patientId as string}
+              patientNom={`${patient?.prenom} ${patient?.nom}`}
+              hasInterrogatoire={Object.values(answersByAxis).some(axis =>
+                axis && Object.keys(axis).length > 0
+              )}
+              hasBdf={false}
+            />
           </div>
         </div>
       </div>

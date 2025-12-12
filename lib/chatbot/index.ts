@@ -7,7 +7,8 @@ export { classifyUserRequest } from "./classifier";
 export { buildLabPayloadFromMessage } from "./labExtractor";
 export { analyseBiologie } from "./analyseBiologie";
 export { answerEndobiogenie } from "./answerEndobiogenie";
-export { retrieveEndobiogenieContext } from "./vectorStoreRetrieval";
-export { queryVectorStore } from "./ragClient";
 export type { ChatRequest, ChatReply, RequestMode } from "./types";
-export type { RAGChunk } from "./ragClient";
+
+// RAG unifié - utiliser lib/ordonnance/ragSearch.ts
+// Les anciens exports ragClient et vectorStoreRetrieval ont été supprimés
+// Utiliser searchForAxisInterpretation, searchAllVectorstores depuis @/lib/ordonnance/ragSearch

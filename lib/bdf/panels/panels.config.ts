@@ -15,14 +15,16 @@ export const PANELS: PanelDefinition[] = [
     id: "panel_sna",
     label: "1. SNA - SYSTÈME NERVEUX AUTONOME",
     description: "Équilibre sympathique/parasympathique et mobilisation",
-    indexes: ["idx_starter", "idx_mobilisation_leucocytes", "idx_mobilisation_plaquettes", "idx_histamine"],
+    // CORRIGÉ: idx_histamine → idx_histamine_potentielle (nom correct dans indexes.config.ts)
+    indexes: ["idx_starter", "idx_mobilisation_leucocytes", "idx_mobilisation_plaquettes", "idx_histamine_potentielle"],
     color: "blue"
   },
   {
     id: "panel_adaptation",
     label: "2. CORTICOTROPE (Adaptation)",
     description: "Capacité de réponse au stress - Axe HPA",
-    indexes: ["idx_adaptation", "idx_cortisol_ratio", "idx_mineralo"],
+    // CORRIGÉ: idx_cortisol_ratio → idx_cortisol_cortex (nom correct dans indexes.config.ts)
+    indexes: ["idx_adaptation", "idx_cortisol_cortex", "idx_mineralo"],
     color: "purple"
   },
   {
@@ -43,14 +45,18 @@ export const PANELS: PanelDefinition[] = [
     id: "panel_somato",
     label: "5. SOMATOTROPE",
     description: "Structure, croissance et réparation tissulaire",
-    indexes: ["idx_croissance", "idx_turnover", "idx_remodelage_osseux", "idx_insuline"],
+    // CORRIGÉ: idx_turnover → idx_remodelage_osseux (idx_turnover n'existe pas)
+    // Ajouté idx_osteomusculaire pour compléter le panel
+    indexes: ["idx_croissance", "idx_remodelage_osseux", "idx_osteomusculaire", "idx_insuline"],
     color: "emerald"
   },
   {
     id: "panel_metabo",
     label: "6. MÉTABOLIQUE",
     description: "Catabolisme/Anabolisme et rendement cellulaire",
-    indexes: ["idx_catabolisme", "idx_rendement_metabolique", "idx_hepatique", "idx_capacite_tampon"],
+    // CORRIGÉ: idx_rendement_metabolique → supprimé (n'existe pas)
+    // idx_catabolisme et idx_cata_ana dépendent de idx_cortisol et idx_anabolisme (orphelins)
+    indexes: ["idx_catabolisme", "idx_cata_ana", "idx_hepatique", "idx_capacite_tampon"],
     color: "orange"
   },
   {

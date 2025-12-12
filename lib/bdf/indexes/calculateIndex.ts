@@ -19,8 +19,8 @@ export function calculateIndex(
     }
   }
 
-  // c) Si index secret, ne pas calculer
-  if (index.formula_type === "secret") {
+  // c) Si index secret ou théorique (non calculable), ne pas calculer
+  if (index.formula_type === "secret" || index.formula_type === "theoretical" || index.formula === "NON_CALCULABLE") {
     return {
       id: index.id,
       value: null,

@@ -1,6 +1,7 @@
 // ========================================
 // API INTERPRÉTATION DES AXES CLINIQUES
 // ========================================
+// VERSION 2: Sans VectorStore (architecture 100% Assistants)
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -15,7 +16,8 @@ import {
   SYSTEM_PROMPT_INTERPRETATION,
   generateUserPrompt,
 } from "@/lib/interrogatoire/prompts";
-import { retrieveEndobiogenieContext } from "@/lib/chatbot/vectorStoreRetrieval";
+// ❌ SUPPRIMÉ: import { searchForAxisInterpretation } from "@/lib/ordonnance/therapeuticReasoning";
+import { withOpenAIRetry } from "@/lib/openai/retry-client";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -45,6 +47,7 @@ const InterpretRequestSchema = z.object({
 
 /**
  * Schéma de validation pour la réponse de l'IA
+ * Note: confiance peut être retourné comme string par l'IA, on le transforme en number
  */
 const InterpretResponseSchema = z.object({
   orientation: z.string(),
@@ -52,13 +55,16 @@ const InterpretResponseSchema = z.object({
   prudences: z.array(z.string()),
   modulateurs: z.array(z.string()),
   resumeClinique: z.string(),
-  confiance: z.number().min(0).max(1),
+  confiance: z.union([z.number(), z.string()]).transform((val) => {
+    const num = typeof val === "string" ? parseFloat(val) : val;
+    return Math.min(1, Math.max(0, num)); // Clamp entre 0 et 1
+  }),
 });
 
 /**
  * POST /api/interrogatoire/interpret
  *
- * Interprète un axe clinique avec l'IA + RAG endobiogénie
+ * Interprète un axe clinique avec l'IA
  * Stocke le résultat dans la table AxeInterpretation
  *
  * Body: InterpretationRequest
@@ -111,18 +117,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Récupérer le contexte RAG endobiogénie
-    console.log(`🔍 [Interpret ${axe}] Récupération contexte RAG...`);
-    const ragQuery = `Analyse de l'axe ${axe} en endobiogénie : ${JSON.stringify(reponsesAxe).substring(0, 200)}`;
-    let ragContext = "";
-
-    try {
-      const ragPassages = await retrieveEndobiogenieContext(ragQuery);
-      ragContext = ragPassages.join("\n\n");
-      console.log(`✅ [Interpret ${axe}] Contexte RAG récupéré (${ragPassages.length} passages)`);
-    } catch (error) {
-      console.warn(`⚠️ [Interpret ${axe}] RAG non disponible, continuer sans contexte`);
-    }
+    // 4. Contexte RAG désactivé (architecture 100% Assistants)
+    // L'interprétation se fait via GPT-4 avec le SYSTEM_PROMPT qui contient
+    // déjà les connaissances endobiogéniques nécessaires
+    console.log(`🔍 [Interpret ${axe}] Mode Assistant (sans VectorStore RAG)`);
+    const ragContext = ""; // Pas de RAG externe, GPT-4 utilise ses connaissances
 
     // 5. Construire le prompt utilisateur
     const userPrompt = generateUserPrompt(
@@ -138,17 +137,20 @@ export async function POST(req: NextRequest) {
       ragContext
     );
 
-    // 6. Appeler OpenAI pour l'interprétation
-    console.log(`🤖 [Interpret ${axe}] Appel OpenAI GPT-4...`);
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT_INTERPRETATION },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.3,
-      response_format: { type: "json_object" },
-    });
+    // 6. Appeler OpenAI pour l'interprétation (avec retry automatique)
+    console.log(`🤖 [Interpret ${axe}] Appel OpenAI GPT-4.1...`);
+    const completion = await withOpenAIRetry(
+      () => openai.chat.completions.create({
+        model: "gpt-4.1",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT_INTERPRETATION },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.3,
+        response_format: { type: "json_object" },
+      }),
+      `interpret-${axe}`
+    );
 
     const rawResponse = completion.choices[0]?.message?.content;
     if (!rawResponse) {

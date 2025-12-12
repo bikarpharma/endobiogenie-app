@@ -6,6 +6,7 @@ import { BIOMARKERS } from "@/lib/bdf/biomarkers/biomarkers.config";
 import { calculateAllIndexes } from "@/lib/bdf/calculateIndexes";
 import { useState } from "react";
 import BdfResultsView from "./BdfResultsView";
+import LabImportModal from "./LabImportModal";
 
 // Mapping des catégories vers des labels français
 const CATEGORY_LABELS: Record<string, string> = {
@@ -14,7 +15,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   enzyme: "Enzymes",
   hormone: "Hormones",
   bone: "Métabolisme Osseux",
-  tumor: "Marqueurs Tumoraux"
+  tumor: "Marqueurs Tumoraux",
+  // NOUVELLES CATÉGORIES
+  liver: "Bilan Hépatique",
+  lipid: "Bilan Lipidique",
+  renal: "Bilan Rénal",
+  metabolic: "Bilan Métabolique",
+  inflammation: "Marqueurs Inflammatoires"
 };
 
 // Couleurs Tailwind par catégorie
@@ -24,7 +31,13 @@ const CATEGORY_COLORS: Record<string, string> = {
   enzyme: "border-amber-200 bg-amber-50",
   hormone: "border-purple-200 bg-purple-50",
   bone: "border-emerald-200 bg-emerald-50",
-  tumor: "border-rose-200 bg-rose-50"
+  tumor: "border-rose-200 bg-rose-50",
+  // NOUVELLES COULEURS
+  liver: "border-orange-200 bg-orange-50",
+  lipid: "border-yellow-200 bg-yellow-50",
+  renal: "border-cyan-200 bg-cyan-50",
+  metabolic: "border-pink-200 bg-pink-50",
+  inflammation: "border-red-300 bg-red-100"
 };
 
 // Données de test pré-configurées
@@ -61,18 +74,30 @@ const TEST_CASES = {
 
 interface BdfInputFormProps {
   patientId?: string;
+  initialValues?: Record<string, number | null>;
+  editMode?: boolean;
+  analysisId?: string;
 }
 
-export default function BdfInputForm({ patientId }: BdfInputFormProps = {}) {
+export default function BdfInputForm({ patientId, initialValues, editMode = false, analysisId }: BdfInputFormProps = {}) {
   const router = useRouter();
-  const { register, handleSubmit, reset, getValues } = useForm();
+  const { register, handleSubmit, reset, getValues } = useForm({
+    defaultValues: initialValues || {},
+  });
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importedCount, setImportedCount] = useState(0);
 
   // Liste des catégories à afficher (dans l'ordre souhaité)
-  const categories = ["hematology", "ion", "enzyme", "hormone", "bone", "tumor"];
+  // AJOUT des 5 catégories manquantes: liver, lipid, renal, metabolic, inflammation
+  const categories = [
+    "hematology", "ion", "enzyme", "hormone", "bone",
+    "liver", "lipid", "renal", "metabolic", "inflammation",
+    "tumor"
+  ];
 
   const onSubmit = async (data: any) => {
     setLoading(true);
@@ -95,6 +120,18 @@ export default function BdfInputForm({ patientId }: BdfInputFormProps = {}) {
     reset(TEST_CASES[caseKey].data);
     setResults(null); // Réinitialiser les résultats
     setSaveMessage(null);
+    setImportedCount(0);
+  };
+
+  // Handler pour l'import de valeurs depuis le PDF
+  const handleLabImport = (values: Record<string, number>) => {
+    // Fusionner avec les valeurs existantes (les nouvelles écrasent les anciennes)
+    const currentValues = getValues();
+    const mergedValues = { ...currentValues, ...values };
+    reset(mergedValues);
+    setResults(null);
+    setSaveMessage(null);
+    setImportedCount(Object.keys(values).length);
   };
 
   // Sauvegarde manuelle
@@ -160,6 +197,28 @@ export default function BdfInputForm({ patientId }: BdfInputFormProps = {}) {
         </p>
       </div>
 
+      {/* BOUTON IMPORT PDF - MISE EN AVANT */}
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => setShowImportModal(true)}
+          className="w-full sm:w-auto px-6 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          Importer un PDF de Laboratoire
+        </button>
+        {importedCount > 0 && (
+          <div className="mt-2 text-sm text-green-700 bg-green-50 px-4 py-2 rounded-lg inline-flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            {importedCount} valeur(s) importee(s) depuis le PDF
+          </div>
+        )}
+      </div>
+
       {/* BOUTONS DE PRÉ-REMPLISSAGE */}
       <div className="mb-6 flex flex-wrap gap-3">
         <span className="text-sm font-medium text-slate-600 self-center">Cas de test:</span>
@@ -175,10 +234,10 @@ export default function BdfInputForm({ patientId }: BdfInputFormProps = {}) {
         ))}
         <button
           type="button"
-          onClick={() => reset({})}
+          onClick={() => { reset({}); setImportedCount(0); }}
           className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-500 rounded-lg text-sm font-medium transition-colors border border-slate-300"
         >
-          Réinitialiser
+          Reinitialiser
         </button>
       </div>
 
@@ -263,6 +322,13 @@ export default function BdfInputForm({ patientId }: BdfInputFormProps = {}) {
 
       {/* AFFICHAGE DES RÉSULTATS AVEC LES 7 PANELS */}
       <BdfResultsView result={results} />
+
+      {/* MODAL D'IMPORT PDF */}
+      <LabImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImport={handleLabImport}
+      />
     </div>
   );
 }

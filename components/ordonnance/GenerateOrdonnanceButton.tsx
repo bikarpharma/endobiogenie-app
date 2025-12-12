@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { TherapeuticScope } from "@/lib/ordonnance/types";
 
 type GenerateOrdonnanceButtonProps = {
   patientId: string;
@@ -12,14 +11,11 @@ type GenerateOrdonnanceButtonProps = {
 
 export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis, hasInterrogatoire }: GenerateOrdonnanceButtonProps) {
   const router = useRouter();
-  const [showModal, setShowModal] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [scope, setScope] = useState<TherapeuticScope>({
-    planteMedicinale: true,
-    gemmotherapie: true,
-    aromatherapie: false,
-    micronutrition: true,
-  });
+
+  // VERSION 3.0 - SANS SCOPE
+  // L'IA choisit automatiquement la meilleure forme galénique selon l'indication
+  // Plus de modal de sélection = génération directe
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -30,7 +26,7 @@ export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis, hasInterro
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patientId,
-          scope,
+          // PAS DE SCOPE - L'IA choisit la meilleure forme selon l'indication
         }),
       });
 
@@ -49,7 +45,6 @@ export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis, hasInterro
       alert(error.message);
     } finally {
       setGenerating(false);
-      setShowModal(false);
     }
   };
 
@@ -87,255 +82,57 @@ export function GenerateOrdonnanceButton({ patientId, hasBdfAnalysis, hasInterro
   }
 
   return (
-    <>
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
-        <button
-          onClick={() => setShowModal(true)}
-          disabled={generating}
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
+      <button
+        onClick={handleGenerate}
+        disabled={generating}
+        style={{
+          padding: "12px 20px",
+          background: generating
+            ? "#9ca3af"
+            : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          fontSize: "0.9rem",
+          fontWeight: "600",
+          cursor: generating ? "not-allowed" : "pointer",
+          boxShadow: generating ? "none" : "0 4px 12px rgba(16, 185, 129, 0.3)",
+        }}
+      >
+        {generating ? "⏳ Génération en cours..." : "🧬 Générer ordonnance intelligente"}
+      </button>
+
+      {/* Info V3 */}
+      <div
+        style={{
+          padding: "6px 12px",
+          background: "#dbeafe",
+          color: "#1e40af",
+          borderRadius: "6px",
+          fontSize: "0.75rem",
+          fontWeight: "500",
+          border: "1px solid #93c5fd",
+        }}
+      >
+        💡 L'IA choisit automatiquement la meilleure forme galénique
+      </div>
+
+      {warningBadge && (
+        <div
           style={{
-            padding: "12px 20px",
-            background: generating
-              ? "#9ca3af"
-              : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "0.9rem",
+            padding: "6px 12px",
+            background: "#fef3c7",
+            color: "#92400e",
+            borderRadius: "6px",
+            fontSize: "0.75rem",
             fontWeight: "600",
-            cursor: generating ? "not-allowed" : "pointer",
-            boxShadow: generating ? "none" : "0 4px 12px rgba(16, 185, 129, 0.3)",
+            border: "1px solid #fbbf24",
           }}
         >
-          {generating ? "⏳ Génération en cours..." : "🧬 Générer ordonnance intelligente"}
-        </button>
-        {warningBadge && (
-          <div
-            style={{
-              padding: "6px 12px",
-              background: "#fef3c7",
-              color: "#92400e",
-              borderRadius: "6px",
-              fontSize: "0.75rem",
-              fontWeight: "600",
-              border: "1px solid #fbbf24",
-            }}
-          >
-            {warningBadge}
-          </div>
-        )}
-      </div>
-
-      {/* Modal Configuration Scope */}
-      {showModal && (
-        <>
-          {/* Overlay */}
-          <div
-            onClick={() => setShowModal(false)}
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(0, 0, 0, 0.5)",
-              zIndex: 9998,
-            }}
-          />
-
-          {/* Modal */}
-          <div
-            style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "min(90vw, 600px)",
-              maxHeight: "90vh",
-              overflow: "auto",
-              background: "white",
-              borderRadius: "16px",
-              padding: "32px",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
-              zIndex: 9999,
-            }}
-          >
-            <h2 style={{ fontSize: "1.5rem", fontWeight: "600", color: "#1f2937", marginBottom: "8px" }}>
-              🧬 Générer une ordonnance intelligente
-            </h2>
-            <p style={{ fontSize: "0.9rem", color: "#6b7280", marginBottom: "24px" }}>
-              Configurez le scope thérapeutique pour personnaliser les recommandations
-            </p>
-
-            <div style={{ display: "grid", gap: "16px", marginBottom: "24px" }}>
-              {/* Plantes médicinales */}
-              <ScopeOption
-                icon="🌿"
-                label="Plantes médicinales (Phytothérapie)"
-                description="Tisanes et extraits de plantes médicinales"
-                checked={scope.planteMedicinale}
-                onChange={(checked) => setScope({ ...scope, planteMedicinale: checked })}
-                recommended
-              />
-
-              {/* Gemmothérapie */}
-              <ScopeOption
-                icon="🌱"
-                label="Gemmothérapie (Macérats de bourgeons)"
-                description="Extraits concentrés de bourgeons et jeunes pousses"
-                checked={scope.gemmotherapie}
-                onChange={(checked) => setScope({ ...scope, gemmotherapie: checked })}
-                recommended
-              />
-
-              {/* Aromathérapie */}
-              <ScopeOption
-                icon="💧"
-                label="Aromathérapie (Huiles essentielles)"
-                description="Huiles essentielles et leurs applications thérapeutiques"
-                checked={scope.aromatherapie}
-                onChange={(checked) => setScope({ ...scope, aromatherapie: checked })}
-              />
-
-              {/* Micronutrition */}
-              <ScopeOption
-                icon="💊"
-                label="Micro-nutrition (Compléments)"
-                description="Recommandations ciblées par axe BdF"
-                checked={scope.micronutrition}
-                onChange={(checked) => setScope({ ...scope, micronutrition: checked })}
-                recommended
-              />
-            </div>
-
-            {/* Info */}
-            <div
-              style={{
-                padding: "12px 16px",
-                background: "#dbeafe",
-                border: "2px solid #3b82f6",
-                borderRadius: "8px",
-                fontSize: "0.85rem",
-                color: "#1e40af",
-                marginBottom: "24px",
-              }}
-            >
-              💡 Le système utilise une architecture à 2 niveaux:
-              <br />
-              1️⃣ Analyse clinique (interrogatoire) + BdF (si disponible)
-              <br />
-              2️⃣ Fusion multi-sources (Clinique + BdF + RAG + IA)
-              <br />
-              3️⃣ Proposition thérapeutique selon scope sélectionné
-              <br />
-              4️⃣ Contrôles de sécurité et cohérence
-            </div>
-
-            {/* Boutons */}
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-              <button
-                onClick={() => setShowModal(false)}
-                disabled={generating}
-                style={{
-                  padding: "12px 24px",
-                  background: "white",
-                  color: "#6b7280",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "8px",
-                  fontSize: "0.9rem",
-                  fontWeight: "600",
-                  cursor: generating ? "not-allowed" : "pointer",
-                }}
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleGenerate}
-                disabled={generating}
-                style={{
-                  padding: "12px 24px",
-                  background: generating
-                    ? "#9ca3af"
-                    : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.9rem",
-                  fontWeight: "600",
-                  cursor: generating ? "not-allowed" : "pointer",
-                  boxShadow: generating ? "none" : "0 4px 12px rgba(16, 185, 129, 0.3)",
-                }}
-              >
-                {generating ? "⏳ Génération..." : "🚀 Générer"}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </>
-  );
-}
-
-// ========================================
-// Composant Scope Option
-// ========================================
-type ScopeOptionProps = {
-  icon: string;
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  recommended?: boolean;
-};
-
-function ScopeOption({ icon, label, description, checked, onChange, recommended }: ScopeOptionProps) {
-  return (
-    <div
-      onClick={() => onChange(!checked)}
-      style={{
-        padding: "16px",
-        background: checked ? "#f0fdf4" : "#f9fafb",
-        border: checked ? "2px solid #10b981" : "2px solid #e5e7eb",
-        borderRadius: "12px",
-        cursor: "pointer",
-        transition: "all 0.2s",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "start", gap: "12px" }}>
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          style={{
-            marginTop: "4px",
-            width: "18px",
-            height: "18px",
-            cursor: "pointer",
-          }}
-        />
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-            <span style={{ fontSize: "1.3rem" }}>{icon}</span>
-            <strong style={{ fontSize: "1rem", color: "#1f2937" }}>{label}</strong>
-            {recommended && (
-              <span
-                style={{
-                  padding: "2px 8px",
-                  background: "#fef3c7",
-                  color: "#92400e",
-                  borderRadius: "4px",
-                  fontSize: "0.7rem",
-                  fontWeight: "600",
-                }}
-              >
-                RECOMMANDÉ
-              </span>
-            )}
-          </div>
-          <p style={{ fontSize: "0.85rem", color: "#6b7280", margin: 0 }}>
-            {description}
-          </p>
+          {warningBadge}
         </div>
-      </div>
+      )}
     </div>
   );
 }

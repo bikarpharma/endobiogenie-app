@@ -1,7 +1,21 @@
-// ========================================
-// MOTEUR DE SCORING ENDOBIOGÉNIQUE V3
-// Utilise les VRAIS IDs des questions du formulaire
-// ========================================
+/**
+ * MOTEUR DE SCORING CLINIQUE V3 - CORRIGÉ
+ * ========================================
+ *
+ * Ce fichier calcule les scores cliniques pour chaque axe endobiogénique
+ * basé sur les réponses aux questionnaires.
+ *
+ * CORRECTION MAJEURE (Décembre 2024) :
+ * Les IDs des questions correspondent maintenant exactement aux fichiers de config :
+ * - axe-neuro.ts : neuro_para_*, neuro_alpha_*, neuro_beta_*, neuro_spasmophilie, etc.
+ * - axe-adaptatif.ts : cortico_*
+ * - axe-thyro.ts : thyro_*
+ * - axe-gonado.ts : gona_f_*, gona_h_*, gona_*
+ * - axe-somato.ts : somato_*
+ * - axe-digestif.ts : dig_*
+ * - axe-immuno.ts : immuno_*
+ * - axe-terrains-pathologiques.ts : terr_*
+ */
 
 import type { QuestionConfig } from "./types";
 
@@ -80,7 +94,7 @@ function scaleToPercent(value: any): number {
  * Convertit un boolean en score
  */
 function boolToScore(value: any, scoreIfTrue: number = 100): number {
-  if (value === true || value === "oui" || value === "true") return scoreIfTrue;
+  if (value === true || value === "oui" || value === "true" || value === "Oui") return scoreIfTrue;
   return 0;
 }
 
@@ -100,7 +114,7 @@ function determinerOrientation(hypo: number, hyper: number): OrientationEndobiog
 
 /**
  * AXE NEUROVÉGÉTATIF
- * IDs: neuro_para_*, neuro_alpha_*, neuro_beta_*, neuro_sommeil_*
+ * IDs VRAIS: neuro_para_*, neuro_alpha_*, neuro_beta_*, neuro_sommeil_*, neuro_spasmophilie, etc.
  */
 function scorerAxeNeuro(answers: Record<string, any>): ScoreAxeEndobiogenique {
   const symptomesCles: string[] = [];
@@ -108,6 +122,18 @@ function scorerAxeNeuro(answers: Record<string, any>): ScoreAxeEndobiogenique {
   let hyperTotal = 0, hyperMax = 0;
 
   // === PARASYMPATHIQUE (hypertonie = hyper) ===
+  // neuro_para_crise_vagale (select)
+  if (answers.neuro_para_crise_vagale) {
+    const val = typeof answers.neuro_para_crise_vagale === "string"
+      ? ["Jamais", "1-2 fois dans ma vie", "Plusieurs fois", "Fréquemment"].indexOf(answers.neuro_para_crise_vagale) * 33.3
+      : scaleToPercent(answers.neuro_para_crise_vagale);
+    if (val > 33) {
+      hyperTotal += val * 3;
+      symptomesCles.push("Crises vagales (malaises)");
+    }
+    hyperMax += 300;
+  }
+
   const paraSalivation = scaleToPercent(answers.neuro_para_salivation);
   if (paraSalivation > 50) {
     hyperTotal += paraSalivation * 2;
@@ -126,6 +152,33 @@ function scorerAxeNeuro(answers: Record<string, any>): ScoreAxeEndobiogenique {
   if (paraNezBouche > 50) {
     hyperTotal += paraNezBouche * 2;
     symptomesCles.push("Congestion nasale post-prandiale (vagotonie)");
+  }
+  hyperMax += 200;
+
+  const paraBallonnement = scaleToPercent(answers.neuro_para_ballonnement);
+  if (paraBallonnement > 50) {
+    hyperTotal += paraBallonnement * 2;
+    symptomesCles.push("Ballonnements/aérophagie (vagotonie)");
+  }
+  hyperMax += 200;
+
+  const paraSueursNuit = scaleToPercent(answers.neuro_para_sueurs_nuit);
+  if (paraSueursNuit > 50) {
+    hyperTotal += paraSueursNuit * 2;
+    symptomesCles.push("Sueurs de première partie de nuit");
+  }
+  hyperMax += 200;
+
+  const paraDiarrhee = scaleToPercent(answers.neuro_para_diarrhee);
+  if (paraDiarrhee > 50) {
+    hyperTotal += paraDiarrhee * 2;
+    symptomesCles.push("Transit accéléré / diarrhée");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.neuro_para_bradycardie) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Bradycardie de repos (<60 bpm)");
   }
   hyperMax += 200;
 
@@ -151,10 +204,36 @@ function scorerAxeNeuro(answers: Record<string, any>): ScoreAxeEndobiogenique {
   }
   hyperMax += 200;
 
-  const alphaMental = scaleToPercent(answers.neuro_alpha_mental);
-  if (alphaMental > 50) {
-    hyperTotal += alphaMental * 2;
-    symptomesCles.push("Ruminations mentales (hypervigilance alpha)");
+  const alphaMydriase = scaleToPercent(answers.neuro_alpha_mydriase);
+  if (alphaMydriase > 50) {
+    hyperTotal += alphaMydriase * 2;
+    symptomesCles.push("Pupilles dilatées / photosensibilité");
+  }
+  hyperMax += 200;
+
+  const alphaVigilance = scaleToPercent(answers.neuro_alpha_vigilance);
+  if (alphaVigilance > 50) {
+    hyperTotal += alphaVigilance * 2;
+    symptomesCles.push("Hypervigilance chronique");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.neuro_alpha_tension) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Hypertension artérielle");
+  }
+  hyperMax += 200;
+
+  const alphaBruxisme = scaleToPercent(answers.neuro_alpha_bruxisme);
+  if (alphaBruxisme > 50) {
+    hyperTotal += alphaBruxisme * 2;
+    symptomesCles.push("Bruxisme (serrement de dents)");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.neuro_alpha_raynaud) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Syndrome de Raynaud");
   }
   hyperMax += 200;
 
@@ -165,6 +244,13 @@ function scorerAxeNeuro(answers: Record<string, any>): ScoreAxeEndobiogenique {
     symptomesCles.push("Palpitations (hyper-réactivité bêta)");
   }
   hyperMax += 300;
+
+  const betaBouffeesChaleur = scaleToPercent(answers.neuro_beta_bouffees_chaleur);
+  if (betaBouffeesChaleur > 50) {
+    hyperTotal += betaBouffeesChaleur * 2;
+    symptomesCles.push("Bouffées de chaleur soudaines");
+  }
+  hyperMax += 200;
 
   const betaEmotivite = scaleToPercent(answers.neuro_beta_emotivite);
   if (betaEmotivite > 50) {
@@ -187,7 +273,35 @@ function scorerAxeNeuro(answers: Record<string, any>): ScoreAxeEndobiogenique {
   }
   hyperMax += 200;
 
-  // === SOMMEIL (perturbation = hyper sympathique) ===
+  const betaHypoglycemie = scaleToPercent(answers.neuro_beta_hypoglycemie);
+  if (betaHypoglycemie > 50) {
+    hyperTotal += betaHypoglycemie * 2;
+    symptomesCles.push("Malaises hypoglycémiques");
+  }
+  hyperMax += 200;
+
+  // Bêta HYPO (insuffisant)
+  const betaLibidoBasse = scaleToPercent(answers.neuro_beta_libido_basse);
+  if (betaLibidoBasse > 50) {
+    hypoTotal += betaLibidoBasse * 2;
+    symptomesCles.push("Absence de libido/désir (bêta insuffisant)");
+  }
+  hypoMax += 200;
+
+  const betaFatigueInitiative = scaleToPercent(answers.neuro_beta_fatigue_initiative);
+  if (betaFatigueInitiative > 50) {
+    hypoTotal += betaFatigueInitiative * 2;
+    symptomesCles.push("Manque d'élan/initiative");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.neuro_beta_bronchospasme) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Tendance aux bronchospasmes/asthme");
+  }
+  hypoMax += 200;
+
+  // === SOMMEIL ===
   const sommeilEndormissement = scaleToPercent(answers.neuro_sommeil_endormissement);
   if (sommeilEndormissement > 50) {
     hyperTotal += sommeilEndormissement * 2;
@@ -198,30 +312,110 @@ function scorerAxeNeuro(answers: Record<string, any>): ScoreAxeEndobiogenique {
   const reveilNocturne = scaleToPercent(answers.neuro_reveil_nocturne);
   if (reveilNocturne > 50) {
     hyperTotal += reveilNocturne * 2;
-    symptomesCles.push("Réveil nocturne 3h-4h (décharge adrénergique)");
+    symptomesCles.push("Réveil nocturne 3h-5h (décharge adrénergique)");
   }
   hyperMax += 200;
+
+  const reveil1h3h = scaleToPercent(answers.neuro_reveil_1h_3h);
+  if (reveil1h3h > 50) {
+    hyperTotal += reveil1h3h * 2;
+    symptomesCles.push("Réveil 1h-3h (congestion hépatique)");
+  }
+  hyperMax += 200;
+
+  const reves = scaleToPercent(answers.neuro_reves);
+  if (reves > 50) {
+    hyperTotal += reves * 2;
+    symptomesCles.push("Rêves vifs/cauchemars (TRH élevée)");
+  }
+  hyperMax += 200;
+
+  // === SPASMOPHILIE ===
+  if (answers.neuro_spasmophilie) {
+    const val = typeof answers.neuro_spasmophilie === "string"
+      ? ["Jamais", "1-2 fois dans ma vie", "Plusieurs fois", "Régulièrement"].indexOf(answers.neuro_spasmophilie) * 33.3
+      : scaleToPercent(answers.neuro_spasmophilie);
+    if (val > 33) {
+      hyperTotal += val * 3;
+      symptomesCles.push("Crises de tétanie/spasmophilie");
+    }
+    hyperMax += 300;
+  }
+
+  const fourmillements = scaleToPercent(answers.neuro_fourmillements);
+  if (fourmillements > 50) {
+    hyperTotal += fourmillements * 2;
+    symptomesCles.push("Paresthésies (fourmillements)");
+  }
+  hyperMax += 200;
+
+  const oppressionThoracique = scaleToPercent(answers.neuro_oppression_thoracique);
+  if (oppressionThoracique > 50) {
+    hyperTotal += oppressionThoracique * 2;
+    symptomesCles.push("Oppression thoracique");
+  }
+  hyperMax += 200;
+
+  const crampesNocturnes = scaleToPercent(answers.neuro_crampes_nocturnes);
+  if (crampesNocturnes > 50) {
+    hyperTotal += crampesNocturnes * 2;
+    symptomesCles.push("Crampes nocturnes");
+  }
+  hyperMax += 200;
+
+  const anxieteAnticipation = scaleToPercent(answers.neuro_anxiete_anticipation);
+  if (anxieteAnticipation > 50) {
+    hyperTotal += anxieteAnticipation * 2;
+    symptomesCles.push("Anxiété d'anticipation");
+  }
+  hyperMax += 200;
+
+  // === AUTACOÏDES ===
+  if (boolToScore(answers.neuro_histamine_allergies) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Allergies/réactions histaminiques");
+  }
+  hyperMax += 200;
+
+  const histaminePrurit = scaleToPercent(answers.neuro_histamine_prurit);
+  if (histaminePrurit > 50) {
+    hyperTotal += histaminePrurit * 1;
+    symptomesCles.push("Prurit fréquent");
+  }
+  hyperMax += 100;
+
+  const serotoninHumeur = scaleToPercent(answers.neuro_serotonine_humeur);
+  if (serotoninHumeur > 50) {
+    hypoTotal += serotoninHumeur * 2;
+    symptomesCles.push("Troubles de l'humeur (sérotonine basse)");
+  }
+  hypoMax += 200;
+
+  const serotoninImpulsivite = scaleToPercent(answers.neuro_serotonine_impulsivite);
+  if (serotoninImpulsivite > 50) {
+    hypoTotal += serotoninImpulsivite * 2;
+    symptomesCles.push("Impulsivité/TCA");
+  }
+  hypoMax += 200;
 
   // Normalisation
   const hypoNorm = hypoMax > 0 ? (hypoTotal / hypoMax) * 100 : 0;
   const hyperNorm = hyperMax > 0 ? (hyperTotal / hyperMax) * 100 : 0;
 
-  // L'axe neuro est particulier : on évalue surtout l'hyperactivité sympathique
-  // L'hypo est rare (plutôt manque de réponse = épuisement)
   return {
     insuffisance: Math.round(hypoNorm),
     surSollicitation: Math.round(hyperNorm),
     orientation: determinerOrientation(hypoNorm, hyperNorm),
     intensite: Math.round(Math.max(hypoNorm, hyperNorm) / 10),
     description: genererDescriptionNeuro(hypoNorm, hyperNorm),
-    confiance: calculerConfiance(answers, 14),
+    confiance: calculerConfiance(answers, "neuro_"),
     symptomesCles
   };
 }
 
 /**
  * AXE CORTICOTROPE (Adaptatif)
- * IDs: cortico_fatigue_matin, cortico_coup_pompe, cortico_sel, etc.
+ * IDs VRAIS: cortico_fatigue_matin, cortico_coup_pompe, cortico_sel, cortico_reveil_precoce, etc.
  */
 function scorerAxeAdaptatif(answers: Record<string, any>): ScoreAxeEndobiogenique {
   const symptomesCles: string[] = [];
@@ -238,10 +432,10 @@ function scorerAxeAdaptatif(answers: Record<string, any>): ScoreAxeEndobiogeniqu
 
   const coupPompe = scaleToPercent(answers.cortico_coup_pompe);
   if (coupPompe > 50) {
-    hypoTotal += coupPompe * 2;
+    hypoTotal += coupPompe * 3;
     symptomesCles.push("Coups de pompe 11h/17h (hypoglycémie)");
   }
-  hypoMax += 200;
+  hypoMax += 300;
 
   const endurance = scaleToPercent(answers.cortico_endurance);
   if (endurance > 50) {
@@ -249,6 +443,13 @@ function scorerAxeAdaptatif(answers: Record<string, any>): ScoreAxeEndobiogeniqu
     symptomesCles.push("Manque d'endurance (épuisement surrénalien)");
   }
   hypoMax += 200;
+
+  const fatigueChronique = scaleToPercent(answers.cortico_fatigue_chronique);
+  if (fatigueChronique > 50) {
+    hypoTotal += fatigueChronique * 3;
+    symptomesCles.push("Fatigue chronique non améliorée par repos");
+  }
+  hypoMax += 300;
 
   const sel = scaleToPercent(answers.cortico_sel);
   if (sel > 50) {
@@ -271,9 +472,29 @@ function scorerAxeAdaptatif(answers: Record<string, any>): ScoreAxeEndobiogeniqu
   }
   hypoMax += 200;
 
-  const irritabilite = scaleToPercent(answers.cortico_irritabilite);
-  if (irritabilite > 50) {
-    hypoTotal += irritabilite * 2;
+  const infectionsRecidivantes = scaleToPercent(answers.cortico_infections_recidivantes);
+  if (infectionsRecidivantes > 50) {
+    hypoTotal += infectionsRecidivantes * 3;
+    symptomesCles.push("Infections récidivantes (terrain précritique)");
+  }
+  hypoMax += 300;
+
+  if (boolToScore(answers.cortico_allergies) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Allergies aggravées au stress");
+  }
+  hypoMax += 200;
+
+  const libido = scaleToPercent(answers.cortico_libido);
+  if (libido > 50) {
+    hypoTotal += libido * 2;
+    symptomesCles.push("Baisse de libido (DHEA insuffisante)");
+  }
+  hypoMax += 200;
+
+  const irritabiliteFaim = scaleToPercent(answers.cortico_irritabilite_faim);
+  if (irritabiliteFaim > 50) {
+    hypoTotal += irritabiliteFaim * 2;
     symptomesCles.push("Irritabilité à jeun (hypoglycémie surrénalienne)");
   }
   hypoMax += 200;
@@ -285,11 +506,135 @@ function scorerAxeAdaptatif(answers: Record<string, any>): ScoreAxeEndobiogeniqu
   }
   hypoMax += 200;
 
-  // === SUR-SOLLICITATION CORTICOTROPE ===
+  const anhedonie = scaleToPercent(answers.cortico_anhedonie);
+  if (anhedonie > 50) {
+    hypoTotal += anhedonie * 3;
+    symptomesCles.push("Anhédonie (manque de plaisir)");
+  }
+  hypoMax += 300;
+
+  const difficulteAdaptation = scaleToPercent(answers.cortico_difficulte_adaptation);
+  if (difficulteAdaptation > 50) {
+    hypoTotal += difficulteAdaptation * 3;
+    symptomesCles.push("Difficulté d'adaptation aux changements");
+  }
+  hypoMax += 300;
+
+  const stressChronique = scaleToPercent(answers.cortico_stress_chronique);
+  if (stressChronique > 50) {
+    hypoTotal += stressChronique * 3;
+    symptomesCles.push("Stress chronique (épuisement surrénalien)");
+  }
+  hypoMax += 300;
+
+  const recuperationStress = scaleToPercent(answers.cortico_recuperation_stress);
+  if (recuperationStress > 50) {
+    hypoTotal += recuperationStress * 2;
+    symptomesCles.push("Récupération lente après stress");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.cortico_aggravation_automne_hiver) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Aggravation automne/hiver");
+  }
+  hypoMax += 200;
+
+  // === SUR-SOLLICITATION CORTICOTROPE (cortisol élevé / ACTH élevée) ===
+  const reveilPrecoce = scaleToPercent(answers.cortico_reveil_precoce);
+  if (reveilPrecoce > 50) {
+    hyperTotal += reveilPrecoce * 3;
+    symptomesCles.push("Réveil précoce 3-5h (ACTH élevée)");
+  }
+  hyperMax += 300;
+
+  const oedemes = scaleToPercent(answers.cortico_oedemes);
+  if (oedemes > 50) {
+    hyperTotal += oedemes * 3;
+    symptomesCles.push("Œdèmes (rétention hydrosodée)");
+  }
+  hyperMax += 300;
+
   const cicatrisation = scaleToPercent(answers.cortico_cicatrisation);
   if (cicatrisation > 50) {
     hyperTotal += cicatrisation * 2;
-    symptomesCles.push("Cicatrisation lente (cortisol chroniquement élevé)");
+    symptomesCles.push("Cicatrisation lente (cortisol élevé)");
+  }
+  hyperMax += 200;
+
+  const ecchymoses = scaleToPercent(answers.cortico_ecchymoses);
+  if (ecchymoses > 50) {
+    hyperTotal += ecchymoses * 2;
+    symptomesCles.push("Ecchymoses faciles (fragilité capillaire)");
+  }
+  hyperMax += 200;
+
+  if (answers.cortico_herpes_recidivant) {
+    const val = typeof answers.cortico_herpes_recidivant === "string"
+      ? ["Jamais", "Rarement (<1/an)", "Parfois (1-3/an)", "Souvent (>3/an)", "Très souvent"].indexOf(answers.cortico_herpes_recidivant) * 25
+      : scaleToPercent(answers.cortico_herpes_recidivant);
+    if (val > 25) {
+      hyperTotal += val * 2;
+      symptomesCles.push("Herpès récidivant (immunosuppression cortisol)");
+    }
+    hyperMax += 200;
+  }
+
+  if (boolToScore(answers.cortico_stries_violacees) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Stries violacées (hypercorticisme)");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.cortico_acne_dos) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Acné du dos (ACTH élevée)");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.cortico_eczema_plis) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Eczéma aux plis (ACTH élevée)");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.cortico_peau_fine) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Peau fine et fragile");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.cortico_visage_lunaire) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Visage rond/bouffi");
+  }
+  hyperMax += 200;
+
+  const prisePoidsAbdominale = scaleToPercent(answers.cortico_prise_poids_abdominale);
+  if (prisePoidsAbdominale > 50) {
+    hyperTotal += prisePoidsAbdominale * 3;
+    symptomesCles.push("Adiposité abdominale");
+  }
+  hyperMax += 300;
+
+  const faiblesseMusculaire = scaleToPercent(answers.cortico_faiblesse_musculaire);
+  if (faiblesseMusculaire > 50) {
+    hyperTotal += faiblesseMusculaire * 3;
+    symptomesCles.push("Faiblesse musculaire proximale");
+  }
+  hyperMax += 300;
+
+  const irritabiliteAgressivite = scaleToPercent(answers.cortico_irritabilite_agressivite);
+  if (irritabiliteAgressivite > 50) {
+    hyperTotal += irritabiliteAgressivite * 2;
+    symptomesCles.push("Irritabilité/agressivité");
+  }
+  hyperMax += 200;
+
+  const douleurFosseIliaque = scaleToPercent(answers.cortico_douleur_fosse_iliaque);
+  if (douleurFosseIliaque > 50) {
+    hyperTotal += douleurFosseIliaque * 2;
+    symptomesCles.push("Douleurs fosse iliaque droite (ACTH élevée)");
   }
   hyperMax += 200;
 
@@ -303,14 +648,14 @@ function scorerAxeAdaptatif(answers: Record<string, any>): ScoreAxeEndobiogeniqu
     orientation: determinerOrientation(hypoNorm, hyperNorm),
     intensite: Math.round(Math.max(hypoNorm, hyperNorm) / 10),
     description: genererDescriptionAdaptatif(hypoNorm, hyperNorm),
-    confiance: calculerConfiance(answers, 9),
+    confiance: calculerConfiance(answers, "cortico_"),
     symptomesCles
   };
 }
 
 /**
  * AXE THYRÉOTROPE
- * IDs: thyro_frilosite, thyro_prise_poids_facile, thyro_intolerance_chaleur, etc.
+ * IDs VRAIS: thyro_metabolisme_general, thyro_frilosite, thyro_intolerance_chaleur, etc.
  */
 function scorerAxeThyro(answers: Record<string, any>): ScoreAxeEndobiogenique {
   const symptomesCles: string[] = [];
@@ -347,9 +692,9 @@ function scorerAxeThyro(answers: Record<string, any>): ScoreAxeEndobiogenique {
   }
   hypoMax += 200;
 
-  if (boolToScore(answers.thyro_fatigue_matinale) > 0) {
+  if (boolToScore(answers.thyro_hypoglycemie) > 0) {
     hypoTotal += 200;
-    symptomesCles.push("Fatigue matinale");
+    symptomesCles.push("Hypoglycémies (TSH basse)");
   }
   hypoMax += 200;
 
@@ -361,32 +706,73 @@ function scorerAxeThyro(answers: Record<string, any>): ScoreAxeEndobiogenique {
 
   if (boolToScore(answers.thyro_difficultes_concentration) > 0) {
     hypoTotal += 200;
-    symptomesCles.push("Difficultés de concentration (brain fog)");
+    symptomesCles.push("Brouillard cérébral");
   }
   hypoMax += 200;
 
-  if (boolToScore(answers.thyro_peau_seche) > 0) {
-    hypoTotal += 100;
-    symptomesCles.push("Peau sèche");
+  if (boolToScore(answers.thyro_fatigue_chronique) > 0) {
+    hypoTotal += 300;
+    symptomesCles.push("Fatigue chronique (TSH basse)");
   }
-  hypoMax += 100;
+  hypoMax += 300;
 
-  // Chute cheveux
-  const cheveux = answers.thyro_chute_cheveux;
-  if (cheveux === "Oui légère") { hypoTotal += 100; symptomesCles.push("Chute cheveux légère"); }
-  else if (cheveux === "Oui modérée") { hypoTotal += 150; symptomesCles.push("Chute cheveux modérée"); }
-  else if (cheveux === "Oui importante") { hypoTotal += 200; symptomesCles.push("Chute cheveux importante"); }
+  if (boolToScore(answers.thyro_fibromyalgie) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Fibromyalgie");
+  }
   hypoMax += 200;
 
-  if (boolToScore(answers.thyro_ongles_fragiles) > 0) {
+  if (boolToScore(answers.thyro_craintif) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Caractère craintif");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.thyro_depression_saisonniere) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Dépression saisonnière");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.thyro_hypersomnie) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Hypersomnie (>10h)");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.thyro_cheveux_secs) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Cheveux secs/cassants");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.thyro_sourcils_externes) > 0) {
+    hypoTotal += 300;
+    symptomesCles.push("Perte tiers externe sourcils (signe Hertoghe)");
+  }
+  hypoMax += 300;
+
+  if (boolToScore(answers.thyro_ongles_cassants) > 0) {
     hypoTotal += 100;
     symptomesCles.push("Ongles fragiles");
   }
   hypoMax += 100;
 
-  if (boolToScore(answers.thyro_sourcils_externes) > 0) {
+  if (boolToScore(answers.thyro_peau_seche) > 0) {
     hypoTotal += 200;
-    symptomesCles.push("Perte tiers externe sourcils (signe Hertoghe)");
+    symptomesCles.push("Peau sèche");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.thyro_myxoedeme) > 0) {
+    hypoTotal += 300;
+    symptomesCles.push("Myxœdème (gonflement)");
+  }
+  hypoMax += 300;
+
+  if (boolToScore(answers.thyro_oedeme_chevilles) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Œdème chevilles");
   }
   hypoMax += 200;
 
@@ -414,6 +800,36 @@ function scorerAxeThyro(answers: Record<string, any>): ScoreAxeEndobiogenique {
   }
   hypoMax += 100;
 
+  if (boolToScore(answers.thyro_regles_abondantes) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Règles abondantes (thyroïde insuffisante)");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.thyro_goitre) > 0) {
+    hypoTotal += 300;
+    symptomesCles.push("Goitre (TSH élevée compensatoire)");
+  }
+  hypoMax += 300;
+
+  if (boolToScore(answers.thyro_amygdales_hypertrophie) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Amygdales volumineuses");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.thyro_voix_rauque) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Voix rauque");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.thyro_hashimoto) > 0) {
+    hypoTotal += 300;
+    symptomesCles.push("Thyroïdite de Hashimoto");
+  }
+  hypoMax += 300;
+
   // === HYPER-THYROÏDIE FONCTIONNELLE ===
   if (boolToScore(answers.thyro_intolerance_chaleur) > 0) {
     hyperTotal += 200;
@@ -427,9 +843,63 @@ function scorerAxeThyro(answers: Record<string, any>): ScoreAxeEndobiogenique {
   }
   hyperMax += 200;
 
+  if (boolToScore(answers.thyro_reves_intenses) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Rêves intenses (TRH élevée)");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_cauchemars) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Cauchemars fréquents");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_rumination) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Ruminations mentales");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_sursaut) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Sursauts faciles");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_reveil_nocturne) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Réveils nocturnes fréquents");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_insomnie) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Insomnie (TRH élevée)");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_paume_rouge) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Paumes rouges (érythème palmaire)");
+  }
+  hyperMax += 200;
+
   if (boolToScore(answers.thyro_appetit_augmente) > 0) {
     hyperTotal += 200;
     symptomesCles.push("Appétit augmenté sans prise de poids");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_perte_poids_appetit) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Perte de poids malgré bon appétit");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.thyro_diarrhee) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Transit accéléré / diarrhées");
   }
   hyperMax += 200;
 
@@ -438,6 +908,54 @@ function scorerAxeThyro(answers: Record<string, any>): ScoreAxeEndobiogenique {
     symptomesCles.push("Tachycardie au repos");
   }
   hyperMax += 200;
+
+  if (boolToScore(answers.thyro_palpitations) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Palpitations");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_tremblements) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Tremblements fins des mains");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_faiblesse_musculaire) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Faiblesse/fonte musculaire");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_osteoporose) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Ostéoporose");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_regles_courtes) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Règles courtes/peu abondantes");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_spm_irritabilite) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("SPM avec irritabilité");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.thyro_exophtalmie) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Exophtalmie (Basedow)");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.thyro_basedow) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Maladie de Basedow");
+  }
+  hyperMax += 300;
 
   // Normalisation
   const hypoNorm = hypoMax > 0 ? (hypoTotal / hypoMax) * 100 : 0;
@@ -449,14 +967,14 @@ function scorerAxeThyro(answers: Record<string, any>): ScoreAxeEndobiogenique {
     orientation: determinerOrientation(hypoNorm, hyperNorm),
     intensite: Math.round(Math.max(hypoNorm, hyperNorm) / 10),
     description: genererDescriptionThyro(hypoNorm, hyperNorm),
-    confiance: calculerConfiance(answers, 20),
+    confiance: calculerConfiance(answers, "thyro_"),
     symptomesCles
   };
 }
 
 /**
  * AXE GONADOTROPE
- * IDs: gona_f_* (femme), gona_h_* (homme), gona_acne (commun)
+ * IDs VRAIS: gona_f_* (femme), gona_h_* (homme), gona_* (commun)
  */
 function scorerAxeGonado(answers: Record<string, any>, sexe: "H" | "F"): ScoreAxeEndobiogenique {
   const symptomesCles: string[] = [];
@@ -472,10 +990,16 @@ function scorerAxeGonado(answers: Record<string, any>, sexe: "H" | "F"): ScoreAx
     }
     hypoMax += 300;
 
-    const cyclesCourts = scaleToPercent(answers.gona_f_cycles_courts);
-    if (cyclesCourts > 50) {
-      hypoTotal += cyclesCourts * 2;
-      symptomesCles.push("Cycles courts (insuffisance lutéale)");
+    const secheresse = scaleToPercent(answers.gona_f_menopause_secheresse);
+    if (secheresse > 50) {
+      hypoTotal += secheresse * 2;
+      symptomesCles.push("Sécheresse vaginale");
+    }
+    hypoMax += 200;
+
+    if (boolToScore(answers.gona_f_herpes_post_regles) > 0) {
+      hypoTotal += 200;
+      symptomesCles.push("Herpès en post-menstruel (hypo-œstrogénie)");
     }
     hypoMax += 200;
 
@@ -483,7 +1007,7 @@ function scorerAxeGonado(answers: Record<string, any>, sexe: "H" | "F"): ScoreAx
     const reglesDoul = scaleToPercent(answers.gona_f_regles_douloureuses);
     if (reglesDoul > 50) {
       hyperTotal += reglesDoul * 2;
-      symptomesCles.push("Dysménorrhée (hyperoestrogénie)");
+      symptomesCles.push("Dysménorrhée");
     }
     hyperMax += 200;
 
@@ -494,10 +1018,37 @@ function scorerAxeGonado(answers: Record<string, any>, sexe: "H" | "F"): ScoreAx
     }
     hyperMax += 300;
 
+    const spotting = scaleToPercent(answers.gona_f_spotting);
+    if (spotting > 50) {
+      hyperTotal += spotting * 2;
+      symptomesCles.push("Spotting intermenstruel");
+    }
+    hyperMax += 200;
+
     const pmsSeins = scaleToPercent(answers.gona_f_pms_seins);
     if (pmsSeins > 50) {
       hyperTotal += pmsSeins * 2;
       symptomesCles.push("Mastodynies prémenstruelles");
+    }
+    hyperMax += 200;
+
+    if (boolToScore(answers.gona_f_seins_fibrokystiques) > 0) {
+      hyperTotal += 200;
+      symptomesCles.push("Seins fibrokystiques");
+    }
+    hyperMax += 200;
+
+    const pmsEmotionnel = scaleToPercent(answers.gona_f_pms_emotionnel);
+    if (pmsEmotionnel > 50) {
+      hyperTotal += pmsEmotionnel * 2;
+      symptomesCles.push("SPM émotionnel");
+    }
+    hyperMax += 200;
+
+    const pmsRetention = scaleToPercent(answers.gona_f_pms_retention);
+    if (pmsRetention > 50) {
+      hyperTotal += pmsRetention * 2;
+      symptomesCles.push("Rétention prémenstruelle");
     }
     hyperMax += 200;
 
@@ -506,18 +1057,52 @@ function scorerAxeGonado(answers: Record<string, any>, sexe: "H" | "F"): ScoreAx
     const libido = scaleToPercent(answers.gona_h_libido);
     if (libido > 50) {
       hypoTotal += libido * 3;
-      symptomesCles.push("Baisse libido/élan vital (hypo-androgénie)");
+      symptomesCles.push("Baisse libido (hypo-androgénie)");
     }
     hypoMax += 300;
+
+    const erectionMatinale = scaleToPercent(answers.gona_h_erection_matinale);
+    // Inversé: jamais = hypo
+    if (erectionMatinale < 50) {
+      hypoTotal += (100 - erectionMatinale) * 3;
+      symptomesCles.push("Absence d'érections matinales");
+    }
+    hypoMax += 300;
+
+    const qualiteErection = scaleToPercent(answers.gona_h_qualite_erection);
+    if (qualiteErection > 50) {
+      hypoTotal += qualiteErection * 2;
+      symptomesCles.push("Troubles de l'érection");
+    }
+    hypoMax += 200;
+
+    const ejaculation = scaleToPercent(answers.gona_h_ejaculation);
+    if (ejaculation > 50) {
+      hypoTotal += ejaculation * 2;
+      symptomesCles.push("Troubles de l'éjaculation");
+    }
+    hypoMax += 200;
 
     const musculaire = scaleToPercent(answers.gona_h_musculaire);
     if (musculaire > 50) {
       hypoTotal += musculaire * 2;
-      symptomesCles.push("Fonte musculaire / gras abdominal");
+      symptomesCles.push("Fonte musculaire");
     }
     hypoMax += 200;
 
+    if (boolToScore(answers.gona_h_voix) > 0) {
+      hypoTotal += 100;
+      symptomesCles.push("Modification voix");
+    }
+    hypoMax += 100;
+
     // === HOMME : SUR-SOLLICITATION (prostate) ===
+    if (boolToScore(answers.gona_h_gynecomastie) > 0) {
+      hyperTotal += 200;
+      symptomesCles.push("Gynécomastie");
+    }
+    hyperMax += 200;
+
     const urinaire = scaleToPercent(answers.gona_h_urinaire);
     if (urinaire > 50) {
       hyperTotal += urinaire * 3;
@@ -534,6 +1119,27 @@ function scorerAxeGonado(answers: Record<string, any>, sexe: "H" | "F"): ScoreAx
   }
   hyperMax += 200;
 
+  const varices = scaleToPercent(answers.gona_varices);
+  if (varices > 50) {
+    hyperTotal += varices * 2;
+    symptomesCles.push("Varices / varicosités");
+  }
+  hyperMax += 200;
+
+  const retentionEau = scaleToPercent(answers.gona_retention_eau);
+  if (retentionEau > 50) {
+    hyperTotal += retentionEau * 2;
+    symptomesCles.push("Rétention d'eau cyclique");
+  }
+  hyperMax += 200;
+
+  const fatigueCyclique = scaleToPercent(answers.gona_fatigue_cyclique);
+  if (fatigueCyclique > 50) {
+    hypoTotal += fatigueCyclique * 2;
+    symptomesCles.push("Fatigue cyclique");
+  }
+  hypoMax += 200;
+
   // Normalisation
   const hypoNorm = hypoMax > 0 ? (hypoTotal / hypoMax) * 100 : 0;
   const hyperNorm = hyperMax > 0 ? (hyperTotal / hyperMax) * 100 : 0;
@@ -544,83 +1150,175 @@ function scorerAxeGonado(answers: Record<string, any>, sexe: "H" | "F"): ScoreAx
     orientation: determinerOrientation(hypoNorm, hyperNorm),
     intensite: Math.round(Math.max(hypoNorm, hyperNorm) / 10),
     description: genererDescriptionGonado(hypoNorm, hyperNorm, sexe),
-    confiance: calculerConfiance(answers, sexe === "F" ? 6 : 4),
+    confiance: calculerConfiance(answers, "gona_"),
     symptomesCles
   };
 }
 
 /**
  * AXE SOMATOTROPE (GH/IGF-1)
- * IDs: soma_reveil_lourd, soma_recuperation_lente, soma_tendinites, etc.
+ * IDs VRAIS: somato_* (somato_croissance_rapide, somato_envies_sucre, etc.)
  */
 function scorerAxeSomato(answers: Record<string, any>): ScoreAxeEndobiogenique {
   const symptomesCles: string[] = [];
   let hypoTotal = 0, hypoMax = 0;
   let hyperTotal = 0, hyperMax = 0;
 
-  // === INSUFFISANCE SOMATOTROPE (GH basse) ===
-  const reveilLourd = scaleToPercent(answers.soma_reveil_lourd);
-  if (reveilLourd > 50) {
-    hypoTotal += reveilLourd * 3;
-    symptomesCles.push("Corps lourd au réveil (déficit GH nocturne)");
+  // === HYPERFONCTIONNEMENT SOMATOTROPE (GH élevée, prolactine) ===
+  if (boolToScore(answers.somato_croissance_rapide) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Croissance rapide enfance");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.somato_grande_taille) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Grande taille");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.somato_ossature_large) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Ossature large");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.somato_pieds_plats) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Pieds plats");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.somato_hallux_valgus) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Hallux valgus");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.somato_cicatrices_cheloides) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Cicatrices chéloïdes (GH élevée)");
+  }
+  hyperMax += 300;
+
+  const enviesSucre = scaleToPercent(answers.somato_envies_sucre);
+  if (enviesSucre > 50) {
+    hyperTotal += enviesSucre * 3;
+    symptomesCles.push("Envies de sucre impérieuses");
+  }
+  hyperMax += 300;
+
+  const somnolencePostprandiale = scaleToPercent(answers.somato_somnolence_postprandiale);
+  if (somnolencePostprandiale > 50) {
+    hyperTotal += somnolencePostprandiale * 2;
+    symptomesCles.push("Somnolence post-prandiale");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.somato_adiposite_proximale) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Adiposité proximale (haut corps)");
+  }
+  hyperMax += 300;
+
+  const prisePoidsF = scaleToPercent(answers.somato_prise_poids_facile);
+  if (prisePoidsF > 50) {
+    hyperTotal += prisePoidsF * 2;
+    symptomesCles.push("Prise de poids facile");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.somato_amygdales_hypertrophiees) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Amygdales hypertrophiées");
+  }
+  hyperMax += 300;
+
+  const sinusites = scaleToPercent(answers.somato_sinusites_recurrentes);
+  if (sinusites > 50) {
+    hyperTotal += sinusites * 2;
+    symptomesCles.push("Sinusites récurrentes");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.somato_langue_empreinte_dents) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Langue avec empreintes de dents");
+  }
+  hyperMax += 200;
+
+  const aphtes = scaleToPercent(answers.somato_aphtes_frequents);
+  if (aphtes > 50) {
+    hyperTotal += aphtes * 2;
+    symptomesCles.push("Aphtes fréquents");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.somato_polypes_kystes) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Polypes / kystes");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.somato_lipomes) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Lipomes");
+  }
+  hyperMax += 200;
+
+  const furoncles = scaleToPercent(answers.somato_furoncles);
+  if (furoncles > 50) {
+    hyperTotal += furoncles * 3;
+    symptomesCles.push("Furoncles récidivants");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.somato_keratose_pilaire) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Kératose pilaire");
+  }
+  hyperMax += 200;
+
+  const sensationFroid = scaleToPercent(answers.somato_sensation_froid);
+  if (sensationFroid > 50) {
+    hyperTotal += sensationFroid * 3;
+    symptomesCles.push("Sensation de froid (hypothyroïdie relative)");
+  }
+  hyperMax += 300;
+
+  // === HYPOFONCTIONNEMENT SOMATOTROPE (GH basse) ===
+  const hypoglycemie = scaleToPercent(answers.somato_hypoglycemie);
+  if (hypoglycemie > 50) {
+    hypoTotal += hypoglycemie * 3;
+    symptomesCles.push("Hypoglycémies");
   }
   hypoMax += 300;
 
-  const recuperationLente = scaleToPercent(answers.soma_recuperation_lente);
-  if (recuperationLente > 50) {
-    hypoTotal += recuperationLente * 2;
-    symptomesCles.push("Récupération lente après effort");
+  const retardCicatrisation = scaleToPercent(answers.somato_retard_cicatrisation);
+  if (retardCicatrisation > 50) {
+    hypoTotal += retardCicatrisation * 2;
+    symptomesCles.push("Cicatrisation lente");
   }
   hypoMax += 200;
 
-  const sommeilAgite = scaleToPercent(answers.soma_sommeil_agite);
-  if (sommeilAgite > 50) {
-    hypoTotal += sommeilAgite * 2;
-    symptomesCles.push("Sommeil agité");
-  }
-  hypoMax += 200;
-
-  const tendinites = scaleToPercent(answers.soma_tendinites);
-  if (tendinites > 50) {
-    hypoTotal += tendinites * 2;
-    symptomesCles.push("Tendinites récidivantes (déficit réparation)");
-  }
-  hypoMax += 200;
-
-  const forceMuscul = scaleToPercent(answers.soma_force_musculaire);
-  if (forceMuscul > 50) {
-    hypoTotal += forceMuscul * 2;
-    symptomesCles.push("Faiblesse musculaire");
-  }
-  hypoMax += 200;
-
-  const peauFine = scaleToPercent(answers.soma_peau_fine);
-  if (peauFine > 50) {
-    hypoTotal += peauFine * 1;
-    symptomesCles.push("Peau très fine");
-  }
-  hypoMax += 100;
-
-  const faimMatin = scaleToPercent(answers.soma_faim_matin);
-  if (faimMatin > 50) {
-    hypoTotal += faimMatin * 3;
-    symptomesCles.push("Faim impérieuse au réveil (hypoglycémie nocturne)");
+  const fatigueGenerale = scaleToPercent(answers.somato_fatigue_generale);
+  if (fatigueGenerale > 50) {
+    hypoTotal += fatigueGenerale * 3;
+    symptomesCles.push("Fatigue générale");
   }
   hypoMax += 300;
 
-  const coupPompeRepas = scaleToPercent(answers.soma_coup_pompe_repas);
-  if (coupPompeRepas > 50) {
-    hypoTotal += coupPompeRepas * 2;
-    symptomesCles.push("Coup de pompe 2-3h après repas (relais GH défaillant)");
+  if (boolToScore(answers.somato_fibromyalgie) > 0) {
+    hypoTotal += 300;
+    symptomesCles.push("Fibromyalgie");
   }
-  hypoMax += 200;
+  hypoMax += 300;
 
-  const graisseAbdo = scaleToPercent(answers.soma_graisse_abdo);
-  if (graisseAbdo > 50) {
-    hypoTotal += graisseAbdo * 2;
-    symptomesCles.push("Graisse abdominale (résistance insuline / déficit GH)");
+  if (boolToScore(answers.somato_maladies_autoimmunes) > 0) {
+    hypoTotal += 300;
+    symptomesCles.push("Maladies auto-immunes");
   }
-  hypoMax += 200;
+  hypoMax += 300;
 
   // Normalisation
   const hypoNorm = hypoMax > 0 ? (hypoTotal / hypoMax) * 100 : 0;
@@ -632,14 +1330,14 @@ function scorerAxeSomato(answers: Record<string, any>): ScoreAxeEndobiogenique {
     orientation: determinerOrientation(hypoNorm, hyperNorm),
     intensite: Math.round(Math.max(hypoNorm, hyperNorm) / 10),
     description: genererDescriptionSomato(hypoNorm, hyperNorm),
-    confiance: calculerConfiance(answers, 9),
+    confiance: calculerConfiance(answers, "somato_"),
     symptomesCles
   };
 }
 
 /**
  * AXE DIGESTIF
- * IDs: dig_estomac_*, dig_foie_*, dig_grele_*, dig_transit_*
+ * IDs VRAIS: dig_estomac_*, dig_foie_*, dig_pancreas_*, dig_grele_*, dig_colon_*, dig_postprandial_*
  */
 function scorerAxeDigestif(answers: Record<string, any>): ScoreAxeEndobiogenique {
   const symptomesCles: string[] = [];
@@ -654,41 +1352,86 @@ function scorerAxeDigestif(answers: Record<string, any>): ScoreAxeEndobiogenique
   }
   hypoMax += 200;
 
-  const graisses = scaleToPercent(answers.dig_foie_graisses);
-  if (graisses > 50) {
-    hypoTotal += graisses * 3;
-    symptomesCles.push("Mal digestion des graisses (insuffisance biliaire)");
+  // dig_foie_graisses (select)
+  if (answers.dig_foie_graisses) {
+    const val = typeof answers.dig_foie_graisses === "string"
+      ? ["Non, je digère bien les graisses", "Légère lourdeur après repas gras", "Nausées avec les fritures", "Intolérance totale aux graisses (selles grasses, diarrhées)", "Douleur sous les côtes droites après repas gras"].indexOf(answers.dig_foie_graisses) * 25
+      : 0;
+    if (val > 25) {
+      hypoTotal += val * 3;
+      symptomesCles.push("Mal digestion des graisses (insuffisance biliaire)");
+    }
+    hypoMax += 300;
+  }
+
+  // dig_foie_appetit_matin (select)
+  if (answers.dig_foie_appetit_matin) {
+    const val = typeof answers.dig_foie_appetit_matin === "string"
+      ? ["Oui, bon appétit dès le réveil", "Appétit modéré, je mange par habitude", "Peu d'appétit, je saute souvent le petit-déjeuner", "Jamais faim le matin, voire dégoût alimentaire", "Nausées matinales à la vue de la nourriture"].indexOf(answers.dig_foie_appetit_matin) * 25
+      : 0;
+    if (val > 25) {
+      hyperTotal += val * 3;
+      symptomesCles.push("Pas d'appétit le matin (congestion hépatique)");
+    }
+    hyperMax += 300;
+  }
+
+  const ballonnementPancreas = scaleToPercent(answers.dig_pancreas_ballonnement_immediat);
+  if (ballonnementPancreas > 50) {
+    hypoTotal += ballonnementPancreas * 3;
+    symptomesCles.push("Ballonnement immédiat (insuffisance pancréatique)");
   }
   hypoMax += 300;
 
-  const somnolence = scaleToPercent(answers.dig_pancreas_somnolence);
-  if (somnolence > 50) {
-    hypoTotal += somnolence * 3;
-    symptomesCles.push("Somnolence post-prandiale (fatigue pancréas)");
+  if (boolToScore(answers.dig_pancreas_selles_flottantes) > 0) {
+    hypoTotal += 300;
+    symptomesCles.push("Selles flottantes graisseuses");
   }
   hypoMax += 300;
 
-  const constipation = scaleToPercent(answers.dig_transit_constipation);
-  if (constipation > 50) {
-    hypoTotal += constipation * 2;
-    symptomesCles.push("Constipation");
+  if (boolToScore(answers.dig_pancreas_aliments_visibles) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Aliments non digérés dans les selles");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.dig_postprandial_reflux_lipides) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Reflux après repas gras");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.dig_postprandial_cicatrisation) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Troubles cicatrisation post-repas");
   }
   hypoMax += 200;
 
   // === SUR-SOLLICITATION / IRRITATION ===
-  const reflux = scaleToPercent(answers.dig_estomac_reflux);
-  if (reflux > 50) {
-    hyperTotal += reflux * 2;
-    symptomesCles.push("RGO / brûlures gastriques");
+  // dig_estomac_rgo (select)
+  if (answers.dig_estomac_rgo) {
+    const val = typeof answers.dig_estomac_rgo === "string"
+      ? ["Jamais", "Occasionnellement après excès", "Régulièrement (plusieurs fois/semaine)", "Quotidiennement", "Avec régurgitations ou toux nocturne"].indexOf(answers.dig_estomac_rgo) * 25
+      : scaleToPercent(answers.dig_estomac_rgo);
+    if (val > 25) {
+      hyperTotal += val * 2;
+      symptomesCles.push("RGO / brûlures gastriques");
+    }
+    hyperMax += 200;
+  }
+
+  const nausees = scaleToPercent(answers.dig_estomac_nausees);
+  if (nausees > 50) {
+    hyperTotal += nausees * 2;
+    symptomesCles.push("Nausées fréquentes");
   }
   hyperMax += 200;
 
-  const eructations = scaleToPercent(answers.dig_estomac_eructations);
-  if (eructations > 50) {
-    hyperTotal += eructations * 1;
-    symptomesCles.push("Éructations");
+  if (boolToScore(answers.dig_estomac_gout_persistant) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Goût persistant en bouche");
   }
-  hyperMax += 100;
+  hypoMax += 200;
 
   const reveilFoie = scaleToPercent(answers.dig_foie_reveil_nocturne);
   if (reveilFoie > 50) {
@@ -699,43 +1442,117 @@ function scorerAxeDigestif(answers: Record<string, any>): ScoreAxeEndobiogenique
 
   const boucheAmere = scaleToPercent(answers.dig_foie_bouche_amere);
   if (boucheAmere > 50) {
-    hyperTotal += boucheAmere * 1;
+    hyperTotal += boucheAmere * 2;
     symptomesCles.push("Bouche amère le matin");
   }
-  hyperMax += 100;
+  hyperMax += 200;
 
-  const ballonnementImmediat = scaleToPercent(answers.dig_grele_ballonnement_immediat);
-  if (ballonnementImmediat > 50) {
-    hyperTotal += ballonnementImmediat * 2;
-    symptomesCles.push("Ballonnement immédiat (SIBO)");
+  if (boolToScore(answers.dig_foie_frissons) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Frissons (congestion hépatique)");
   }
   hyperMax += 200;
 
-  const ballonnementTardif = scaleToPercent(answers.dig_colon_ballonnement_tardif);
-  if (ballonnementTardif > 50) {
-    hyperTotal += ballonnementTardif * 2;
+  if (boolToScore(answers.dig_foie_prurit) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Prurit (démangeaisons)");
+  }
+  hyperMax += 200;
+
+  const somnolencePancreas = scaleToPercent(answers.dig_pancreas_somnolence);
+  if (somnolencePancreas > 50) {
+    hyperTotal += somnolencePancreas * 3;
+    symptomesCles.push("Somnolence post-prandiale (fatigue pancréas)");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.dig_pancreas_sinusites) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Sinusites récurrentes (pancréas)");
+  }
+  hyperMax += 200;
+
+  const ballonnementGrele = scaleToPercent(answers.dig_grele_ballonnement_10min);
+  if (ballonnementGrele > 50) {
+    hyperTotal += ballonnementGrele * 3;
+    symptomesCles.push("Ballonnement <10min (SIBO)");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.dig_grele_gaz_inodores) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Gaz inodores (fermentation grêle)");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.dig_grele_selles_explosives) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Selles explosives");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.dig_grele_post_antibio) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Troubles post-antibiotiques");
+  }
+  hyperMax += 200;
+
+  const ballonnementColon = scaleToPercent(answers.dig_colon_ballonnement_tardif);
+  if (ballonnementColon > 50) {
+    hyperTotal += ballonnementColon * 3;
     symptomesCles.push("Ballonnements tardifs (putréfaction colique)");
   }
+  hyperMax += 300;
+
+  if (boolToScore(answers.dig_colon_gaz_odorants) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Gaz odorants (putréfaction)");
+  }
   hyperMax += 200;
 
-  const spasmes = scaleToPercent(answers.dig_douleurs_spasmes);
+  const spasmes = scaleToPercent(answers.dig_colon_spasmes);
   if (spasmes > 50) {
     hyperTotal += spasmes * 2;
-    symptomesCles.push("Spasmes abdominaux");
+    symptomesCles.push("Spasmes coliques");
   }
   hyperMax += 200;
 
-  const diarrhee = scaleToPercent(answers.dig_transit_diarrhee);
-  if (diarrhee > 50) {
-    hyperTotal += diarrhee * 2;
-    symptomesCles.push("Selles molles / diarrhée");
+  if (boolToScore(answers.dig_colon_alternance) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Alternance constipation/diarrhée");
   }
   hyperMax += 200;
 
-  const intolerances = scaleToPercent(answers.dig_intolerances);
-  if (intolerances > 50) {
-    hyperTotal += intolerances * 2;
-    symptomesCles.push("Intolérances alimentaires (Leaky Gut)");
+  if (boolToScore(answers.dig_colon_mucus) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Mucus dans les selles");
+  }
+  hyperMax += 200;
+
+  const froidPostprandial = scaleToPercent(answers.dig_postprandial_froid);
+  if (froidPostprandial > 50) {
+    hyperTotal += froidPostprandial * 3;
+    symptomesCles.push("Froid post-prandial (insuffisance thyroïdienne)");
+  }
+  hyperMax += 300;
+
+  const fatigueGlucides = scaleToPercent(answers.dig_postprandial_fatigue_glucides);
+  if (fatigueGlucides > 50) {
+    hyperTotal += fatigueGlucides * 3;
+    symptomesCles.push("Fatigue après glucides (hyperinsulinisme)");
+  }
+  hyperMax += 300;
+
+  const pruritAnus = scaleToPercent(answers.dig_anus_prurit);
+  if (pruritAnus > 50) {
+    hyperTotal += pruritAnus * 2;
+    symptomesCles.push("Prurit anal");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.dig_anus_fissures) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Fissures anales");
   }
   hyperMax += 200;
 
@@ -749,103 +1566,303 @@ function scorerAxeDigestif(answers: Record<string, any>): ScoreAxeEndobiogenique
     orientation: determinerOrientation(hypoNorm, hyperNorm),
     intensite: Math.round(Math.max(hypoNorm, hyperNorm) / 10),
     description: genererDescriptionDigestif(hypoNorm, hyperNorm),
-    confiance: calculerConfiance(answers, 13),
+    confiance: calculerConfiance(answers, "dig_"),
     symptomesCles
   };
 }
 
 /**
  * AXE IMMUNO-INFLAMMATOIRE
- * IDs: immu_infections_hiver, immu_rhinite_saison, immu_douleurs_articulaires, etc.
+ * IDs VRAIS: immuno_infections_recidivantes, immuno_allergies, immuno_autoimmune, etc.
  */
 function scorerAxeImmuno(answers: Record<string, any>): ScoreAxeEndobiogenique {
   const symptomesCles: string[] = [];
   let hypoTotal = 0, hypoMax = 0;
   let hyperTotal = 0, hyperMax = 0;
 
-  // === INSUFFISANCE IMMUNITAIRE (Th1 faible) ===
-  const infections = scaleToPercent(answers.immu_infections_hiver);
-  if (infections > 50) {
-    hypoTotal += infections * 3;
-    symptomesCles.push("Infections récidivantes (immunité faible)");
+  // === INSUFFISANCE IMMUNITAIRE (infections récidivantes, immunité faible) ===
+  const infectionsRecidivantes = scaleToPercent(answers.immuno_infections_recidivantes);
+  if (infectionsRecidivantes > 50) {
+    hypoTotal += infectionsRecidivantes * 3;
+    symptomesCles.push("Infections récidivantes");
   }
   hypoMax += 300;
 
-  const convalescence = scaleToPercent(answers.immu_convalescence);
-  if (convalescence > 50) {
-    hypoTotal += convalescence * 2;
-    symptomesCles.push("Convalescence longue");
-  }
-  hypoMax += 200;
-
-  const viralLatent = scaleToPercent(answers.immu_viral_latent);
-  if (viralLatent > 50) {
-    hypoTotal += viralLatent * 3;
-    symptomesCles.push("Herpès/Zona au stress (réactivation virale)");
-  }
-  hypoMax += 300;
-
-  const sinusites = scaleToPercent(answers.immu_sinusites);
-  if (sinusites > 50) {
-    hypoTotal += sinusites * 2;
-    symptomesCles.push("Sinusites récidivantes");
-  }
-  hypoMax += 200;
-
-  const angines = scaleToPercent(answers.immu_angines);
-  if (angines > 50) {
-    hypoTotal += angines * 2;
+  const anginesRepetition = scaleToPercent(answers.immuno_angines_repetition);
+  if (anginesRepetition > 50) {
+    hypoTotal += anginesRepetition * 3;
     symptomesCles.push("Angines à répétition");
   }
+  hypoMax += 300;
+
+  if (boolToScore(answers.immuno_otites_repetition) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Otites à répétition");
+  }
   hypoMax += 200;
 
-  // === SUR-SOLLICITATION / INFLAMMATION (Th2 / auto-immunité) ===
-  const rhinite = scaleToPercent(answers.immu_rhinite_saison);
-  if (rhinite > 50) {
-    hyperTotal += rhinite * 2;
-    symptomesCles.push("Rhinite allergique (terrain Th2)");
+  const sinusites = scaleToPercent(answers.immuno_sinusites_recurrentes);
+  if (sinusites > 50) {
+    hypoTotal += sinusites * 2;
+    symptomesCles.push("Sinusites récurrentes");
+  }
+  hypoMax += 200;
+
+  const bronchites = scaleToPercent(answers.immuno_bronchites_recurrentes);
+  if (bronchites > 50) {
+    hypoTotal += bronchites * 3;
+    symptomesCles.push("Bronchites récurrentes");
+  }
+  hypoMax += 300;
+
+  const cystites = scaleToPercent(answers.immuno_cystites_recurrentes);
+  if (cystites > 50) {
+    hypoTotal += cystites * 2;
+    symptomesCles.push("Cystites récurrentes");
+  }
+  hypoMax += 200;
+
+  const herpes = scaleToPercent(answers.immuno_herpes);
+  if (herpes > 50) {
+    hypoTotal += herpes * 3;
+    symptomesCles.push("Herpès récidivant");
+  }
+  hypoMax += 300;
+
+  if (boolToScore(answers.immuno_zona) > 0) {
+    hypoTotal += 300;
+    symptomesCles.push("Antécédent de zona");
+  }
+  hypoMax += 300;
+
+  const mycoses = scaleToPercent(answers.immuno_mycoses);
+  if (mycoses > 50) {
+    hypoTotal += mycoses * 3;
+    symptomesCles.push("Mycoses récidivantes");
+  }
+  hypoMax += 300;
+
+  if (boolToScore(answers.immuno_verrues) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Verrues récidivantes");
+  }
+  hypoMax += 200;
+
+  const fatigueInfection = scaleToPercent(answers.immuno_fatigue_infection);
+  if (fatigueInfection > 50) {
+    hypoTotal += fatigueInfection * 3;
+    symptomesCles.push("Fatigue importante pendant/après infections");
+  }
+  hypoMax += 300;
+
+  const guerisonLente = scaleToPercent(answers.immuno_guerison_lente);
+  if (guerisonLente > 50) {
+    hypoTotal += guerisonLente * 3;
+    symptomesCles.push("Guérison lente des infections");
+  }
+  hypoMax += 300;
+
+  if (boolToScore(answers.immuno_fievre_rare) > 0) {
+    hypoTotal += 300;
+    symptomesCles.push("Absence de fièvre lors d'infections (immunité insuffisante)");
+  }
+  hypoMax += 300;
+
+  const cicatrisationLente = scaleToPercent(answers.immuno_cicatrisation_lente);
+  if (cicatrisationLente > 50) {
+    hypoTotal += cicatrisationLente * 3;
+    symptomesCles.push("Cicatrisation lente / plaies infectées");
+  }
+  hypoMax += 300;
+
+  if (boolToScore(answers.immuno_lymphocytes_bas) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Lymphocytes bas");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.immuno_creux_suprasternal) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Sensibilité creux sus-sternal (thymus congestif)");
+  }
+  hypoMax += 200;
+
+  const stressDeclencheur = scaleToPercent(answers.immuno_stress_declencheur);
+  if (stressDeclencheur > 50) {
+    hypoTotal += stressDeclencheur * 2;
+    symptomesCles.push("Infections déclenchées par le stress");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.immuno_antibiotiques_frequents) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Antibiotiques fréquents (>2x/an)");
+  }
+  hypoMax += 200;
+
+  const convalescenceLongue = scaleToPercent(answers.immuno_convalescence_longue);
+  if (convalescenceLongue > 50) {
+    hypoTotal += convalescenceLongue * 2;
+    symptomesCles.push("Convalescence prolongée");
+  }
+  hypoMax += 200;
+
+  if (boolToScore(answers.immuno_vitamine_d_basse) > 0) {
+    hypoTotal += 200;
+    symptomesCles.push("Carence en vitamine D");
+  }
+  hypoMax += 200;
+
+  const sommeilMauvais = scaleToPercent(answers.immuno_sommeil_mauvais);
+  if (sommeilMauvais > 50) {
+    hypoTotal += sommeilMauvais * 2;
+    symptomesCles.push("Mauvais sommeil");
+  }
+  hypoMax += 200;
+
+  // === HYPERFONCTIONNEMENT IMMUNITAIRE (allergies, auto-immunité, inflammation) ===
+  if (boolToScore(answers.immuno_fievre_elevee) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Fièvre élevée pour infections mineures");
   }
   hyperMax += 200;
 
-  const eczema = scaleToPercent(answers.immu_eczema_atopique);
-  if (eczema > 50) {
-    hyperTotal += eczema * 2;
-    symptomesCles.push("Eczéma / urticaire (atopie)");
+  const ganglions = scaleToPercent(answers.immuno_ganglions);
+  if (ganglions > 50) {
+    hyperTotal += ganglions * 2;
+    symptomesCles.push("Ganglions palpables/douloureux");
   }
   hyperMax += 200;
 
-  const intolAlim = scaleToPercent(answers.immu_intolerance_alim);
-  if (intolAlim > 50) {
-    hyperTotal += intolAlim * 2;
-    symptomesCles.push("Intolérances alimentaires multiples");
+  if (boolToScore(answers.immuno_amygdales_grosses) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Amygdales volumineuses");
   }
   hyperMax += 200;
 
-  const douleursArt = scaleToPercent(answers.immu_douleurs_articulaires);
-  if (douleursArt > 50) {
-    hyperTotal += douleursArt * 3;
-    symptomesCles.push("Douleurs articulaires inflammatoires");
-  }
-  hyperMax += 300;
-
-  const fatigueChr = scaleToPercent(answers.immu_fatigue_chronique);
-  if (fatigueChr > 50) {
-    hyperTotal += fatigueChr * 2;
-    symptomesCles.push("Fatigue chronique inexpliquée (inflammation silencieuse)");
+  if (boolToScore(answers.immuno_rate_grosse) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Splénomégalie");
   }
   hyperMax += 200;
 
-  if (boolToScore(answers.immu_maladie_auto_immune) > 0) {
+  if (boolToScore(answers.immuno_vegetations) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Végétations adénoïdes");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.immuno_allergies) > 0) {
     hyperTotal += 300;
-    symptomesCles.push("Maladie auto-immune diagnostiquée");
+    symptomesCles.push("Allergies (terrain Th2)");
   }
   hyperMax += 300;
 
-  if (boolToScore(answers.immu_vaccins_reactions) > 0) {
-    hyperTotal += 100;
-    symptomesCles.push("Réactions vaccinales fortes");
+  if (boolToScore(answers.immuno_eczema) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Eczéma");
   }
-  hyperMax += 100;
+  hyperMax += 200;
+
+  if (boolToScore(answers.immuno_asthme) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Asthme");
+  }
+  hyperMax += 200;
+
+  const urticaire = scaleToPercent(answers.immuno_urticaire);
+  if (urticaire > 50) {
+    hyperTotal += urticaire * 2;
+    symptomesCles.push("Urticaire");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.immuno_atopie_familiale) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Terrain atopique familial");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.immuno_intolerances) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Intolérances alimentaires");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.immuno_autoimmune) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Maladie auto-immune");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.immuno_autoimmune_familiale) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Auto-immunité familiale");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.immuno_thyroidite) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Thyroïdite auto-immune");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.immuno_declenchement_peripartum) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Auto-immunité péri-partum");
+  }
+  hyperMax += 200;
+
+  const douleursArticulaires = scaleToPercent(answers.immuno_douleurs_articulaires);
+  if (douleursArticulaires > 50) {
+    hyperTotal += douleursArticulaires * 2;
+    symptomesCles.push("Douleurs articulaires chroniques");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.immuno_raideur_matinale) > 0) {
+    hyperTotal += 300;
+    symptomesCles.push("Raideur matinale >30min (auto-immunité)");
+  }
+  hyperMax += 300;
+
+  if (boolToScore(answers.immuno_crp_elevee) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("CRP élevée (inflammation)");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.immuno_vs_elevee) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("VS élevée");
+  }
+  hyperMax += 200;
+
+  const spasmophilie = scaleToPercent(answers.immuno_spasmophilie);
+  if (spasmophilie > 50) {
+    hyperTotal += spasmophilie * 2;
+    symptomesCles.push("Spasmophilie");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.immuno_dermographisme) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Dermographisme");
+  }
+  hyperMax += 200;
+
+  if (boolToScore(answers.immuno_alimentation_aggravation) > 0) {
+    hyperTotal += 200;
+    symptomesCles.push("Aggravation par certains aliments");
+  }
+  hyperMax += 200;
+
+  const mucusExcessif = scaleToPercent(answers.immuno_mucus_excessif);
+  if (mucusExcessif > 50) {
+    hyperTotal += mucusExcessif * 2;
+    symptomesCles.push("Mucus excessif");
+  }
+  hyperMax += 200;
 
   // Normalisation
   const hypoNorm = hypoMax > 0 ? (hypoTotal / hypoMax) * 100 : 0;
@@ -857,7 +1874,7 @@ function scorerAxeImmuno(answers: Record<string, any>): ScoreAxeEndobiogenique {
     orientation: determinerOrientation(hypoNorm, hyperNorm),
     intensite: Math.round(Math.max(hypoNorm, hyperNorm) / 10),
     description: genererDescriptionImmuno(hypoNorm, hyperNorm),
-    confiance: calculerConfiance(answers, 12),
+    confiance: calculerConfiance(answers, "immuno_"),
     symptomesCles
   };
 }
@@ -865,7 +1882,7 @@ function scorerAxeImmuno(answers: Record<string, any>): ScoreAxeEndobiogenique {
 // ========================================
 // DÉTECTION DES TERRAINS PATHOLOGIQUES
 // ========================================
-// Utilise les questions dédiées du fichier terrains-pathologiques.ts
+// Utilise les questions dédiées du fichier terrains-pathologiques.ts (terr_*)
 // en complément des questions des axes standards
 
 function detecterTerrains(
@@ -873,34 +1890,31 @@ function detecterTerrains(
   answers: Record<string, Record<string, any>>
 ): TerrainDetecte[] {
   const terrains: TerrainDetecte[] = [];
-  const terrainsAnswers = answers.terrains || {};
+  const allAnswers = { ...answers.neuro, ...answers.adaptatif, ...answers.thyro, ...answers.gonado, ...answers.somato, ...answers.digestif, ...answers.immuno, ...answers.terrains };
 
   // === TERRAIN ATOPIQUE ===
   const immunoHyper = scores.immuno?.surSollicitation || 0;
-  const hasAllergies =
-    scaleToPercent(answers.immuno?.immu_rhinite_saison) > 50 ||
-    scaleToPercent(answers.immuno?.immu_eczema_atopique) > 50;
-  // Nouvelles questions dédiées terrains
-  const hasAsthme = boolToScore(terrainsAnswers.terrain_atopique_asthme) > 0;
-  const hasAtcdFamiliaux = boolToScore(terrainsAnswers.terrain_atopique_antecedents_familiaux) > 0;
-  const hasSensibChimique = scaleToPercent(terrainsAnswers.terrain_atopique_reactif_chimique) > 50;
-  const hasYeuxPrurigineux = scaleToPercent(terrainsAnswers.terrain_atopique_yeux_prurigineux) > 50;
+  const hasAllergies = boolToScore(allAnswers.immuno_allergies) > 0;
+  const hasEczema = boolToScore(allAnswers.immuno_eczema) > 0;
+  const hasAsthme = boolToScore(allAnswers.immuno_asthme) > 0;
+  const hasAtopieFamiliale = boolToScore(allAnswers.immuno_atopie_familiale) > 0;
+  const hasAllergiesMultiples = scaleToPercent(allAnswers.terr_allergies_multiples) > 50;
 
   const atopicScore = Math.round(
     (immunoHyper * 0.4) +
     (hasAllergies ? 20 : 0) +
+    (hasEczema ? 15 : 0) +
     (hasAsthme ? 25 : 0) +
-    (hasAtcdFamiliaux ? 15 : 0) +
-    (hasSensibChimique ? 10 : 0) +
-    (hasYeuxPrurigineux ? 10 : 0)
+    (hasAtopieFamiliale ? 15 : 0) +
+    (hasAllergiesMultiples ? 20 : 0)
   );
 
   if (atopicScore > 30) {
     const indicateurs: string[] = ["Terrain Th2 dominant"];
     if (hasAllergies) indicateurs.push("Allergies cutanées/respiratoires");
-    if (hasAsthme) indicateurs.push("Asthme (actuel ou passé)");
-    if (hasAtcdFamiliaux) indicateurs.push("Antécédents familiaux atopiques");
-    if (hasSensibChimique) indicateurs.push("Sensibilité chimique multiple");
+    if (hasAsthme) indicateurs.push("Asthme");
+    if (hasEczema) indicateurs.push("Eczéma");
+    if (hasAtopieFamiliale) indicateurs.push("Antécédents familiaux atopiques");
 
     terrains.push({
       terrain: "atopique",
@@ -911,32 +1925,25 @@ function detecterTerrains(
   }
 
   // === TERRAIN AUTO-IMMUN ===
-  const autoImmun = boolToScore(answers.immuno?.immu_maladie_auto_immune) > 0;
-  const adaptatifHypo = scores.adaptatif?.insuffisance || 0;
-  // Nouvelles questions dédiées
-  const hasAtcdAutoImmun = boolToScore(terrainsAnswers.terrain_autoimmun_atcd_familiaux) > 0;
-  const hasSyndromeSec = scaleToPercent(terrainsAnswers.terrain_autoimmun_secheresse_yeux_bouche) > 50;
-  const hasRaideurMatinale = scaleToPercent(terrainsAnswers.terrain_autoimmun_raideur_matinale) > 50;
-  const hasAphtes = scaleToPercent(terrainsAnswers.terrain_autoimmun_ulceres_buccaux) > 50;
-  const hasPhotosens = scaleToPercent(terrainsAnswers.terrain_autoimmun_photosensibilite) > 50;
+  const hasAutoImmune = boolToScore(allAnswers.immuno_autoimmune) > 0;
+  const hasThyroidite = boolToScore(allAnswers.immuno_thyroidite) > 0;
+  const hasRaideurMatinale = boolToScore(allAnswers.immuno_raideur_matinale) > 0;
+  const hasAutoImmunFamiliale = boolToScore(allAnswers.immuno_autoimmune_familiale) > 0;
+  const hasTerrautoImmun = allAnswers.terr_auto_immun && allAnswers.terr_auto_immun !== "Non";
 
   const autoImmunScore = Math.round(
-    (autoImmun ? 50 : 0) +
-    (adaptatifHypo * 0.3) +
-    (hasAtcdAutoImmun ? 15 : 0) +
-    (hasSyndromeSec ? 15 : 0) +
-    (hasRaideurMatinale ? 20 : 0) +
-    (hasAphtes ? 10 : 0) +
-    (hasPhotosens ? 10 : 0)
+    (hasAutoImmune ? 50 : 0) +
+    (hasThyroidite ? 30 : 0) +
+    (hasRaideurMatinale ? 25 : 0) +
+    (hasAutoImmunFamiliale ? 15 : 0) +
+    (hasTerrautoImmun ? 30 : 0)
   );
 
-  if (autoImmunScore > 30 || autoImmun) {
+  if (autoImmunScore > 30 || hasAutoImmune) {
     const indicateurs: string[] = [];
-    if (autoImmun) indicateurs.push("Maladie auto-immune diagnostiquée");
-    if (adaptatifHypo > 40) indicateurs.push("Cortisol insuffisant");
+    if (hasAutoImmune) indicateurs.push("Maladie auto-immune diagnostiquée");
+    if (hasThyroidite) indicateurs.push("Thyroïdite auto-immune");
     if (hasRaideurMatinale) indicateurs.push("Raideur matinale inflammatoire (> 30 min)");
-    if (hasSyndromeSec) indicateurs.push("Syndrome sec (Sjögren ?)");
-    if (hasPhotosens) indicateurs.push("Photosensibilité (lupus ?)");
     if (indicateurs.length === 0) indicateurs.push("Terrain inflammatoire Th1/Th17");
 
     terrains.push({
@@ -949,32 +1956,27 @@ function detecterTerrains(
 
   // === TERRAIN SPASMOPHILE ===
   const neuroHyper = scores.neuro?.surSollicitation || 0;
-  const hasPalpitations = scaleToPercent(answers.neuro?.neuro_beta_palpitations) > 50;
-  const hasTremblements = scaleToPercent(answers.neuro?.neuro_beta_tremblements) > 50;
-  // Nouvelles questions dédiées
-  const hasCrampes = scaleToPercent(terrainsAnswers.terrain_spasmo_crampes) > 50;
-  const hasPaupiere = scaleToPercent(terrainsAnswers.terrain_spasmo_paupiere) > 50;
-  const hasOppression = scaleToPercent(terrainsAnswers.terrain_spasmo_oppression) > 50;
-  const hasHypervent = scaleToPercent(terrainsAnswers.terrain_spasmo_hyperventilation) > 50;
-  const hasSensibBruit = scaleToPercent(terrainsAnswers.terrain_spasmo_sensibilite_bruit) > 50;
+  const hasSpasmophilie = scaleToPercent(allAnswers.neuro_spasmophilie) > 50 || scaleToPercent(allAnswers.terr_spasmophilie) > 50;
+  const hasFourmillements = scaleToPercent(allAnswers.neuro_fourmillements) > 50 || scaleToPercent(allAnswers.terr_paresthesies) > 50;
+  const hasCrampesNocturnes = scaleToPercent(allAnswers.neuro_crampes_nocturnes) > 50;
+  const hasOppression = scaleToPercent(allAnswers.neuro_oppression_thoracique) > 50;
+  const hasAttaquesPanique = scaleToPercent(allAnswers.terr_attaques_panique) > 50;
 
   const spasmoScore = Math.round(
     (neuroHyper * 0.3) +
-    (hasPalpitations ? 15 : 0) +
-    (hasTremblements ? 10 : 0) +
-    (hasCrampes ? 20 : 0) +
-    (hasPaupiere ? 10 : 0) +
+    (hasSpasmophilie ? 30 : 0) +
+    (hasFourmillements ? 15 : 0) +
+    (hasCrampesNocturnes ? 15 : 0) +
     (hasOppression ? 20 : 0) +
-    (hasHypervent ? 20 : 0) +
-    (hasSensibBruit ? 10 : 0)
+    (hasAttaquesPanique ? 25 : 0)
   );
 
   if (spasmoScore > 30) {
     const indicateurs: string[] = ["Dystonie neurovégétative"];
-    if (hasCrampes || hasPaupiere) indicateurs.push("Déficit magnésien probable");
+    if (hasSpasmophilie) indicateurs.push("Crises de tétanie/spasmophilie");
+    if (hasFourmillements) indicateurs.push("Paresthésies");
     if (hasOppression) indicateurs.push("Oppression thoracique fonctionnelle");
-    if (hasHypervent) indicateurs.push("Hyperventilation / Tétanie latente");
-    if (hasSensibBruit) indicateurs.push("Hypersensibilité sensorielle");
+    if (hasAttaquesPanique) indicateurs.push("Attaques de panique");
 
     terrains.push({
       terrain: "spasmophile",
@@ -986,32 +1988,26 @@ function detecterTerrains(
 
   // === TERRAIN CONGESTIF ===
   const digestifHyper = scores.digestif?.surSollicitation || 0;
-  const hasCongestioFoie =
-    scaleToPercent(answers.digestif?.dig_foie_reveil_nocturne) > 50 ||
-    scaleToPercent(answers.digestif?.dig_foie_graisses) > 50;
-  // Nouvelles questions dédiées
-  const hasJambesLourdes = scaleToPercent(terrainsAnswers.terrain_congestif_jambes_lourdes) > 50;
-  const hasHemoroides = boolToScore(terrainsAnswers.terrain_congestif_hemoroides) > 0;
-  const hasCephaleesDigest = scaleToPercent(terrainsAnswers.terrain_congestif_cephalees_digestives) > 50;
-  const hasLangueChargee = scaleToPercent(terrainsAnswers.terrain_congestif_langue_chargee) > 50;
-  const hasTeintBrouille = scaleToPercent(terrainsAnswers.terrain_congestif_teint_brouille) > 50;
+  const hasReveilFoie = scaleToPercent(allAnswers.dig_foie_reveil_nocturne) > 50;
+  const hasBoucheAmere = scaleToPercent(allAnswers.dig_foie_bouche_amere) > 50;
+  const hasReveil1h3h = scaleToPercent(allAnswers.neuro_reveil_1h_3h) > 50;
+  const hasCongestionHepatique = scaleToPercent(allAnswers.terr_congestion_hepatique) > 50;
+  const hasCongestionPelvienne = scaleToPercent(allAnswers.terr_congestion_pelvienne) > 50;
 
   const congestifScore = Math.round(
     (digestifHyper * 0.3) +
-    (hasCongestioFoie ? 20 : 0) +
-    (hasJambesLourdes ? 15 : 0) +
-    (hasHemoroides ? 25 : 0) +
-    (hasCephaleesDigest ? 15 : 0) +
-    (hasLangueChargee ? 10 : 0) +
-    (hasTeintBrouille ? 10 : 0)
+    (hasReveilFoie ? 20 : 0) +
+    (hasBoucheAmere ? 15 : 0) +
+    (hasReveil1h3h ? 20 : 0) +
+    (hasCongestionHepatique ? 25 : 0) +
+    (hasCongestionPelvienne ? 20 : 0)
   );
 
   if (congestifScore > 30) {
     const indicateurs: string[] = ["Congestion hépato-splanchnique"];
-    if (hasHemoroides) indicateurs.push("Hypertension portale relative (hémorroïdes/varices)");
-    if (hasJambesLourdes) indicateurs.push("Stase veineuse périphérique");
-    if (hasCephaleesDigest) indicateurs.push("Céphalées hépato-digestives");
-    if (hasLangueChargee || hasTeintBrouille) indicateurs.push("Surcharge toxémique");
+    if (hasReveilFoie || hasReveil1h3h) indicateurs.push("Réveil nocturne 1h-3h");
+    if (hasBoucheAmere) indicateurs.push("Bouche amère matinale");
+    if (hasCongestionPelvienne) indicateurs.push("Congestion pelvienne");
 
     terrains.push({
       terrain: "congestif",
@@ -1022,35 +2018,27 @@ function detecterTerrains(
   }
 
   // === TERRAIN MÉTABOLIQUE ===
-  const somatoHypo = scores.somato?.insuffisance || 0;
-  const hasGraisseAbdo = scaleToPercent(answers.somato?.soma_graisse_abdo) > 50;
-  const hasHypoGlycemies =
-    scaleToPercent(answers.somato?.soma_faim_matin) > 50 ||
-    scaleToPercent(answers.adaptatif?.cortico_coup_pompe) > 50;
-  // Nouvelles questions dédiées
-  const hasGraisseAbdoTerrain = scaleToPercent(terrainsAnswers.terrain_metabo_graisse_abdominale) > 50;
-  const hasEnvieSucre = scaleToPercent(terrainsAnswers.terrain_metabo_sucre_envie) > 50;
-  const hasSoifUrines = scaleToPercent(terrainsAnswers.terrain_metabo_soif_urines) > 50;
-  const hasAcanthosis = boolToScore(terrainsAnswers.terrain_metabo_acanthosis) > 0;
-  const hasGlycemieElevee = boolToScore(terrainsAnswers.terrain_metabo_glycemie_elevee) > 0;
+  const somatoHyper = scores.somato?.surSollicitation || 0;
+  const hasEnviesSucre = scaleToPercent(allAnswers.somato_envies_sucre) > 50;
+  const hasSomnolencePostprandiale = scaleToPercent(allAnswers.somato_somnolence_postprandiale) > 50;
+  const hasAdipositéProximale = boolToScore(allAnswers.somato_adiposite_proximale) > 0;
+  const hasPrisePoidsAbdo = scaleToPercent(allAnswers.cortico_prise_poids_abdominale) > 50;
+  const hasResistanceInsuline = scaleToPercent(allAnswers.terr_resistance_insuline) > 50;
 
   const metaboScore = Math.round(
-    (somatoHypo * 0.2) +
-    (hasGraisseAbdo || hasGraisseAbdoTerrain ? 20 : 0) +
-    (hasHypoGlycemies ? 10 : 0) +
-    (hasEnvieSucre ? 15 : 0) +
-    (hasSoifUrines ? 20 : 0) +
-    (hasAcanthosis ? 25 : 0) +
-    (hasGlycemieElevee ? 25 : 0)
+    (somatoHyper * 0.2) +
+    (hasEnviesSucre ? 20 : 0) +
+    (hasSomnolencePostprandiale ? 15 : 0) +
+    (hasAdipositéProximale ? 25 : 0) +
+    (hasPrisePoidsAbdo ? 20 : 0) +
+    (hasResistanceInsuline ? 25 : 0)
   );
 
   if (metaboScore > 30) {
     const indicateurs: string[] = ["Insulino-résistance probable"];
-    if (hasGraisseAbdo || hasGraisseAbdoTerrain) indicateurs.push("Adiposité abdominale");
-    if (hasEnvieSucre) indicateurs.push("Envies sucrées (dysglycémie)");
-    if (hasSoifUrines) indicateurs.push("Polyurie-polydipsie (pré-diabète ?)");
-    if (hasAcanthosis) indicateurs.push("Acanthosis nigricans (pathognomonique)");
-    if (hasGlycemieElevee) indicateurs.push("Glycémie limite connue");
+    if (hasAdipositéProximale || hasPrisePoidsAbdo) indicateurs.push("Adiposité abdominale");
+    if (hasEnviesSucre) indicateurs.push("Envies sucrées (dysglycémie)");
+    if (hasSomnolencePostprandiale) indicateurs.push("Somnolence post-prandiale");
 
     terrains.push({
       terrain: "metabolique",
@@ -1060,26 +2048,47 @@ function detecterTerrains(
     });
   }
 
+  // === TERRAIN INFLAMMATOIRE ===
+  const hasDouleursArticulaires = scaleToPercent(allAnswers.immuno_douleurs_articulaires) > 50;
+  const hasCRPElevee = boolToScore(allAnswers.immuno_crp_elevee) > 0;
+  const hasVSElevee = boolToScore(allAnswers.immuno_vs_elevee) > 0;
+  const hasInflammationChronique = scaleToPercent(allAnswers.terr_inflammation_chronique) > 50;
+
+  const inflammatoireScore = Math.round(
+    (hasDouleursArticulaires ? 25 : 0) +
+    (hasCRPElevee ? 30 : 0) +
+    (hasVSElevee ? 20 : 0) +
+    (hasInflammationChronique ? 40 : 0)
+  );
+
+  if (inflammatoireScore > 30) {
+    const indicateurs: string[] = ["Inflammation chronique bas grade"];
+    if (hasDouleursArticulaires) indicateurs.push("Douleurs articulaires/musculaires");
+    if (hasCRPElevee || hasVSElevee) indicateurs.push("Marqueurs inflammatoires élevés");
+
+    terrains.push({
+      terrain: "inflammatoire",
+      score: Math.min(inflammatoireScore, 100),
+      indicateurs,
+      axesImpliques: ["immuno", "adaptatif"]
+    });
+  }
+
   // === TERRAIN DÉGÉNÉRATIF ===
-  // Questions dédiées uniquement
-  const hasMemoire = scaleToPercent(terrainsAnswers.terrain_degeneratif_memoire) > 50;
-  const hasPeauRelach = scaleToPercent(terrainsAnswers.terrain_degeneratif_peau_relachement) > 50;
-  const hasArthrose = scaleToPercent(terrainsAnswers.terrain_degeneratif_douleurs_articulaires_usure) > 50;
-  const hasOsteoporose = boolToScore(terrainsAnswers.terrain_degeneratif_osteoporose_fractures) > 0;
+  const hasTumeursBenignes = allAnswers.terr_tumeurs_benignes && allAnswers.terr_tumeurs_benignes !== "Non";
+  const hasDegeneratif = scaleToPercent(allAnswers.terr_degeneratif) > 50;
+  const hasOsteoporose = boolToScore(allAnswers.thyro_osteoporose) > 0 || boolToScore(allAnswers.somato_osteoporose) > 0;
 
   const degeneratifScore = Math.round(
-    (hasMemoire ? 20 : 0) +
-    (hasPeauRelach ? 15 : 0) +
-    (hasArthrose ? 25 : 0) +
-    (hasOsteoporose ? 40 : 0)
+    (hasTumeursBenignes ? 30 : 0) +
+    (hasDegeneratif ? 40 : 0) +
+    (hasOsteoporose ? 30 : 0)
   );
 
   if (degeneratifScore > 30) {
-    const indicateurs: string[] = ["Vieillissement accéléré"];
-    if (hasMemoire) indicateurs.push("Déclin cognitif");
-    if (hasArthrose) indicateurs.push("Arthrose mécanique");
-    if (hasOsteoporose) indicateurs.push("Ostéopénie / Ostéoporose");
-    if (hasPeauRelach) indicateurs.push("Dégradation tissulaire (collagène)");
+    const indicateurs: string[] = ["Vieillissement tissulaire"];
+    if (hasTumeursBenignes) indicateurs.push("Tumeurs bénignes");
+    if (hasOsteoporose) indicateurs.push("Ostéoporose");
 
     terrains.push({
       terrain: "degeneratif",
@@ -1132,6 +2141,7 @@ function genererDescriptionGonado(hypo: number, hyper: number, sexe: "H" | "F"):
 
 function genererDescriptionSomato(hypo: number, hyper: number): string {
   if (hypo < 20 && hyper < 20) return "Axe somatotrope équilibré";
+  if (hyper > 40) return "Hyperactivité somatotrope - Terrain hyperinsulinique/prolifératif";
   if (hypo > 30) return "Insuffisance somatotrope - Déficit GH/IGF-1 fonctionnel";
   return "Légère perturbation de l'axe somatotrope";
 }
@@ -1150,10 +2160,12 @@ function genererDescriptionImmuno(hypo: number, hyper: number): string {
   return "Instabilité immunitaire - Balance Th1/Th2 perturbée";
 }
 
-function calculerConfiance(answers: Record<string, any>, totalQuestions: number): number {
+function calculerConfiance(answers: Record<string, any>, prefix: string): number {
   if (!answers) return 0;
-  const answered = Object.values(answers).filter(v => v !== undefined && v !== null && v !== "").length;
-  return Math.min(answered / totalQuestions, 1);
+  const allKeys = Object.keys(answers);
+  const relevantKeys = allKeys.filter(k => k.startsWith(prefix));
+  const answered = relevantKeys.filter(k => answers[k] !== undefined && answers[k] !== null && answers[k] !== "").length;
+  return Math.min(answered / Math.max(relevantKeys.length, 1), 1);
 }
 
 // ========================================
@@ -1166,33 +2178,45 @@ export function calculateClinicalScoresV3(
 ): ScoringResultV3 {
   const axes: ScoringResultV3["axes"] = {};
 
-  // Scorer chaque axe
-  if (answersByAxis.neuro && Object.keys(answersByAxis.neuro).length > 0) {
-    axes.neuro = scorerAxeNeuro(answersByAxis.neuro);
+  // Fusionner toutes les réponses pour faciliter l'accès
+  const allAnswers = {
+    ...answersByAxis.neuro,
+    ...answersByAxis.adaptatif,
+    ...answersByAxis.thyro,
+    ...answersByAxis.gonado,
+    ...answersByAxis.somato,
+    ...answersByAxis.digestif,
+    ...answersByAxis.immuno,
+    ...answersByAxis.terrains
+  };
+
+  // Scorer chaque axe avec les réponses fusionnées
+  if (Object.keys(allAnswers).some(k => k.startsWith("neuro_"))) {
+    axes.neuro = scorerAxeNeuro(allAnswers);
   }
 
-  if (answersByAxis.adaptatif && Object.keys(answersByAxis.adaptatif).length > 0) {
-    axes.adaptatif = scorerAxeAdaptatif(answersByAxis.adaptatif);
+  if (Object.keys(allAnswers).some(k => k.startsWith("cortico_"))) {
+    axes.adaptatif = scorerAxeAdaptatif(allAnswers);
   }
 
-  if (answersByAxis.thyro && Object.keys(answersByAxis.thyro).length > 0) {
-    axes.thyro = scorerAxeThyro(answersByAxis.thyro);
+  if (Object.keys(allAnswers).some(k => k.startsWith("thyro_"))) {
+    axes.thyro = scorerAxeThyro(allAnswers);
   }
 
-  if (answersByAxis.gonado && Object.keys(answersByAxis.gonado).length > 0) {
-    axes.gonado = scorerAxeGonado(answersByAxis.gonado, sexe);
+  if (Object.keys(allAnswers).some(k => k.startsWith("gona_"))) {
+    axes.gonado = scorerAxeGonado(allAnswers, sexe);
   }
 
-  if (answersByAxis.somato && Object.keys(answersByAxis.somato).length > 0) {
-    axes.somato = scorerAxeSomato(answersByAxis.somato);
+  if (Object.keys(allAnswers).some(k => k.startsWith("somato_"))) {
+    axes.somato = scorerAxeSomato(allAnswers);
   }
 
-  if (answersByAxis.digestif && Object.keys(answersByAxis.digestif).length > 0) {
-    axes.digestif = scorerAxeDigestif(answersByAxis.digestif);
+  if (Object.keys(allAnswers).some(k => k.startsWith("dig_"))) {
+    axes.digestif = scorerAxeDigestif(allAnswers);
   }
 
-  if (answersByAxis.immuno && Object.keys(answersByAxis.immuno).length > 0) {
-    axes.immuno = scorerAxeImmuno(answersByAxis.immuno);
+  if (Object.keys(allAnswers).some(k => k.startsWith("immuno_"))) {
+    axes.immuno = scorerAxeImmuno(allAnswers);
   }
 
   // Détecter terrains pathologiques
@@ -1233,6 +2257,9 @@ export function calculateClinicalScoresV3(
   }
   if (terrainsDetectes.some(t => t.terrain === "congestif")) {
     recommandationsPrioritaires.push("Drainage hépatique PRIORITAIRE (Romarin, Artichaut)");
+  }
+  if (terrainsDetectes.some(t => t.terrain === "metabolique")) {
+    recommandationsPrioritaires.push("Régulation glycémique (Cannelle, Chrome, Gymnema)");
   }
 
   return {

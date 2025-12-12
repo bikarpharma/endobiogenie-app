@@ -12,18 +12,64 @@ type AnyQuestion = QuestionConfig | GonadoQuestion;
 interface QuestionFieldProps {
   question: AnyQuestion;
   control: Control<any>;
+  showPriorityBadge?: boolean;
 }
 
-export function QuestionField({ question, control }: QuestionFieldProps) {
+export function QuestionField({ question, control, showPriorityBadge = true }: QuestionFieldProps) {
   const { id, question: label, type, options, tooltip } = question;
   const scaleLabels = "scaleLabels" in question ? question.scaleLabels : undefined;
+  const priority = "priority" in question ? (question as any).priority : undefined;
+
+  // Déterminer le style selon la priorité
+  const getPriorityStyles = () => {
+    switch (priority) {
+      case 1: // Essentiel
+        return {
+          dot: "bg-amber-400",
+          border: "border-amber-300 bg-amber-50/30",
+          label: "text-amber-900"
+        };
+      case 2: // Important
+        return {
+          dot: "bg-blue-400",
+          border: "border-blue-200 bg-blue-50/20",
+          label: "text-slate-800"
+        };
+      case 3: // Optionnel
+      default:
+        return {
+          dot: "bg-slate-300",
+          border: "border-slate-200",
+          label: "text-slate-700"
+        };
+    }
+  };
+
+  const styles = getPriorityStyles();
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start gap-2 mb-3">
-        <label htmlFor={id} className="font-medium text-lg text-slate-800 flex-1">
+    <div className={`
+      bg-white rounded-xl shadow-sm border p-6 mb-4 hover:shadow-md transition-shadow
+      ${styles.border}
+    `}>
+      <div className="flex items-start gap-3 mb-3">
+        {/* Point coloré de priorité */}
+        {showPriorityBadge && priority && (
+          <span className={`
+            w-3 h-3 rounded-full flex-shrink-0 mt-1.5
+            ${styles.dot}
+          `} />
+        )}
+
+        {/* Label de la question */}
+        <label htmlFor={id} className={`
+          font-medium text-lg flex-1
+          ${styles.label}
+        `}>
           {label}
         </label>
+
+        {/* Tooltip info */}
         {tooltip && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -51,7 +97,17 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
               return (
                 <select
                   id={id}
-                  className="border-2 border-gray-300 rounded-lg px-4 py-3 text-base font-medium w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-blue-400 transition-colors"
+                  className={`
+                    border-2 rounded-lg px-4 py-3 text-base font-medium w-full 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                    bg-white transition-colors
+                    ${priority === 1 
+                      ? "border-amber-300 hover:border-amber-400" 
+                      : priority === 2
+                        ? "border-blue-200 hover:border-blue-400"
+                        : "border-gray-300 hover:border-gray-400"
+                    }
+                  `}
                   value={field.value === undefined ? "" : field.value ? "oui" : "non"}
                   onChange={(e) => field.onChange(e.target.value === "oui")}
                 >
@@ -64,7 +120,17 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
               return (
                 <select
                   id={id}
-                  className="border-2 border-gray-300 rounded-lg px-4 py-3 text-base font-medium w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-blue-400 transition-colors"
+                  className={`
+                    border-2 rounded-lg px-4 py-3 text-base font-medium w-full 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                    bg-white transition-colors
+                    ${priority === 1 
+                      ? "border-amber-300 hover:border-amber-400" 
+                      : priority === 2
+                        ? "border-blue-200 hover:border-blue-400"
+                        : "border-gray-300 hover:border-gray-400"
+                    }
+                  `}
                   value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value)}
                 >
@@ -81,7 +147,11 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
                 <input
                   id={id}
                   type="number"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`
+                    border rounded-lg px-3 py-2 text-sm w-full 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                    ${priority === 1 ? "border-amber-300" : priority === 2 ? "border-blue-200" : "border-gray-300"}
+                  `}
                   value={field.value ?? ""}
                   onChange={(e) =>
                     field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
@@ -93,7 +163,11 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
                 <select
                   id={id}
                   multiple
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]"
+                  className={`
+                    border rounded-lg px-3 py-2 text-sm w-full min-h-[100px]
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                    ${priority === 1 ? "border-amber-300" : priority === 2 ? "border-blue-200" : "border-gray-300"}
+                  `}
                   value={field.value ?? []}
                   onChange={(e) =>
                     field.onChange(
@@ -113,7 +187,11 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
                 <input
                   id={id}
                   type="date"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`
+                    border rounded-lg px-3 py-2 text-sm w-full 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                    ${priority === 1 ? "border-amber-300" : priority === 2 ? "border-blue-200" : "border-gray-300"}
+                  `}
                   value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value)}
                 />
@@ -131,8 +209,16 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
                           flex-1 px-5 py-4 text-base font-semibold rounded-lg border-2 transition-all
                           ${
                             field.value === value
-                              ? "bg-blue-500 text-white border-blue-600 shadow-lg scale-105"
-                              : "bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50 hover:scale-102"
+                              ? priority === 1
+                                ? "bg-amber-500 text-white border-amber-600 shadow-lg scale-105"
+                                : priority === 2
+                                  ? "bg-blue-500 text-white border-blue-600 shadow-lg scale-105"
+                                  : "bg-slate-500 text-white border-slate-600 shadow-lg scale-105"
+                              : priority === 1
+                                ? "bg-white text-gray-700 border-amber-300 hover:border-amber-400 hover:bg-amber-50 hover:scale-102"
+                                : priority === 2
+                                  ? "bg-white text-gray-700 border-blue-200 hover:border-blue-400 hover:bg-blue-50 hover:scale-102"
+                                  : "bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50 hover:scale-102"
                           }
                         `}
                       >
@@ -156,7 +242,11 @@ export function QuestionField({ question, control }: QuestionFieldProps) {
               return (
                 <textarea
                   id={id}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full min-h-[80px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                  className={`
+                    border rounded-lg px-3 py-2 text-sm w-full min-h-[80px] resize-y
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                    ${priority === 1 ? "border-amber-300" : priority === 2 ? "border-blue-200" : "border-gray-300"}
+                  `}
                   value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value)}
                 />

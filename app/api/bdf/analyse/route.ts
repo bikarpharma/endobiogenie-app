@@ -4,45 +4,64 @@
 // Endpoint pour l'analyse BdF (Biologie des Fonctions)
 // Reçoit des valeurs biologiques, calcule les index,
 // et renvoie une interprétation fonctionnelle.
+//
+// VERSION MISE À JOUR : Validation Zod des plages physiologiques
 
 import { NextRequest, NextResponse } from "next/server";
-import type { LabValues } from "@/lib/bdf/types";
-import { calculateIndexes } from "@/lib/bdf/calculateIndexes";
+import { calculateAllIndexes } from "@/lib/bdf/calculateIndexes";
+import { sanitizeBiomarkers } from "@/lib/validations";
 
 export const runtime = "nodejs";
 
 /**
  * POST /api/bdf/analyse
  * Analyse des valeurs biologiques selon la Biologie des Fonctions
- * Retourne UNIQUEMENT les 8 index calculés (pas de résumé rapide)
- * Le résumé/axes/lecture seront générés par la route RAG si demandé
+ *
+ * @body Record<string, number> - Biomarqueurs { "GR": 5.2, "GB": 6.5, "TSH": 2.1, ... }
+ * @returns BdfResult avec tous les index calculés
+ *
+ * SÉCURITÉ: Les valeurs hors plages physiologiques sont ignorées
+ * pour éviter de fausser les calculs d'index.
  */
 export async function POST(req: NextRequest) {
   try {
     // Récupérer les valeurs biologiques du body
     const body = await req.json();
-    const labValues: LabValues = body;
+
+    // VALIDATION ZOD : Sanitize les biomarqueurs avec plages physiologiques
+    const { sanitized: biomarkers, warnings } = sanitizeBiomarkers(body);
+
+    // Log des avertissements côté serveur
+    if (warnings.length > 0) {
+      console.warn("⚠️ Valeurs biologiques hors plages:", warnings);
+    }
 
     // Validation : au moins une valeur doit être présente
-    if (Object.keys(labValues).length === 0) {
+    const validValues = Object.values(biomarkers).filter(v => v !== null);
+    if (validValues.length === 0) {
       return NextResponse.json(
-        { error: "Aucune valeur biologique fournie" },
+        { error: "Aucune valeur biologique valide fournie" },
         { status: 400 }
       );
     }
 
-    // Calculer les 8 index BdF
-    const indexes = calculateIndexes(labValues);
+    // Calculer tous les index BdF (avec conversions automatiques)
+    const result = calculateAllIndexes(biomarkers);
 
-    // Renvoyer les index avec une note technique
+    // Renvoyer le résultat complet avec warnings
     return NextResponse.json({
-      indexes,
+      success: true,
+      indexes: result.indexes,
+      metadata: result.metadata,
+      warnings: warnings.length > 0 ? warnings : undefined,
       noteTechnique: "Analyse fonctionnelle du terrain selon la Biologie des Fonctions. À corréler au contexte clinique.",
     }, { status: 200 });
-  } catch (e: any) {
-    console.error("Erreur API /bdf/analyse:", e);
+
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Erreur serveur";
+    console.error("❌ Erreur API /bdf/analyse:", e);
     return NextResponse.json(
-      { error: e?.message ?? "Erreur serveur" },
+      { error: message },
       { status: 500 }
     );
   }
@@ -56,5 +75,12 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     message: "API BdF (Biologie des Fonctions) opérationnelle",
+    version: "2.0",
+    features: [
+      "Conversions BdF automatiques (GR, GB, PLT, CA)",
+      "Correction TSH (<0.5→0.5, >5→5)",
+      "Détection hypothyroïdie latente",
+      "25+ index calculés"
+    ]
   });
 }

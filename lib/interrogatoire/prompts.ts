@@ -76,16 +76,31 @@ TU NE DOIS JAMAIS :
 - "Soutiens de la réceptivité cellulaire"
 
 ═══════════════════════════════════════════════════════════════
-📊 CALCUL DE LA CONFIANCE (0.0 à 1.0)
+📊 CALCUL OBLIGATOIRE DE LA CONFIANCE (0.0 à 1.0)
 ═══════════════════════════════════════════════════════════════
 
-Évalue ta confiance selon :
-- **Cohérence des réponses cliniques** (0.3) : Les signes convergent-ils ?
-- **Concordance endobiogénique** (0.3) : Le profil respecte-t-il la physiologie ?
-- **Clarté du profil** (0.2) : Le tableau est-il net ou ambigu ?
-- **Suffisance des données** (0.2) : Assez d'informations pour conclure ?
+⚠️ IMPORTANT : Tu DOIS calculer la confiance toi-même. NE COPIE PAS une valeur par défaut.
 
-Si confiance < 0.6 → Mentionne les données manquantes dans "prudences"
+FORMULE DE CALCUL (applique-la systématiquement) :
+
+confiance = (
+  coherence_reponses × 0.3 +      // Les signes convergent-ils ? (0 à 1)
+  concordance_endobiogenique × 0.3 + // Le profil respecte-t-il la physiologie ? (0 à 1)
+  clarte_profil × 0.2 +            // Le tableau est-il net ou ambigu ? (0 à 1)
+  suffisance_donnees × 0.2         // Assez d'informations pour conclure ? (0 à 1)
+)
+
+EXEMPLES DE CALCUL (pour comprendre, ne pas copier les valeurs) :
+- Réponses très cohérentes (0.9) + Profil physio clair (0.8) + Tableau net (0.9) + 80% questions répondues (0.8)
+  → confiance = 0.9×0.3 + 0.8×0.3 + 0.9×0.2 + 0.8×0.2 = 0.27 + 0.24 + 0.18 + 0.16 = 0.85
+
+- Réponses contradictoires (0.4) + Profil ambigu (0.5) + Tableau mixte (0.4) + 40% questions (0.4)
+  → confiance = 0.4×0.3 + 0.5×0.3 + 0.4×0.2 + 0.4×0.2 = 0.12 + 0.15 + 0.08 + 0.08 = 0.43
+
+- Peu de réponses (0.3) mais très cohérentes (0.9) + Profil clair (0.8) + Clarté moyenne (0.6)
+  → confiance = 0.9×0.3 + 0.8×0.3 + 0.6×0.2 + 0.3×0.2 = 0.27 + 0.24 + 0.12 + 0.06 = 0.69
+
+RÈGLE : Si confiance < 0.6 → Mentionne les données manquantes dans "prudences"
 
 ═══════════════════════════════════════════════════════════════
 📤 FORMAT DE SORTIE (JSON STRICT - Ne pas modifier la structure)
@@ -110,8 +125,11 @@ Si confiance < 0.6 → Mentionne les données manquantes dans "prudences"
     "..."
   ],
   "resumeClinique": "Synthèse narrative DÉTAILLÉE pour le dossier patient, incluant : profil identifié, mécanismes, chronologie, interrelations avec autres axes si pertinent, et orientation thérapeutique générique (4-6 phrases minimum)",
-  "confiance": 0.85
+  "confiance": "CALCULE_SELON_FORMULE_CI_DESSUS"
 }
+
+⚠️ RAPPEL FINAL : La valeur "confiance" dans ta réponse DOIT être un nombre entre 0.0 et 1.0 que TU as calculé.
+Si tu retournes exactement 0.85, c'est probablement une erreur - recalcule !
 
 ═══════════════════════════════════════════════════════════════
 🎯 TON OBJECTIF FINAL

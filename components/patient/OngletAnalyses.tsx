@@ -1,11 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import BdfResultsView from "@/components/bdf/BdfResultsView";
+import { SyntheseUnifiee } from "@/components/interrogatoire/SyntheseUnifiee";
 import type { BdfResult } from "@/lib/bdf/calculateIndexes";
 
 export function OngletAnalyses({ patient }: { patient: any }) {
+  const router = useRouter();
   const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  // Vérifier si la BdF a été modifiée après la dernière synthèse IA
+  const lastSynthesis = patient.unifiedSyntheses?.[0];
+  const lastBdf = patient.bdfAnalyses?.[0];
+  const bdfModifiedAfterSynthesis = lastSynthesis && lastBdf &&
+    new Date(lastBdf.updatedAt || lastBdf.createdAt) > new Date(lastSynthesis.createdAt);
+
+  // Sélectionner une analyse
+  const handleSelectAnalysis = (analysis: any) => {
+    setSelectedAnalysis(analysis);
+  };
 
   if (patient.bdfAnalyses.length === 0) {
     return (
@@ -107,7 +122,7 @@ export function OngletAnalyses({ patient }: { patient: any }) {
                   </div>
                   <div>
                     <button
-                      onClick={() => setSelectedAnalysis(analysis)}
+                      onClick={() => handleSelectAnalysis(analysis)}
                       style={{
                         padding: "8px 16px",
                         background: "#2563eb",
@@ -130,7 +145,7 @@ export function OngletAnalyses({ patient }: { patient: any }) {
       ) : (
         <>
           {/* Détail d'une analyse */}
-          <div style={{ marginBottom: "24px" }}>
+          <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
             <button
               onClick={() => setSelectedAnalysis(null)}
               style={{
@@ -146,7 +161,51 @@ export function OngletAnalyses({ patient }: { patient: any }) {
             >
               ← Retour à la liste
             </button>
+
+            {/* Bouton Modifier BdF */}
+            <button
+              onClick={() => router.push(`/bdf?patientId=${patient.id}&edit=${selectedAnalysis.id}`)}
+              style={{
+                padding: "10px 20px",
+                background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "0.9rem",
+                fontWeight: "600",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: "0 2px 8px rgba(245, 158, 11, 0.3)",
+              }}
+            >
+              ✏️ Modifier cette BdF
+            </button>
           </div>
+
+          {/* Alerte si BdF modifiée après synthèse */}
+          {bdfModifiedAfterSynthesis && selectedAnalysis.id === lastBdf?.id && (
+            <div style={{
+              background: "#fef3c7",
+              border: "2px solid #f59e0b",
+              borderRadius: "12px",
+              padding: "16px 20px",
+              marginBottom: "20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}>
+              <span style={{ fontSize: "1.5rem" }}>⚠️</span>
+              <div>
+                <strong style={{ color: "#92400e" }}>Données modifiées depuis la dernière synthèse IA</strong>
+                <p style={{ fontSize: "0.85rem", color: "#b45309", margin: "4px 0 0 0" }}>
+                  Cette analyse BdF a été modifiée après la génération de la synthèse.
+                  Veuillez régénérer la synthèse IA pour prendre en compte les changements.
+                </p>
+              </div>
+            </div>
+          )}
 
           <h3
             style={{
@@ -203,101 +262,62 @@ export function OngletAnalyses({ patient }: { patient: any }) {
             } as BdfResult}
           />
 
-          {/* Résumé fonctionnel */}
-          {selectedAnalysis.summary && (
-            <div style={{ marginTop: "32px", marginBottom: "32px" }}>
-              <h4
-                style={{
-                  fontSize: "0.95rem",
-                  fontWeight: "600",
-                  color: "#1f2937",
-                  marginBottom: "12px",
-                }}
-              >
-                🔬 Résumé fonctionnel
-              </h4>
-              <div
-                style={{
-                  background: "#f0f9ff",
-                  padding: "20px",
-                  borderRadius: "10px",
-                  border: "2px solid #0ea5e9",
-                  fontSize: "0.9rem",
-                  color: "#0c4a6e",
-                  lineHeight: "1.8",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {selectedAnalysis.summary}
-              </div>
-            </div>
-          )}
+          {/* ════════════════════════════════════════════════════════════
+              SECTIONS LEGACY SUPPRIMÉES :
+              - "Résumé fonctionnel" (affichait du JSON brut illisible)
+              - "Axes sollicités" (redondant avec la nouvelle synthèse)
+              - "Lecture endobiogénique" (remplacé par SyntheseUnifiee)
 
-          {/* Axes sollicités */}
-          {selectedAnalysis.axes &&
-            Array.isArray(selectedAnalysis.axes) &&
-            selectedAnalysis.axes.length > 0 && (
-              <div style={{ marginBottom: "32px" }}>
-                <h4
-                  style={{
-                    fontSize: "0.95rem",
-                    fontWeight: "600",
-                    color: "#1f2937",
-                    marginBottom: "12px",
-                  }}
-                >
-                  ⚙️ Axes sollicités
-                </h4>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {selectedAnalysis.axes.map((axe: string, idx: number) => (
-                    <div
-                      key={idx}
-                      style={{
-                        background: "#fef3c7",
-                        padding: "8px 16px",
-                        borderRadius: "8px",
-                        border: "1px solid #fbbf24",
-                        fontSize: "0.85rem",
-                        color: "#78350f",
-                        fontWeight: "500",
-                      }}
-                    >
-                      {axe}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+              Ces informations sont maintenant générées dynamiquement
+              par le composant SyntheseUnifiee ci-dessous.
+          ════════════════════════════════════════════════════════════ */}
 
-          {/* Lecture endobiogénique */}
-          {selectedAnalysis.ragText && (
-            <div style={{ marginBottom: "32px" }}>
-              <h4
-                style={{
-                  fontSize: "0.95rem",
-                  fontWeight: "600",
-                  color: "#1f2937",
-                  marginBottom: "12px",
-                }}
-              >
-                🧠 Lecture endobiogénique du terrain
-              </h4>
-              <div
-                style={{
-                  background: "linear-gradient(135deg, #667eea15 0%, #764ba215 100%)",
-                  border: "2px solid #667eea",
-                  borderRadius: "12px",
-                  padding: "20px",
-                  fontSize: "0.9rem",
-                  color: "#1f2937",
-                  lineHeight: "1.8",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {selectedAnalysis.ragText}
-              </div>
-            </div>
-          )}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* SYNTHÈSE IA UNIFIÉE - Toujours visible */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <div style={{ marginBottom: "24px" }}>
+            <SyntheseUnifiee
+              patientId={patient.id}
+              patientNom={`${patient.prenom} ${patient.nom}`}
+              hasInterrogatoire={!!patient.interrogatoire?.v2?.answersByAxis}
+              hasBdf={true}
+              interrogatoireCompletion={(() => {
+                // Calculer la complétion de l'interrogatoire
+                const answersByAxis = patient.interrogatoire?.v2?.answersByAxis || {};
+                const axesRemplis = Object.keys(answersByAxis).filter(
+                  (k) => answersByAxis[k] && Object.keys(answersByAxis[k]).length > 0
+                ).length;
+                const axesTotal = 10; // Nombre total d'axes dans l'interrogatoire
+
+                // Compter les questions remplies
+                let questionsRemplies = 0;
+                let questionsTotal = 0;
+                Object.values(answersByAxis).forEach((axeAnswers: any) => {
+                  if (axeAnswers) {
+                    Object.values(axeAnswers).forEach((val: any) => {
+                      questionsTotal++;
+                      if (val !== null && val !== undefined && val !== "") {
+                        questionsRemplies++;
+                      }
+                    });
+                  }
+                });
+
+                // Estimer le total de questions si aucune n'est remplie
+                if (questionsTotal === 0) {
+                  questionsTotal = 150; // Estimation du nombre total de questions
+                }
+
+                return {
+                  questionsRemplies,
+                  questionsTotal,
+                  axesRemplis,
+                  axesTotal,
+                };
+              })()}
+            />
+          </div>
+
         </>
       )}
     </div>

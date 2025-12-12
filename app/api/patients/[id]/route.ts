@@ -263,11 +263,18 @@ export async function PATCH(
     if (body.sexe !== undefined) updateData.sexe = body.sexe;
     if (body.telephone !== undefined) updateData.telephone = body.telephone?.trim() || null;
     if (body.email !== undefined) updateData.email = body.email?.trim() || null;
-    if (body.allergies !== undefined) updateData.allergies = body.allergies?.trim() || null;
+    if (body.allergies !== undefined) updateData.allergiesStructured = body.allergies; // PatientAllergyEntry[]
+    if (body.allergiesNotes !== undefined) updateData.allergiesNotes = body.allergiesNotes?.trim() || null;
     if (body.atcdMedicaux !== undefined) updateData.atcdMedicaux = body.atcdMedicaux?.trim() || null;
     if (body.atcdChirurgicaux !== undefined) updateData.atcdChirurgicaux = body.atcdChirurgicaux?.trim() || null;
     if (body.traitements !== undefined) updateData.traitements = body.traitements?.trim() || null;
     if (body.notes !== undefined) updateData.notes = body.notes?.trim() || null;
+    // Contexte enrichi ordonnance
+    if (body.pathologiesAssociees !== undefined) updateData.pathologiesAssociees = body.pathologiesAssociees;
+    if (body.symptomesActuels !== undefined) updateData.symptomesActuels = body.symptomesActuels;
+    if (body.autresBilans !== undefined) updateData.autresBilans = body.autresBilans;
+    // Terrain chronique (APCI & maladies chroniques)
+    if (body.chronicProfile !== undefined) updateData.chronicProfile = body.chronicProfile;
 
     const patient = await prisma.patient.update({
       where: { id },
